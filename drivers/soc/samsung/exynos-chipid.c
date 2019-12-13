@@ -59,6 +59,7 @@ static const struct exynos_soc_id {
 	/* Compatible with: samsung,exynos850-chipid */
 	{ "EXYNOS7885", 0xE7885000 },
 	{ "EXYNOS850", 0xE3830000 },
+	{ "EXYNOS8890", 0xE8890000 },
 	{ "EXYNOSAUTOV9", 0xAAA80000 },
 };
 
