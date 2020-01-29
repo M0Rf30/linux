@@ -42,6 +42,7 @@ enum samsung_pll_type {
 	pll_142xx,
 	pll_141xx,
 	pll_1419x,
+	pll_1431x
 };
 
 #define PLL_RATE(_fin, _m, _p, _s, _k, _ks) \
