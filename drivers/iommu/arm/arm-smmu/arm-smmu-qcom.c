@@ -289,7 +289,8 @@ static int qcom_smmu_cfg_probe(struct arm_smmu_device *smmu)
 	reg = arm_smmu_gr0_read(smmu, last_s2cr);
 	if (FIELD_GET(ARM_SMMU_S2CR_TYPE, reg) != S2CR_TYPE_BYPASS) {
 		qsmmu->bypass_quirk = true;
-		qsmmu->bypass_cbndx = smmu->num_context_banks - 1;
+		if (qsmmu->bypass_cbndx == 0xff)
+			qsmmu->bypass_cbndx = smmu->num_context_banks - 1;
 
 		set_bit(qsmmu->bypass_cbndx, smmu->context_map);
 
@@ -411,6 +412,7 @@ static const struct arm_smmu_impl qcom_adreno_smmu_impl = {
 static struct arm_smmu_device *qcom_smmu_create(struct arm_smmu_device *smmu,
 		const struct arm_smmu_impl *impl)
 {
+	const struct device_node *np = smmu->dev->of_node;
 	struct qcom_smmu *qsmmu;
 
 	/* Check to make sure qcom_scm has finished probing */
@@ -423,6 +425,16 @@ static struct arm_smmu_device *qcom_smmu_create(struct arm_smmu_device *smmu,
 
 	qsmmu->smmu.impl = impl;
 	qsmmu->cfg = qcom_smmu_impl_data(smmu);
+	qsmmu->bypass_cbndx = 0xff;
+
+	if (np != NULL) {
+		/*
+		 * This property is optional and we expect to fail finding it if:
+		 * - Using the default bypass_cbndx (in the .cfg_probe cb) is fine; or
+		 * - We are booting on ACPI
+		 */
+		of_property_read_u8(np, "qcom,bypass-cbndx", &qsmmu->bypass_cbndx);
+	}
 
 	return &qsmmu->smmu;
 }
