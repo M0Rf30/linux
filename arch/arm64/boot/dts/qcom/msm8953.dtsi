@@ -1955,6 +1955,8 @@
 				phys = <&hsusb_phy>;
 				phy-names = "usb2-phy";
 
+				usb-psy-name = "qcom-smbcharger-usb";
+
 				snps,usb2-gadget-lpm-disable;
 				snps,dis-u1-entry-quirk;
 				snps,dis-u2-entry-quirk;
