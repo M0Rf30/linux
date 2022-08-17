@@ -52,7 +52,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -79,7 +78,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -106,7 +104,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -133,7 +130,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -160,7 +156,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -187,7 +182,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -214,7 +208,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -241,7 +234,6 @@
 			capacity-dmips-mhz = <1024>;
 			clocks = <&apcc_pll>;
 			clock-names = "cpu";
-			operating-points-v2 = <&cpu0_opp>;
 			power-domains = <&cpr 0>;
 			power-domain-names = "cpr";
 			interconnects = <&bimc MAS_APPS_PROC &bimc SLV_EBI>;
@@ -341,39 +333,6 @@
 			compatible = "cache";
 			cache-level = <2>;
 		};
-	};
-
-#define OPP(freqKhz, req, HW, peakBW, extra)		\
-	opp-freqKhz##000 {				\
-		opp-hz = /bits/ 64 <freqKhz##000>;	\
-		opp-supported-hw = <HW>;		\
-		opp-peak-kBps = <peakBW>;		\
-		required-opps = <&req>;			\
-		extra; \
-	}
-
-
-#define BIN_625  0x04
-#define BIN_626  0x81
-#define BIN_ALL	 0xff
-
-	cpu0_opp: cpu0-opp-table {
-		compatible = "operating-points-v2-qcom-cpu",
-			     "operating-points-v2-kryo-cpu";
-		nvmem-cells = <&cpu_speed_bin>;
-		opp-shared;
-
-		OPP( 652800, cpr_opp1, BIN_ALL, 1611000, opp-suspend);
-		OPP(1036800, cpr_opp2, BIN_ALL, 3221000, none);
-		OPP(1248000, cpr_opp3, BIN_ALL, 4550000, none);
-		OPP(1401600, cpr_opp4, BIN_ALL, 5859000, none);
-		OPP(1689600, cpr_opp5, BIN_ALL, 6445000, none);
-		OPP(1804800, cpr_opp6, BIN_ALL, 7104000, none);
-		OPP(1958400, cpr_opp7, BIN_625, 7104000, none);
-		OPP(2016000, cpr_opp8, BIN_625, 7104000, none);
-		OPP(2150400, cpr_opp9, BIN_626, 7104000, none);
-		OPP(2208000, cpr_opp10, BIN_626, 7104000, none);
-
 	};
 
 	firmware {
