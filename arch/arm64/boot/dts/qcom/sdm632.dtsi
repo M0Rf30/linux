@@ -199,7 +199,7 @@
 			   "cpr_fuse_revision",
 			   "cpr_speed_bin";
 
-
+	/*
 	/delete-node/cpr-opp-table;
 	cpr_opp_table: cpr-opp-table {
 		compatible = "operating-points-v2-qcom-level";
@@ -236,7 +236,7 @@
 			opp-level = <8>;
 			opp-hz = /bits/ 64 <787200000>;
 		};
-	};
+	};*/
 
 };
 
