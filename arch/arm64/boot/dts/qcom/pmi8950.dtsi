@@ -193,6 +193,23 @@
 			status = "disabled";
 		};
 
+		labibb {
+			compatible = "qcom,pmi8998-lab-ibb";
+			lab_vreg: lab {
+				interrupts = <0x3 0xde 0x1 IRQ_TYPE_EDGE_RISING>,
+							 <0x3 0xde 0x0 IRQ_TYPE_LEVEL_LOW>;
+				interrupt-names = "sc-err", "ocp";
+				qcom,soft-start-us = <800>;
+			};
+
+			ibb_vreg: ibb {
+				interrupts = <0x3 0xdc 0x2 IRQ_TYPE_EDGE_RISING>,
+							 <0x3 0xdc 0x0 IRQ_TYPE_LEVEL_LOW>;
+				interrupt-names = "sc-err", "ocp";
+				qcom,discharge-resistor-kohms = <32>;
+			};
+		};
+
 		pmi8950_wled: wled@d800 {
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -236,20 +253,5 @@
 				<3 0xc0 1 IRQ_TYPE_NONE>;
 			interrupt-names = "sc-irq", "play-irq";
 		};
-	};
-};
-
-/ {
-	ibb_vreg: fake-ibb-vreg {
-		compatible = "regulator-fixed";
-		regulator-name = "fakeibb_vreg";
-		regulator-min-microvolt = <4000000>;
-		regulator-max-microvolt = <4000000>;
-	};
-	lab_vreg: fake-lab-vreg {
-		compatible = "regulator-fixed";
-		regulator-name = "fakelab_vreg";
-		regulator-min-microvolt = <4000000>;
-		regulator-max-microvolt = <4000000>;
 	};
 };
