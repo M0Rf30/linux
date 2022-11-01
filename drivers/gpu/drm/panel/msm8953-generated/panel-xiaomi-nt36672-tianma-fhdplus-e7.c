@@ -13,7 +13,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct nt36672_tianma_fhdplus_e7 {
+struct nt36672_tianmaplus_e7 {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -22,9 +22,9 @@ struct nt36672_tianma_fhdplus_e7 {
 };
 
 static inline
-struct nt36672_tianma_fhdplus_e7 *to_nt36672_tianma_fhdplus_e7(struct drm_panel *panel)
+struct nt36672_tianmaplus_e7 *to_nt36672_tianmaplus_e7(struct drm_panel *panel)
 {
-	return container_of(panel, struct nt36672_tianma_fhdplus_e7, panel);
+	return container_of(panel, struct nt36672_tianmaplus_e7, panel);
 }
 
 #define dsi_generic_write_seq(dsi, seq...) do {				\
@@ -35,7 +35,7 @@ struct nt36672_tianma_fhdplus_e7 *to_nt36672_tianma_fhdplus_e7(struct drm_panel 
 			return ret;					\
 	} while (0)
 
-static void nt36672_tianma_fhdplus_e7_reset(struct nt36672_tianma_fhdplus_e7 *ctx)
+static void nt36672_tianmaplus_e7_reset(struct nt36672_tianmaplus_e7 *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(10000, 11000);
@@ -45,7 +45,7 @@ static void nt36672_tianma_fhdplus_e7_reset(struct nt36672_tianma_fhdplus_e7 *ct
 	usleep_range(10000, 11000);
 }
 
-static int nt36672_tianma_fhdplus_e7_on(struct nt36672_tianma_fhdplus_e7 *ctx)
+static int nt36672_tianmaplus_e7_on(struct nt36672_tianmaplus_e7 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -66,7 +66,7 @@ static int nt36672_tianma_fhdplus_e7_on(struct nt36672_tianma_fhdplus_e7 *ctx)
 	return 0;
 }
 
-static int nt36672_tianma_fhdplus_e7_off(struct nt36672_tianma_fhdplus_e7 *ctx)
+static int nt36672_tianmaplus_e7_off(struct nt36672_tianmaplus_e7 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -93,9 +93,9 @@ static int nt36672_tianma_fhdplus_e7_off(struct nt36672_tianma_fhdplus_e7 *ctx)
 	return 0;
 }
 
-static int nt36672_tianma_fhdplus_e7_prepare(struct drm_panel *panel)
+static int nt36672_tianmaplus_e7_prepare(struct drm_panel *panel)
 {
-	struct nt36672_tianma_fhdplus_e7 *ctx = to_nt36672_tianma_fhdplus_e7(panel);
+	struct nt36672_tianmaplus_e7 *ctx = to_nt36672_tianmaplus_e7(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -108,9 +108,9 @@ static int nt36672_tianma_fhdplus_e7_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	nt36672_tianma_fhdplus_e7_reset(ctx);
+	nt36672_tianmaplus_e7_reset(ctx);
 
-	ret = nt36672_tianma_fhdplus_e7_on(ctx);
+	ret = nt36672_tianmaplus_e7_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -122,16 +122,16 @@ static int nt36672_tianma_fhdplus_e7_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int nt36672_tianma_fhdplus_e7_unprepare(struct drm_panel *panel)
+static int nt36672_tianmaplus_e7_unprepare(struct drm_panel *panel)
 {
-	struct nt36672_tianma_fhdplus_e7 *ctx = to_nt36672_tianma_fhdplus_e7(panel);
+	struct nt36672_tianmaplus_e7 *ctx = to_nt36672_tianmaplus_e7(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = nt36672_tianma_fhdplus_e7_off(ctx);
+	ret = nt36672_tianmaplus_e7_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -142,7 +142,7 @@ static int nt36672_tianma_fhdplus_e7_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode nt36672_tianma_fhdplus_e7_mode = {
+static const struct drm_display_mode nt36672_tianmaplus_e7_mode = {
 	.clock = (1080 + 16 + 20 + 64) * (2160 + 4 + 2 + 4) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 16,
@@ -156,12 +156,12 @@ static const struct drm_display_mode nt36672_tianma_fhdplus_e7_mode = {
 	.height_mm = 122,
 };
 
-static int nt36672_tianma_fhdplus_e7_get_modes(struct drm_panel *panel,
-					       struct drm_connector *connector)
+static int nt36672_tianmaplus_e7_get_modes(struct drm_panel *panel,
+					   struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &nt36672_tianma_fhdplus_e7_mode);
+	mode = drm_mode_duplicate(connector->dev, &nt36672_tianmaplus_e7_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -175,16 +175,16 @@ static int nt36672_tianma_fhdplus_e7_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs nt36672_tianma_fhdplus_e7_panel_funcs = {
-	.prepare = nt36672_tianma_fhdplus_e7_prepare,
-	.unprepare = nt36672_tianma_fhdplus_e7_unprepare,
-	.get_modes = nt36672_tianma_fhdplus_e7_get_modes,
+static const struct drm_panel_funcs nt36672_tianmaplus_e7_panel_funcs = {
+	.prepare = nt36672_tianmaplus_e7_prepare,
+	.unprepare = nt36672_tianmaplus_e7_unprepare,
+	.get_modes = nt36672_tianmaplus_e7_get_modes,
 };
 
-static int nt36672_tianma_fhdplus_e7_probe(struct mipi_dsi_device *dsi)
+static int nt36672_tianmaplus_e7_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct nt36672_tianma_fhdplus_e7 *ctx;
+	struct nt36672_tianmaplus_e7 *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -212,7 +212,7 @@ static int nt36672_tianma_fhdplus_e7_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
-	drm_panel_init(&ctx->panel, dev, &nt36672_tianma_fhdplus_e7_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &nt36672_tianmaplus_e7_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -231,9 +231,9 @@ static int nt36672_tianma_fhdplus_e7_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int nt36672_tianma_fhdplus_e7_remove(struct mipi_dsi_device *dsi)
+static int nt36672_tianmaplus_e7_remove(struct mipi_dsi_device *dsi)
 {
-	struct nt36672_tianma_fhdplus_e7 *ctx = mipi_dsi_get_drvdata(dsi);
+	struct nt36672_tianmaplus_e7 *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -245,21 +245,21 @@ static int nt36672_tianma_fhdplus_e7_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id nt36672_tianma_fhdplus_e7_of_match[] = {
+static const struct of_device_id nt36672_tianmaplus_e7_of_match[] = {
 	{ .compatible = "xiaomi,nt36672-tianma-fhdplus-e7" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, nt36672_tianma_fhdplus_e7_of_match);
+MODULE_DEVICE_TABLE(of, nt36672_tianmaplus_e7_of_match);
 
-static struct mipi_dsi_driver nt36672_tianma_fhdplus_e7_driver = {
-	.probe = nt36672_tianma_fhdplus_e7_probe,
-	.remove = nt36672_tianma_fhdplus_e7_remove,
+static struct mipi_dsi_driver nt36672_tianmaplus_e7_driver = {
+	.probe = nt36672_tianmaplus_e7_probe,
+	.remove = nt36672_tianmaplus_e7_remove,
 	.driver = {
-		.name = "panel-nt36672-tianma-fhdplus-e7",
-		.of_match_table = nt36672_tianma_fhdplus_e7_of_match,
+		.name = "panel-nt36672-tianmaplus-e7",
+		.of_match_table = nt36672_tianmaplus_e7_of_match,
 	},
 };
-module_mipi_dsi_driver(nt36672_tianma_fhdplus_e7_driver);
+module_mipi_dsi_driver(nt36672_tianmaplus_e7_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for nt36672 tianma e7 fhdplus video mode dsi panel");

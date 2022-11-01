@@ -15,7 +15,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct td4310_fhdplus_e7 {
+struct td4310plus_e7 {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -23,10 +23,9 @@ struct td4310_fhdplus_e7 {
 	bool prepared;
 };
 
-static inline
-struct td4310_fhdplus_e7 *to_td4310_fhdplus_e7(struct drm_panel *panel)
+static inline struct td4310plus_e7 *to_td4310plus_e7(struct drm_panel *panel)
 {
-	return container_of(panel, struct td4310_fhdplus_e7, panel);
+	return container_of(panel, struct td4310plus_e7, panel);
 }
 
 #define dsi_generic_write_seq(dsi, seq...) do {				\
@@ -45,7 +44,7 @@ struct td4310_fhdplus_e7 *to_td4310_fhdplus_e7(struct drm_panel *panel)
 			return ret;					\
 	} while (0)
 
-static void td4310_fhdplus_e7_reset(struct td4310_fhdplus_e7 *ctx)
+static void td4310plus_e7_reset(struct td4310plus_e7 *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(5000, 6000);
@@ -55,7 +54,7 @@ static void td4310_fhdplus_e7_reset(struct td4310_fhdplus_e7 *ctx)
 	msleep(30);
 }
 
-static int td4310_fhdplus_e7_on(struct td4310_fhdplus_e7 *ctx)
+static int td4310plus_e7_on(struct td4310plus_e7 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -103,7 +102,7 @@ static int td4310_fhdplus_e7_on(struct td4310_fhdplus_e7 *ctx)
 	return 0;
 }
 
-static int td4310_fhdplus_e7_off(struct td4310_fhdplus_e7 *ctx)
+static int td4310plus_e7_off(struct td4310plus_e7 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -117,9 +116,9 @@ static int td4310_fhdplus_e7_off(struct td4310_fhdplus_e7 *ctx)
 	return 0;
 }
 
-static int td4310_fhdplus_e7_prepare(struct drm_panel *panel)
+static int td4310plus_e7_prepare(struct drm_panel *panel)
 {
-	struct td4310_fhdplus_e7 *ctx = to_td4310_fhdplus_e7(panel);
+	struct td4310plus_e7 *ctx = to_td4310plus_e7(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -132,9 +131,9 @@ static int td4310_fhdplus_e7_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	td4310_fhdplus_e7_reset(ctx);
+	td4310plus_e7_reset(ctx);
 
-	ret = td4310_fhdplus_e7_on(ctx);
+	ret = td4310plus_e7_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -146,16 +145,16 @@ static int td4310_fhdplus_e7_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int td4310_fhdplus_e7_unprepare(struct drm_panel *panel)
+static int td4310plus_e7_unprepare(struct drm_panel *panel)
 {
-	struct td4310_fhdplus_e7 *ctx = to_td4310_fhdplus_e7(panel);
+	struct td4310plus_e7 *ctx = to_td4310plus_e7(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = td4310_fhdplus_e7_off(ctx);
+	ret = td4310plus_e7_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -166,7 +165,7 @@ static int td4310_fhdplus_e7_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode td4310_fhdplus_e7_mode = {
+static const struct drm_display_mode td4310plus_e7_mode = {
 	.clock = (1080 + 108 + 12 + 60) * (2160 + 6 + 4 + 33) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 108,
@@ -180,12 +179,12 @@ static const struct drm_display_mode td4310_fhdplus_e7_mode = {
 	.height_mm = 122,
 };
 
-static int td4310_fhdplus_e7_get_modes(struct drm_panel *panel,
-				       struct drm_connector *connector)
+static int td4310plus_e7_get_modes(struct drm_panel *panel,
+				   struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &td4310_fhdplus_e7_mode);
+	mode = drm_mode_duplicate(connector->dev, &td4310plus_e7_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -199,16 +198,16 @@ static int td4310_fhdplus_e7_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs td4310_fhdplus_e7_panel_funcs = {
-	.prepare = td4310_fhdplus_e7_prepare,
-	.unprepare = td4310_fhdplus_e7_unprepare,
-	.get_modes = td4310_fhdplus_e7_get_modes,
+static const struct drm_panel_funcs td4310plus_e7_panel_funcs = {
+	.prepare = td4310plus_e7_prepare,
+	.unprepare = td4310plus_e7_unprepare,
+	.get_modes = td4310plus_e7_get_modes,
 };
 
-static int td4310_fhdplus_e7_probe(struct mipi_dsi_device *dsi)
+static int td4310plus_e7_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct td4310_fhdplus_e7 *ctx;
+	struct td4310plus_e7 *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -236,7 +235,7 @@ static int td4310_fhdplus_e7_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
-	drm_panel_init(&ctx->panel, dev, &td4310_fhdplus_e7_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &td4310plus_e7_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -255,9 +254,9 @@ static int td4310_fhdplus_e7_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int td4310_fhdplus_e7_remove(struct mipi_dsi_device *dsi)
+static int td4310plus_e7_remove(struct mipi_dsi_device *dsi)
 {
-	struct td4310_fhdplus_e7 *ctx = mipi_dsi_get_drvdata(dsi);
+	struct td4310plus_e7 *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -269,21 +268,21 @@ static int td4310_fhdplus_e7_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id td4310_fhdplus_e7_of_match[] = {
+static const struct of_device_id td4310plus_e7_of_match[] = {
 	{ .compatible = "xiaomi,td4310-fhdplus-e7" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, td4310_fhdplus_e7_of_match);
+MODULE_DEVICE_TABLE(of, td4310plus_e7_of_match);
 
-static struct mipi_dsi_driver td4310_fhdplus_e7_driver = {
-	.probe = td4310_fhdplus_e7_probe,
-	.remove = td4310_fhdplus_e7_remove,
+static struct mipi_dsi_driver td4310plus_e7_driver = {
+	.probe = td4310plus_e7_probe,
+	.remove = td4310plus_e7_remove,
 	.driver = {
-		.name = "panel-td4310-fhdplus-e7",
-		.of_match_table = td4310_fhdplus_e7_of_match,
+		.name = "panel-td4310plus-e7",
+		.of_match_table = td4310plus_e7_of_match,
 	},
 };
-module_mipi_dsi_driver(td4310_fhdplus_e7_driver);
+module_mipi_dsi_driver(td4310plus_e7_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for td4310 fhdplus e7 video mode dsi panel");

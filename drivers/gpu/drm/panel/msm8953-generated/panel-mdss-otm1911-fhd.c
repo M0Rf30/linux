@@ -15,7 +15,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct otm1911_fhd {
+struct otm1911 {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -23,9 +23,9 @@ struct otm1911_fhd {
 	bool prepared;
 };
 
-static inline struct otm1911_fhd *to_otm1911_fhd(struct drm_panel *panel)
+static inline struct otm1911 *to_otm1911(struct drm_panel *panel)
 {
-	return container_of(panel, struct otm1911_fhd, panel);
+	return container_of(panel, struct otm1911, panel);
 }
 
 #define dsi_dcs_write_seq(dsi, seq...) do {				\
@@ -36,7 +36,7 @@ static inline struct otm1911_fhd *to_otm1911_fhd(struct drm_panel *panel)
 			return ret;					\
 	} while (0)
 
-static void otm1911_fhd_reset(struct otm1911_fhd *ctx)
+static void otm1911_reset(struct otm1911 *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(10000, 11000);
@@ -46,7 +46,7 @@ static void otm1911_fhd_reset(struct otm1911_fhd *ctx)
 	usleep_range(10000, 11000);
 }
 
-static int otm1911_fhd_on(struct otm1911_fhd *ctx)
+static int otm1911_on(struct otm1911 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -68,7 +68,7 @@ static int otm1911_fhd_on(struct otm1911_fhd *ctx)
 	return 0;
 }
 
-static int otm1911_fhd_off(struct otm1911_fhd *ctx)
+static int otm1911_off(struct otm1911 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -80,9 +80,9 @@ static int otm1911_fhd_off(struct otm1911_fhd *ctx)
 	return 0;
 }
 
-static int otm1911_fhd_prepare(struct drm_panel *panel)
+static int otm1911_prepare(struct drm_panel *panel)
 {
-	struct otm1911_fhd *ctx = to_otm1911_fhd(panel);
+	struct otm1911 *ctx = to_otm1911(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -95,9 +95,9 @@ static int otm1911_fhd_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	otm1911_fhd_reset(ctx);
+	otm1911_reset(ctx);
 
-	ret = otm1911_fhd_on(ctx);
+	ret = otm1911_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -109,16 +109,16 @@ static int otm1911_fhd_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int otm1911_fhd_unprepare(struct drm_panel *panel)
+static int otm1911_unprepare(struct drm_panel *panel)
 {
-	struct otm1911_fhd *ctx = to_otm1911_fhd(panel);
+	struct otm1911 *ctx = to_otm1911(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = otm1911_fhd_off(ctx);
+	ret = otm1911_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -129,7 +129,7 @@ static int otm1911_fhd_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode otm1911_fhd_mode = {
+static const struct drm_display_mode otm1911_mode = {
 	.clock = (1080 + 24 + 20 + 24) * (1920 + 14 + 2 + 6) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 24,
@@ -143,12 +143,12 @@ static const struct drm_display_mode otm1911_fhd_mode = {
 	.height_mm = 122,
 };
 
-static int otm1911_fhd_get_modes(struct drm_panel *panel,
-				 struct drm_connector *connector)
+static int otm1911_get_modes(struct drm_panel *panel,
+			     struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &otm1911_fhd_mode);
+	mode = drm_mode_duplicate(connector->dev, &otm1911_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -162,16 +162,16 @@ static int otm1911_fhd_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs otm1911_fhd_panel_funcs = {
-	.prepare = otm1911_fhd_prepare,
-	.unprepare = otm1911_fhd_unprepare,
-	.get_modes = otm1911_fhd_get_modes,
+static const struct drm_panel_funcs otm1911_panel_funcs = {
+	.prepare = otm1911_prepare,
+	.unprepare = otm1911_unprepare,
+	.get_modes = otm1911_get_modes,
 };
 
-static int otm1911_fhd_probe(struct mipi_dsi_device *dsi)
+static int otm1911_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct otm1911_fhd *ctx;
+	struct otm1911 *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -199,7 +199,7 @@ static int otm1911_fhd_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM;
 
-	drm_panel_init(&ctx->panel, dev, &otm1911_fhd_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &otm1911_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -218,9 +218,9 @@ static int otm1911_fhd_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int otm1911_fhd_remove(struct mipi_dsi_device *dsi)
+static int otm1911_remove(struct mipi_dsi_device *dsi)
 {
-	struct otm1911_fhd *ctx = mipi_dsi_get_drvdata(dsi);
+	struct otm1911 *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -232,21 +232,21 @@ static int otm1911_fhd_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id otm1911_fhd_of_match[] = {
+static const struct of_device_id otm1911_of_match[] = {
 	{ .compatible = "mdss,otm1911-fhd" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, otm1911_fhd_of_match);
+MODULE_DEVICE_TABLE(of, otm1911_of_match);
 
-static struct mipi_dsi_driver otm1911_fhd_driver = {
-	.probe = otm1911_fhd_probe,
-	.remove = otm1911_fhd_remove,
+static struct mipi_dsi_driver otm1911_driver = {
+	.probe = otm1911_probe,
+	.remove = otm1911_remove,
 	.driver = {
-		.name = "panel-otm1911-fhd",
-		.of_match_table = otm1911_fhd_of_match,
+		.name = "panel-otm1911",
+		.of_match_table = otm1911_of_match,
 	},
 };
-module_mipi_dsi_driver(otm1911_fhd_driver);
+module_mipi_dsi_driver(otm1911_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for otm1911 fhd video mode dsi panel");

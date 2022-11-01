@@ -15,7 +15,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct hx8399c_fhdplus {
+struct hx8399cplus {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -23,10 +23,9 @@ struct hx8399c_fhdplus {
 	bool prepared;
 };
 
-static inline
-struct hx8399c_fhdplus *to_hx8399c_fhdplus(struct drm_panel *panel)
+static inline struct hx8399cplus *to_hx8399cplus(struct drm_panel *panel)
 {
-	return container_of(panel, struct hx8399c_fhdplus, panel);
+	return container_of(panel, struct hx8399cplus, panel);
 }
 
 #define dsi_dcs_write_seq(dsi, seq...) do {				\
@@ -37,7 +36,7 @@ struct hx8399c_fhdplus *to_hx8399c_fhdplus(struct drm_panel *panel)
 			return ret;					\
 	} while (0)
 
-static void hx8399c_fhdplus_reset(struct hx8399c_fhdplus *ctx)
+static void hx8399cplus_reset(struct hx8399cplus *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(10000, 11000);
@@ -47,7 +46,7 @@ static void hx8399c_fhdplus_reset(struct hx8399c_fhdplus *ctx)
 	msleep(50);
 }
 
-static int hx8399c_fhdplus_on(struct hx8399c_fhdplus *ctx)
+static int hx8399cplus_on(struct hx8399cplus *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -80,7 +79,7 @@ static int hx8399c_fhdplus_on(struct hx8399c_fhdplus *ctx)
 	return 0;
 }
 
-static int hx8399c_fhdplus_off(struct hx8399c_fhdplus *ctx)
+static int hx8399cplus_off(struct hx8399cplus *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -92,9 +91,9 @@ static int hx8399c_fhdplus_off(struct hx8399c_fhdplus *ctx)
 	return 0;
 }
 
-static int hx8399c_fhdplus_prepare(struct drm_panel *panel)
+static int hx8399cplus_prepare(struct drm_panel *panel)
 {
-	struct hx8399c_fhdplus *ctx = to_hx8399c_fhdplus(panel);
+	struct hx8399cplus *ctx = to_hx8399cplus(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -107,9 +106,9 @@ static int hx8399c_fhdplus_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	hx8399c_fhdplus_reset(ctx);
+	hx8399cplus_reset(ctx);
 
-	ret = hx8399c_fhdplus_on(ctx);
+	ret = hx8399cplus_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -121,16 +120,16 @@ static int hx8399c_fhdplus_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int hx8399c_fhdplus_unprepare(struct drm_panel *panel)
+static int hx8399cplus_unprepare(struct drm_panel *panel)
 {
-	struct hx8399c_fhdplus *ctx = to_hx8399c_fhdplus(panel);
+	struct hx8399cplus *ctx = to_hx8399cplus(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = hx8399c_fhdplus_off(ctx);
+	ret = hx8399cplus_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -141,7 +140,7 @@ static int hx8399c_fhdplus_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode hx8399c_fhdplus_mode = {
+static const struct drm_display_mode hx8399cplus_mode = {
 	.clock = (1080 + 24 + 40 + 40) * (2280 + 9 + 4 + 3) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 24,
@@ -155,12 +154,12 @@ static const struct drm_display_mode hx8399c_fhdplus_mode = {
 	.height_mm = 122,
 };
 
-static int hx8399c_fhdplus_get_modes(struct drm_panel *panel,
-				     struct drm_connector *connector)
+static int hx8399cplus_get_modes(struct drm_panel *panel,
+				 struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &hx8399c_fhdplus_mode);
+	mode = drm_mode_duplicate(connector->dev, &hx8399cplus_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -174,16 +173,16 @@ static int hx8399c_fhdplus_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs hx8399c_fhdplus_panel_funcs = {
-	.prepare = hx8399c_fhdplus_prepare,
-	.unprepare = hx8399c_fhdplus_unprepare,
-	.get_modes = hx8399c_fhdplus_get_modes,
+static const struct drm_panel_funcs hx8399cplus_panel_funcs = {
+	.prepare = hx8399cplus_prepare,
+	.unprepare = hx8399cplus_unprepare,
+	.get_modes = hx8399cplus_get_modes,
 };
 
-static int hx8399c_fhdplus_probe(struct mipi_dsi_device *dsi)
+static int hx8399cplus_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct hx8399c_fhdplus *ctx;
+	struct hx8399cplus *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -211,7 +210,7 @@ static int hx8399c_fhdplus_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM;
 
-	drm_panel_init(&ctx->panel, dev, &hx8399c_fhdplus_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &hx8399cplus_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -230,9 +229,9 @@ static int hx8399c_fhdplus_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int hx8399c_fhdplus_remove(struct mipi_dsi_device *dsi)
+static int hx8399cplus_remove(struct mipi_dsi_device *dsi)
 {
-	struct hx8399c_fhdplus *ctx = mipi_dsi_get_drvdata(dsi);
+	struct hx8399cplus *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -244,21 +243,21 @@ static int hx8399c_fhdplus_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id hx8399c_fhdplus_of_match[] = {
+static const struct of_device_id hx8399cplus_of_match[] = {
 	{ .compatible = "himax,hx8399c-fhdplus" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, hx8399c_fhdplus_of_match);
+MODULE_DEVICE_TABLE(of, hx8399cplus_of_match);
 
-static struct mipi_dsi_driver hx8399c_fhdplus_driver = {
-	.probe = hx8399c_fhdplus_probe,
-	.remove = hx8399c_fhdplus_remove,
+static struct mipi_dsi_driver hx8399cplus_driver = {
+	.probe = hx8399cplus_probe,
+	.remove = hx8399cplus_remove,
 	.driver = {
-		.name = "panel-hx8399c-fhdplus",
-		.of_match_table = hx8399c_fhdplus_of_match,
+		.name = "panel-hx8399cplus",
+		.of_match_table = hx8399cplus_of_match,
 	},
 };
-module_mipi_dsi_driver(hx8399c_fhdplus_driver);
+module_mipi_dsi_driver(hx8399cplus_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for hx8399c fhdplus video mode dsi panel");

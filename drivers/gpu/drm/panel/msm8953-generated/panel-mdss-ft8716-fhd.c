@@ -15,7 +15,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct ft8716_fhd {
+struct ft8716 {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -23,9 +23,9 @@ struct ft8716_fhd {
 	bool prepared;
 };
 
-static inline struct ft8716_fhd *to_ft8716_fhd(struct drm_panel *panel)
+static inline struct ft8716 *to_ft8716(struct drm_panel *panel)
 {
-	return container_of(panel, struct ft8716_fhd, panel);
+	return container_of(panel, struct ft8716, panel);
 }
 
 #define dsi_dcs_write_seq(dsi, seq...) do {				\
@@ -36,7 +36,7 @@ static inline struct ft8716_fhd *to_ft8716_fhd(struct drm_panel *panel)
 			return ret;					\
 	} while (0)
 
-static void ft8716_fhd_reset(struct ft8716_fhd *ctx)
+static void ft8716_reset(struct ft8716 *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(10000, 11000);
@@ -46,7 +46,7 @@ static void ft8716_fhd_reset(struct ft8716_fhd *ctx)
 	usleep_range(10000, 11000);
 }
 
-static int ft8716_fhd_on(struct ft8716_fhd *ctx)
+static int ft8716_on(struct ft8716 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -224,7 +224,7 @@ static int ft8716_fhd_on(struct ft8716_fhd *ctx)
 	return 0;
 }
 
-static int ft8716_fhd_off(struct ft8716_fhd *ctx)
+static int ft8716_off(struct ft8716 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -242,9 +242,9 @@ static int ft8716_fhd_off(struct ft8716_fhd *ctx)
 	return 0;
 }
 
-static int ft8716_fhd_prepare(struct drm_panel *panel)
+static int ft8716_prepare(struct drm_panel *panel)
 {
-	struct ft8716_fhd *ctx = to_ft8716_fhd(panel);
+	struct ft8716 *ctx = to_ft8716(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -257,9 +257,9 @@ static int ft8716_fhd_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	ft8716_fhd_reset(ctx);
+	ft8716_reset(ctx);
 
-	ret = ft8716_fhd_on(ctx);
+	ret = ft8716_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -271,16 +271,16 @@ static int ft8716_fhd_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int ft8716_fhd_unprepare(struct drm_panel *panel)
+static int ft8716_unprepare(struct drm_panel *panel)
 {
-	struct ft8716_fhd *ctx = to_ft8716_fhd(panel);
+	struct ft8716 *ctx = to_ft8716(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = ft8716_fhd_off(ctx);
+	ret = ft8716_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -291,7 +291,7 @@ static int ft8716_fhd_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode ft8716_fhd_mode = {
+static const struct drm_display_mode ft8716_mode = {
 	.clock = (1080 + 32 + 4 + 32) * (1920 + 16 + 2 + 16) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 32,
@@ -305,12 +305,12 @@ static const struct drm_display_mode ft8716_fhd_mode = {
 	.height_mm = 122,
 };
 
-static int ft8716_fhd_get_modes(struct drm_panel *panel,
-				struct drm_connector *connector)
+static int ft8716_get_modes(struct drm_panel *panel,
+			    struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &ft8716_fhd_mode);
+	mode = drm_mode_duplicate(connector->dev, &ft8716_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -324,16 +324,16 @@ static int ft8716_fhd_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs ft8716_fhd_panel_funcs = {
-	.prepare = ft8716_fhd_prepare,
-	.unprepare = ft8716_fhd_unprepare,
-	.get_modes = ft8716_fhd_get_modes,
+static const struct drm_panel_funcs ft8716_panel_funcs = {
+	.prepare = ft8716_prepare,
+	.unprepare = ft8716_unprepare,
+	.get_modes = ft8716_get_modes,
 };
 
-static int ft8716_fhd_probe(struct mipi_dsi_device *dsi)
+static int ft8716_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct ft8716_fhd *ctx;
+	struct ft8716 *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -361,7 +361,7 @@ static int ft8716_fhd_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM;
 
-	drm_panel_init(&ctx->panel, dev, &ft8716_fhd_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &ft8716_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -380,9 +380,9 @@ static int ft8716_fhd_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int ft8716_fhd_remove(struct mipi_dsi_device *dsi)
+static int ft8716_remove(struct mipi_dsi_device *dsi)
 {
-	struct ft8716_fhd *ctx = mipi_dsi_get_drvdata(dsi);
+	struct ft8716 *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -394,21 +394,21 @@ static int ft8716_fhd_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id ft8716_fhd_of_match[] = {
+static const struct of_device_id ft8716_of_match[] = {
 	{ .compatible = "mdss,ft8716-fhd" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, ft8716_fhd_of_match);
+MODULE_DEVICE_TABLE(of, ft8716_of_match);
 
-static struct mipi_dsi_driver ft8716_fhd_driver = {
-	.probe = ft8716_fhd_probe,
-	.remove = ft8716_fhd_remove,
+static struct mipi_dsi_driver ft8716_driver = {
+	.probe = ft8716_probe,
+	.remove = ft8716_remove,
 	.driver = {
-		.name = "panel-ft8716-fhd",
-		.of_match_table = ft8716_fhd_of_match,
+		.name = "panel-ft8716",
+		.of_match_table = ft8716_of_match,
 	},
 };
-module_mipi_dsi_driver(ft8716_fhd_driver);
+module_mipi_dsi_driver(ft8716_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for ft8716 fhd video mode dsi panel");

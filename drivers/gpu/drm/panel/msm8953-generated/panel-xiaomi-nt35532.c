@@ -13,7 +13,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct nt35532_fhd {
+struct nt35532 {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -21,9 +21,9 @@ struct nt35532_fhd {
 	bool prepared;
 };
 
-static inline struct nt35532_fhd *to_nt35532_fhd(struct drm_panel *panel)
+static inline struct nt35532 *to_nt35532(struct drm_panel *panel)
 {
-	return container_of(panel, struct nt35532_fhd, panel);
+	return container_of(panel, struct nt35532, panel);
 }
 
 #define dsi_generic_write_seq(dsi, seq...) do {				\
@@ -34,7 +34,7 @@ static inline struct nt35532_fhd *to_nt35532_fhd(struct drm_panel *panel)
 			return ret;					\
 	} while (0)
 
-static void nt35532_fhd_reset(struct nt35532_fhd *ctx)
+static void nt35532_reset(struct nt35532 *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(10000, 11000);
@@ -44,7 +44,7 @@ static void nt35532_fhd_reset(struct nt35532_fhd *ctx)
 	usleep_range(10000, 11000);
 }
 
-static int nt35532_fhd_on(struct nt35532_fhd *ctx)
+static int nt35532_on(struct nt35532 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -74,7 +74,7 @@ static int nt35532_fhd_on(struct nt35532_fhd *ctx)
 	return 0;
 }
 
-static int nt35532_fhd_off(struct nt35532_fhd *ctx)
+static int nt35532_off(struct nt35532 *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -105,9 +105,9 @@ static int nt35532_fhd_off(struct nt35532_fhd *ctx)
 	return 0;
 }
 
-static int nt35532_fhd_prepare(struct drm_panel *panel)
+static int nt35532_prepare(struct drm_panel *panel)
 {
-	struct nt35532_fhd *ctx = to_nt35532_fhd(panel);
+	struct nt35532 *ctx = to_nt35532(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -120,9 +120,9 @@ static int nt35532_fhd_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	nt35532_fhd_reset(ctx);
+	nt35532_reset(ctx);
 
-	ret = nt35532_fhd_on(ctx);
+	ret = nt35532_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -134,16 +134,16 @@ static int nt35532_fhd_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int nt35532_fhd_unprepare(struct drm_panel *panel)
+static int nt35532_unprepare(struct drm_panel *panel)
 {
-	struct nt35532_fhd *ctx = to_nt35532_fhd(panel);
+	struct nt35532 *ctx = to_nt35532(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = nt35532_fhd_off(ctx);
+	ret = nt35532_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -154,7 +154,7 @@ static int nt35532_fhd_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode nt35532_fhd_mode = {
+static const struct drm_display_mode nt35532_mode = {
 	.clock = (1080 + 124 + 16 + 64) * (1920 + 7 + 2 + 12) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 124,
@@ -168,12 +168,12 @@ static const struct drm_display_mode nt35532_fhd_mode = {
 	.height_mm = 122,
 };
 
-static int nt35532_fhd_get_modes(struct drm_panel *panel,
-				 struct drm_connector *connector)
+static int nt35532_get_modes(struct drm_panel *panel,
+			     struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &nt35532_fhd_mode);
+	mode = drm_mode_duplicate(connector->dev, &nt35532_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -187,16 +187,16 @@ static int nt35532_fhd_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs nt35532_fhd_panel_funcs = {
-	.prepare = nt35532_fhd_prepare,
-	.unprepare = nt35532_fhd_unprepare,
-	.get_modes = nt35532_fhd_get_modes,
+static const struct drm_panel_funcs nt35532_panel_funcs = {
+	.prepare = nt35532_prepare,
+	.unprepare = nt35532_unprepare,
+	.get_modes = nt35532_get_modes,
 };
 
-static int nt35532_fhd_probe(struct mipi_dsi_device *dsi)
+static int nt35532_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct nt35532_fhd *ctx;
+	struct nt35532 *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -224,7 +224,7 @@ static int nt35532_fhd_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
-	drm_panel_init(&ctx->panel, dev, &nt35532_fhd_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &nt35532_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -243,9 +243,9 @@ static int nt35532_fhd_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int nt35532_fhd_remove(struct mipi_dsi_device *dsi)
+static int nt35532_remove(struct mipi_dsi_device *dsi)
 {
-	struct nt35532_fhd *ctx = mipi_dsi_get_drvdata(dsi);
+	struct nt35532 *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -257,21 +257,21 @@ static int nt35532_fhd_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id nt35532_fhd_of_match[] = {
+static const struct of_device_id nt35532_of_match[] = {
 	{ .compatible = "xiaomi,nt35532" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, nt35532_fhd_of_match);
+MODULE_DEVICE_TABLE(of, nt35532_of_match);
 
-static struct mipi_dsi_driver nt35532_fhd_driver = {
-	.probe = nt35532_fhd_probe,
-	.remove = nt35532_fhd_remove,
+static struct mipi_dsi_driver nt35532_driver = {
+	.probe = nt35532_probe,
+	.remove = nt35532_remove,
 	.driver = {
-		.name = "panel-nt35532-fhd",
-		.of_match_table = nt35532_fhd_of_match,
+		.name = "panel-nt35532",
+		.of_match_table = nt35532_of_match,
 	},
 };
-module_mipi_dsi_driver(nt35532_fhd_driver);
+module_mipi_dsi_driver(nt35532_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for nt35532 fhd video mode dsi panel");

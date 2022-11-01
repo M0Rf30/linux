@@ -13,7 +13,7 @@
 #include <drm/drm_modes.h>
 #include <drm/drm_panel.h>
 
-struct ili9885_boe_fhd {
+struct ili9885_boe {
 	struct drm_panel panel;
 	struct mipi_dsi_device *dsi;
 	struct regulator_bulk_data supplies[2];
@@ -21,10 +21,9 @@ struct ili9885_boe_fhd {
 	bool prepared;
 };
 
-static inline
-struct ili9885_boe_fhd *to_ili9885_boe_fhd(struct drm_panel *panel)
+static inline struct ili9885_boe *to_ili9885_boe(struct drm_panel *panel)
 {
-	return container_of(panel, struct ili9885_boe_fhd, panel);
+	return container_of(panel, struct ili9885_boe, panel);
 }
 
 #define dsi_generic_write_seq(dsi, seq...) do {				\
@@ -35,7 +34,7 @@ struct ili9885_boe_fhd *to_ili9885_boe_fhd(struct drm_panel *panel)
 			return ret;					\
 	} while (0)
 
-static void ili9885_boe_fhd_reset(struct ili9885_boe_fhd *ctx)
+static void ili9885_boe_reset(struct ili9885_boe *ctx)
 {
 	gpiod_set_value_cansleep(ctx->reset_gpio, 0);
 	usleep_range(10000, 11000);
@@ -45,7 +44,7 @@ static void ili9885_boe_fhd_reset(struct ili9885_boe_fhd *ctx)
 	usleep_range(10000, 11000);
 }
 
-static int ili9885_boe_fhd_on(struct ili9885_boe_fhd *ctx)
+static int ili9885_boe_on(struct ili9885_boe *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 
@@ -63,7 +62,7 @@ static int ili9885_boe_fhd_on(struct ili9885_boe_fhd *ctx)
 	return 0;
 }
 
-static int ili9885_boe_fhd_off(struct ili9885_boe_fhd *ctx)
+static int ili9885_boe_off(struct ili9885_boe *ctx)
 {
 	struct mipi_dsi_device *dsi = ctx->dsi;
 	struct device *dev = &dsi->dev;
@@ -88,9 +87,9 @@ static int ili9885_boe_fhd_off(struct ili9885_boe_fhd *ctx)
 	return 0;
 }
 
-static int ili9885_boe_fhd_prepare(struct drm_panel *panel)
+static int ili9885_boe_prepare(struct drm_panel *panel)
 {
-	struct ili9885_boe_fhd *ctx = to_ili9885_boe_fhd(panel);
+	struct ili9885_boe *ctx = to_ili9885_boe(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
@@ -103,9 +102,9 @@ static int ili9885_boe_fhd_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	ili9885_boe_fhd_reset(ctx);
+	ili9885_boe_reset(ctx);
 
-	ret = ili9885_boe_fhd_on(ctx);
+	ret = ili9885_boe_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
 		gpiod_set_value_cansleep(ctx->reset_gpio, 1);
@@ -117,16 +116,16 @@ static int ili9885_boe_fhd_prepare(struct drm_panel *panel)
 	return 0;
 }
 
-static int ili9885_boe_fhd_unprepare(struct drm_panel *panel)
+static int ili9885_boe_unprepare(struct drm_panel *panel)
 {
-	struct ili9885_boe_fhd *ctx = to_ili9885_boe_fhd(panel);
+	struct ili9885_boe *ctx = to_ili9885_boe(panel);
 	struct device *dev = &ctx->dsi->dev;
 	int ret;
 
 	if (!ctx->prepared)
 		return 0;
 
-	ret = ili9885_boe_fhd_off(ctx);
+	ret = ili9885_boe_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
@@ -137,7 +136,7 @@ static int ili9885_boe_fhd_unprepare(struct drm_panel *panel)
 	return 0;
 }
 
-static const struct drm_display_mode ili9885_boe_fhd_mode = {
+static const struct drm_display_mode ili9885_boe_mode = {
 	.clock = (1080 + 100 + 16 + 64) * (1920 + 44 + 2 + 12) * 60 / 1000,
 	.hdisplay = 1080,
 	.hsync_start = 1080 + 100,
@@ -151,12 +150,12 @@ static const struct drm_display_mode ili9885_boe_fhd_mode = {
 	.height_mm = 122,
 };
 
-static int ili9885_boe_fhd_get_modes(struct drm_panel *panel,
-				     struct drm_connector *connector)
+static int ili9885_boe_get_modes(struct drm_panel *panel,
+				 struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 
-	mode = drm_mode_duplicate(connector->dev, &ili9885_boe_fhd_mode);
+	mode = drm_mode_duplicate(connector->dev, &ili9885_boe_mode);
 	if (!mode)
 		return -ENOMEM;
 
@@ -170,16 +169,16 @@ static int ili9885_boe_fhd_get_modes(struct drm_panel *panel,
 	return 1;
 }
 
-static const struct drm_panel_funcs ili9885_boe_fhd_panel_funcs = {
-	.prepare = ili9885_boe_fhd_prepare,
-	.unprepare = ili9885_boe_fhd_unprepare,
-	.get_modes = ili9885_boe_fhd_get_modes,
+static const struct drm_panel_funcs ili9885_boe_panel_funcs = {
+	.prepare = ili9885_boe_prepare,
+	.unprepare = ili9885_boe_unprepare,
+	.get_modes = ili9885_boe_get_modes,
 };
 
-static int ili9885_boe_fhd_probe(struct mipi_dsi_device *dsi)
+static int ili9885_boe_probe(struct mipi_dsi_device *dsi)
 {
 	struct device *dev = &dsi->dev;
-	struct ili9885_boe_fhd *ctx;
+	struct ili9885_boe *ctx;
 	int ret;
 
 	ctx = devm_kzalloc(dev, sizeof(*ctx), GFP_KERNEL);
@@ -207,7 +206,7 @@ static int ili9885_boe_fhd_probe(struct mipi_dsi_device *dsi)
 			  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_NO_EOT_PACKET |
 			  MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
-	drm_panel_init(&ctx->panel, dev, &ili9885_boe_fhd_panel_funcs,
+	drm_panel_init(&ctx->panel, dev, &ili9885_boe_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
 
 	ret = drm_panel_of_backlight(&ctx->panel);
@@ -226,9 +225,9 @@ static int ili9885_boe_fhd_probe(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static int ili9885_boe_fhd_remove(struct mipi_dsi_device *dsi)
+static int ili9885_boe_remove(struct mipi_dsi_device *dsi)
 {
-	struct ili9885_boe_fhd *ctx = mipi_dsi_get_drvdata(dsi);
+	struct ili9885_boe *ctx = mipi_dsi_get_drvdata(dsi);
 	int ret;
 
 	ret = mipi_dsi_detach(dsi);
@@ -240,21 +239,21 @@ static int ili9885_boe_fhd_remove(struct mipi_dsi_device *dsi)
 	return 0;
 }
 
-static const struct of_device_id ili9885_boe_fhd_of_match[] = {
+static const struct of_device_id ili9885_boe_of_match[] = {
 	{ .compatible = "xiaomi,boe-ili9885" }, // FIXME
 	{ /* sentinel */ }
 };
-MODULE_DEVICE_TABLE(of, ili9885_boe_fhd_of_match);
+MODULE_DEVICE_TABLE(of, ili9885_boe_of_match);
 
-static struct mipi_dsi_driver ili9885_boe_fhd_driver = {
-	.probe = ili9885_boe_fhd_probe,
-	.remove = ili9885_boe_fhd_remove,
+static struct mipi_dsi_driver ili9885_boe_driver = {
+	.probe = ili9885_boe_probe,
+	.remove = ili9885_boe_remove,
 	.driver = {
-		.name = "panel-ili9885-boe-fhd",
-		.of_match_table = ili9885_boe_fhd_of_match,
+		.name = "panel-ili9885-boe",
+		.of_match_table = ili9885_boe_of_match,
 	},
 };
-module_mipi_dsi_driver(ili9885_boe_fhd_driver);
+module_mipi_dsi_driver(ili9885_boe_driver);
 
 MODULE_AUTHOR("linux-mdss-dsi-panel-driver-generator <fix@me>"); // FIXME
 MODULE_DESCRIPTION("DRM driver for ili9885 boe fhd video mode dsi panel");
