@@ -52,6 +52,14 @@
 
 		reset-gpios = <&tlmm 61 GPIO_ACTIVE_LOW>;
 
+		// Downstream:
+		// lab-supply = <&lcdb_ldo_vreg>;
+		// ibb-supply = <&lcdb_ncp_vreg>;
+
+		// lcdb driver is not yet in mainline
+		// vsp-supply = <>;
+		// vsn-supply = <>;
+
 		port {
 			panel_in: endpoint {
 				remote-endpoint = <&dsi0_out>;
