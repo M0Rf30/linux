@@ -156,6 +156,10 @@
 	};
 };
 
+&atc_leds {
+	status = "okay";
+};
+
 &dsi0 {
 	status = "okay";
 
