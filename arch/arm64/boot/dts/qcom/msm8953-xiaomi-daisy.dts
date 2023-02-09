@@ -1,13 +1,6 @@
-/* Copyright (c) 2022 The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2022, Alejandro Tafalla
  */
 /dts-v1/;
 
@@ -18,9 +11,13 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
 
+/delete-node/ &adsp_fw_mem;
+/delete-node/ &qseecom_mem;
+/delete-node/ &wcnss_fw_mem;
+
 / {
+	model = "Xiaomi Mi A2 Lite";
 	compatible = "xiaomi,daisy", "qcom,msm8953";
-	model = "Xiaomi Mi A2 Lite (daisy)";
 	chassis-type = "handset";
 	qcom,msm-id = <293 0>;
 	qcom,board-id= <0x1000b 0x9>;
@@ -38,7 +35,7 @@
 		#size-cells = <2>;
 		ranges;
 
-		framebuffer0: framebuffer@90001000 {
+		framebuffer@90001000 {
 			compatible = "simple-framebuffer";
 			reg = <0 0x90001000 0 (1920 * 2280 * 3)>;
 
@@ -65,7 +62,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&gpio_key_default>;
 
-		volume-up {
+		key-volume-up {
 			label = "Volume Up";
 			gpios = <&tlmm 85 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEUP>;
@@ -73,39 +70,39 @@
 	};
 
 	reserved-memory {
-		/delete-node/memory@85b00000;
-
-		memory@84b00000 {
+		qseecom_mem: qseecom@84a00000 {
 			reg = <0x0 0x84a00000 0x0 0x1900000>;
 			no-map;
 		};
 
-		adsp_fw_mem: memory@8d600000 {
+		adsp_fw_mem: adsp@8d600000 {
 			reg = <0x0 0x8d600000 0x0 0x1200000>;
 			no-map;
 		};
 
-		/delete-node/memory@8e700000;
-		wcnss_fw_mem: memory@8e800000 {
+		wcnss_fw_mem: wcnss@8e800000 {
 			reg = <0x0 0x8e800000 0x0 0x700000>;
 			no-map;
 		};
 	};
 
-	sensors: i2c-sensors {
+	/*
+	 * We bitbang on &i2c_4 because BLSP is protected by TZ as sensors are
+	 * normally proxied via ADSP firmware. GPIOs aren't protected.
+	 */
+	i2c-sensors {
 		compatible = "i2c-gpio";
 		sda-gpios = <&tlmm 14 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
 		scl-gpios = <&tlmm 15 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
-		i2c-gpio,delay-us = <2>;        /* ~100 kHz */
+		i2c-gpio,delay-us = <2>; /* ~100 kHz */
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		lsm6dsl@6a {
+		imu@6a {
 			compatible = "st,lsm6dsl";
 			reg = <0x6a>;
 			vdd-supply = <&pm8953_l10>;
 			vddio-supply = <&pm8953_l6>;
-
 			mount-matrix = "-1", "0", "0",
 					"0", "-1", "0",
 					"0", "0", "1";
@@ -154,7 +151,7 @@
 	remote-endpoint = <&panel_in>;
 };
 
-&dsi_phy0 {
+&dsi0_phy {
         vddio-supply = <&pm8953_l6>;
         vcca-supply = <&pm8953_l3>;
 };
@@ -163,6 +160,7 @@
 	vdd-supply 		= <&pm8953_l3>;
 	vdda-pll-supply 	= <&pm8953_l7>;
 	vdda-phy-dpdm-supply 	= <&pm8953_l13>;
+
 	status = "okay";
 };
 
@@ -203,7 +201,7 @@
 		touchscreen-size-y = <2280>;
 	};
 
-	focaltech@38 {
+	touchscreen@38 {
 		compatible = "edt,edt-ft5406", "edt,edt-ft5x06";
 		reg = <0x38>;
 
@@ -242,8 +240,8 @@
 
 
 &pm8953_resin {
-	status = "okay";
 	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
 };
 
 &pmi8950_fg {
@@ -258,12 +256,11 @@
 };
 
 &pmi8950_wled {
-	status = "okay";
-
 	qcom,current-limit-microamp = <20000>;
-	qcom,enabled-strings = <0 1>;
 	qcom,num-strings = <2>;
 	qcom,ovp-milivolt = <29500>;
+
+	status = "okay";
 };
 
 &pronto {
@@ -279,7 +276,7 @@
 };
 
 &rpm_requests {
-	smd_rpm_regulators: pm8953-regulators {
+	regulators {
 		compatible = "qcom,rpm-pm8953-regulators";
 
 		vdd_s1-supply = <&vph_pwr>;
@@ -332,9 +329,9 @@
 		};
 
 		pm8953_l6: l6 {
-			regulator-always-on;
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
 		};
 
 		pm8953_l7: l7 {
@@ -353,9 +350,9 @@
 		};
 
 		pm8953_l10: l10 {
-			regulator-always-on;
 			regulator-min-microvolt = <2850000>;
 			regulator-max-microvolt = <2850000>;
+			regulator-always-on;
 		};
 
 		pm8953_l11: l11 {
@@ -389,9 +386,9 @@
 		};
 
 		pm8953_l22: l22 {
-			regulator-always-on;
 			regulator-min-microvolt = <2800000>;
 			regulator-max-microvolt = <2850000>;
+			regulator-always-on;
 		};
 
 		pm8953_l23: l23 {
@@ -402,17 +399,23 @@
 };
 
 &sdhc_1 {
+	vmmc-supply = <&pm8953_l8>;
+	vqmmc-supply = <&pm8953_l5>;
+
 	status = "okay";
 };
 
 &sdhc_2 {
-	status = "okay";
+	vmmc-supply = <&pm8953_l11>;
+	vqmmc-supply = <&pm8953_l12>;
+
+	cd-gpios = <&tlmm 133 GPIO_ACTIVE_LOW>;
 
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
 
-	cd-gpios = <&tlmm 133 GPIO_ACTIVE_LOW>;
+	status = "okay";
 };
 
 &sound_card {
@@ -467,9 +470,10 @@
 };
 
 &uart_0 {
-	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart_console_active>;
+
+	status = "okay";
 };
 
 &usb3 {

@@ -1,13 +1,6 @@
-/* Copyright (c) 2022 The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2022, Sireesh Kodali
  */
 /dts-v1/;
 
@@ -15,8 +8,11 @@
 #include "pm8953.dtsi"
 #include "pmi8950.dtsi"
 
+/delete-node/ &cont_splash_mem;
+/delete-node/ &qseecom_mem;
+
 / {
-	model = "Motorola G5 Plus (potter)";
+	model = "Motorola G5 Plus";
 	compatible = "motorola,potter", "qcom,msm8953";
 	chassis-type = "handset";
 	qcom,msm-id = <293 0>;
@@ -27,7 +23,7 @@
 		#size-cells = <2>;
 		ranges;
 
-		framebuffer0: framebuffer@90001000 {
+		framebuffer@90001000 {
 			compatible = "simple-framebuffer";
 			reg = <0 0x90001000 0 (2220 * 1920 * 3)>;
 
@@ -54,7 +50,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&gpio_key_default>;
 
-		volume-up {
+		key-volume-up {
 			label = "Volume Up";
 			gpios = <&tlmm 85 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEUP>;
@@ -111,29 +107,27 @@
 	};
 
 	reserved-memory {
-		/delete-node/memory@85b00000;
-
-		memory@84300000 {
+		qseecom_mem: qseecom@84300000 {
 			reg = <0x0 0x84300000 0x0 0x2000000>;
 			no-map;
 		};
 
-		memory@90001000 {
+		cont_splash_mem: cont-splash@90001000 {
 			reg = <0x0 0x90001000 0x0 (1080 * 1920 * 3)>;
 			no-map;
 		};
 
-		memory@aefd2000 {
+		reserved@aefd2000 {
 			reg = <0x0 0xaefd2000 0x0 0x2e000>;
 			no-map;
 		};
 
-		memory@eefe4000 {
+		reserved@eefe4000 {
 			reg = <0x0 0xeefe4000 0x0 0x1c000>;
 			no-map;
 		};
 
-		memory@ef000000 {
+		ramoops@ef000000 {
 			compatible = "ramoops";
 			reg = <0x0 0xef000000 0x0 0x80000>;
 			console-size = <0x40000>;
@@ -160,10 +154,6 @@
 		gpio = <&tlmm 64 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
 	};
-};
-
-&atc_leds {
-	status = "okay";
 };
 
 &dsi0 {
@@ -200,16 +190,16 @@
 	remote-endpoint = <&panel_in>;
 };
 
-&dsi_phy0 {
+&dsi0_phy {
 	vcca-supply = <&pm8953_l3>;
 };
 
 &hsusb_phy {
-	status = "okay";
-
 	vdd-supply = <&pm8953_l3>;
 	vdda-pll-supply = <&pm8953_l7>;
 	vdda-phy-dpdm-supply = <&pm8953_l13>;
+
+	status = "okay";
 };
 
 &i2c_3 {
@@ -272,21 +262,17 @@
 };
 
 &pm8953_resin {
-	status = "okay";
 	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
 };
 
 &pmi8950_wled {
-	status = "okay";
-
-	/* Don't copy-paste! See pmi8950.dtsi */
-
 	qcom,current-limit-microamp = <25000>;
-	qcom,enabled-strings = <0 1 2>;
 	qcom,num-strings = <3>;
-
+	qcom,external-pfet;
 	qcom,cabc;
-	qcom,eternal-pfet;
+
+	status = "okay";
 };
 
 &pronto {
@@ -296,7 +282,7 @@
 };
 
 &rpm_requests {
-	pm8953-regulators {
+	regulators {
 		compatible = "qcom,rpm-pm8953-regulators";
 		vdd_s1-supply = <&vph_pwr>;
 		vdd_s2-supply = <&vph_pwr>;
@@ -343,16 +329,14 @@
 		};
 
 		pm8953_l5: l5 {
-			/* May fix sdcard detection */
-			regulator-always-on;
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
 		};
 
 		pm8953_l6: l6 {
-			regulator-always-on;
 			regulator-min-microvolt = <1800000>;
 			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
 		};
 
 		pm8953_l7: l7 {
@@ -424,14 +408,15 @@
 };
 
 &sdhc_1 {
-	status = "okay";
-
 	vmmc-supply = <&pm8953_l8>;
 	vqmmc-supply = <&pm8953_l5>;
+
+	status = "okay";
 };
 
 &sdhc_2 {
-	status = "okay";
+	vmmc-supply = <&pm8953_l11>;
+	vqmmc-supply = <&pm8953_l12>;
 
 	cd-gpios = <&tlmm 133 GPIO_ACTIVE_LOW>;
 
@@ -439,8 +424,7 @@
 	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_off>;
 	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
 
-	vmmc-supply = <&pm8953_l11>;
-	vqmmc-supply = <&pm8953_l12>;
+	status = "okay";
 };
 
 &sound_card {
@@ -456,14 +440,14 @@
 &tlmm {
 	gpio-reserved-ranges = <1 2>, <96 4>, <111 1>, <126 1>;
 
-	ts_reset: ts-reset-pins {
+	ts_reset: ts-reset-state {
 		pins = "gpio64";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
 	};
 
-	pmx_mdss_default: pmx-mdss-default-pins {
+	pmx_mdss_default: pmx-mdss-default-state {
 		pins = "gpio61";
 		function = "gpio";
 		drive-strength = <8>;
@@ -471,7 +455,7 @@
 		output-high;
 	};
 
-	pmx_mdss_sleep: pmx-mdss-sleep-pins {
+	pmx_mdss_sleep: pmx-mdss-sleep-state {
 		pins = "gpio61";
 		function = "gpio";
 		drive-strength = <2>;
@@ -479,20 +463,20 @@
 	};
 
 
-	nfc_irq_default: nfc-irq-pins {
+	nfc_irq_default: nfc-irq-state {
 		pins = "gpio17";
 		bias-pull-down;
 		drive-strength = <2>;
 	};
 
-	nfc_pwr_default: nfc-pwr-pins {
+	nfc_pwr_default: nfc-pwr-state {
 		pins = "gpio16";
 		bias-pull-down;
 		output-low;
 		drive-strength = <2>;
 	};
 
-	nfc_firm_default: nfc-firm-pins {
+	nfc_firm_default: nfc-firm-state {
 		pins = "gpio62";
 		bias-pull-down;
 		output-low;

@@ -13,6 +13,8 @@
 #include <dt-bindings/leds/common.h>
 
 /delete-node/ &adsp_fw_mem;
+/delete-node/ &cont_splash_mem;
+/delete-node/ &qseecom_mem;
 /delete-node/ &wcnss_fw_mem;
 
 / {
@@ -69,13 +71,11 @@
 	};
 
 	reserved-memory {
-		/delete-node/memory@85b00000;
 		qseecom_mem: qseecom@84a00000 {
 			reg = <0x0 0x84a00000 0x0 0x1900000>;
 			no-map;
 		};
 
-		/delete-node/memory@90001000;
 		cont_splash_mem: cont-splash@90001000 {
 			reg = <0x0 0x90001000 0x0 (1080 * 2160 * 3)>;
 			no-map;
@@ -180,7 +180,7 @@
 	remote-endpoint = <&panel_in>;
 };
 
-&dsi_phy0 {
+&dsi0_phy {
 	vcca-supply = <&pm8953_l3>;
 };
 

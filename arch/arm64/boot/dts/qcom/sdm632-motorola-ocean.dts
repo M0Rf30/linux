@@ -125,7 +125,7 @@
 	remote-endpoint = <&panel_in>;
 };
 
-&dsi_phy0 {
+&dsi0_phy {
 	vcca-supply = <&pm8953_l3>;
 };
 

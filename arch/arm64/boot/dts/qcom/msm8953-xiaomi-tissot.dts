@@ -1,13 +1,7 @@
-/* Copyright (c) 2022 The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Copyright (c) 2022, Danila Tikhonov <JIaxyga@protonmail.com>
+ * Copyright (c) 2022, Anton Bambura <jenneron@protonmail.com>
  */
 /dts-v1/;
 
@@ -18,9 +12,13 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
 
+/delete-node/ &adsp_fw_mem;
+/delete-node/ &qseecom_mem;
+/delete-node/ &wcnss_fw_mem;
+
 / {
+	model = "Xiaomi Mi A1";
 	compatible = "xiaomi,tissot", "qcom,msm8953";
-	model = "Xiaomi Mi A1 (tissot)";
 	chassis-type = "handset";
 	qcom,msm-id = <293 0>;
 	qcom,board-id = <0x1000b 0x00>;
@@ -31,7 +29,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&gpio_key_default>, <&gpio_hall_sensor_default>;
 
-		hall-sensor {
+		event-hall-sensor {
 			label = "Hall Effect Sensor";
 			gpios = <&tlmm 44 GPIO_ACTIVE_LOW>;
 			linux,input-type = <EV_SW>;
@@ -39,7 +37,7 @@
 			linux,can-disable;
 		};
 
-		volume-up {
+		key-volume-up {
 			label = "Volume Up";
 			gpios = <&tlmm 85 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEUP>;
@@ -94,20 +92,17 @@
 	};
 
 	reserved-memory {
-		/delete-node/memory@85b00000;
-
-		memory@84a00000 {
+		qseecom_mem: qseecom@84a00000 {
 			reg = <0x0 0x84a00000 0x0 0x1900000>;
 			no-map;
 		};
 
-		adsp_fw_mem: memory@8d600000 {
+		adsp_fw_mem: adsp@8d600000 {
 			reg = <0x0 0x8d600000 0x0 0x1200000>;
 			no-map;
 		};
 
-		/delete-node/memory@8e700000;
-		wcnss_fw_mem: memory@8e800000 {
+		wcnss_fw_mem: wcnss@8e800000 {
 			reg = <0x0 0x8e800000 0x0 0x700000>;
 			no-map;
 		};
@@ -122,11 +117,15 @@
 		};
 	};
 
-	sensors: i2c-gpio {
+	/*
+	 * We bitbang on &i2c_4 because BLSP is protected by TZ as sensors are
+	 * normally proxied via ADSP firmware. GPIOs aren't protected.
+	 */
+	i2c-sensors {
 		compatible = "i2c-gpio";
 		sda-gpios = <&tlmm 14 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
 		scl-gpios = <&tlmm 15 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
-		i2c-gpio,delay-us = <2>;        /* ~100 kHz */
+		i2c-gpio,delay-us = <2>; /* ~100 kHz */
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -136,7 +135,6 @@
 
 			vdd-supply = <&pm8953_l10>;
 			vddio-supply = <&pm8953_l6>;
-
 			mount-matrix = "0", "1", "0",
 					"1", "0", "0",
 					"0", "0", "1";
@@ -178,13 +176,17 @@
 };
 
 &hsusb_phy {
+	vdd-supply = <&pm8953_l3>;
+	vdda-pll-supply = <&pm8953_l7>;
+	vdda-phy-dpdm-supply = <&pm8953_l13>;
+
 	status = "okay";
 };
 
 &i2c_2 {
 	status = "okay";
 
-	max98927_codec: max98927@3a {
+	max98927_codec: audio-codec@3a {
 		compatible = "maxim,max98927";
 		reg = <0x3a>;
 
@@ -218,7 +220,7 @@
 	status = "okay";
 
 	touchscreen@38 {
-		compatible = "edt,edt-ft5x06";
+		compatible = "edt,edt-ft5406";
 		reg = <0x38>;
 
 		interrupt-parent = <&tlmm>;
@@ -237,8 +239,8 @@
 };
 
 &pm8953_resin {
-	status = "okay";
 	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
 };
 
 &pmi8950_fg {
@@ -253,12 +255,11 @@
 };
 
 &pmi8950_wled {
-	status = "okay";
-
-	qcom,cabc;
-	qcom,enabled-strings = <0 1>;
-	qcom,eternal-pfet;
 	qcom,num-strings = <2>;
+	qcom,external-pfet;
+	qcom,cabc;
+
+	status = "okay";
 };
 
 &q6afedai {
@@ -268,23 +269,9 @@
 	};
 };
 
-&sdhc_1 {
-	status = "okay";
-};
-
-&sdhc_2 {
-	status = "okay";
-
-	pinctrl-names = "default", "sleep";
-	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
-	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
-
-	cd-gpios = <&tlmm 133 GPIO_ACTIVE_HIGH>;
-};
-
 &rpm_requests {
-        smd_rpm_regulators: pm8953-regulators {
-                compatible = "qcom,rpm-pm8953-regulators";
+	regulators {
+		compatible = "qcom,rpm-pm8953-regulators";
 
 		vdd_s1-supply = <&vph_pwr>;
 		vdd_s2-supply = <&vph_pwr>;
@@ -401,6 +388,26 @@
 	};
 };
 
+&sdhc_1 {
+	vmmc-supply = <&pm8953_l8>;
+	vqmmc-supply = <&pm8953_l5>;
+
+	status = "okay";
+};
+
+&sdhc_2 {
+	vmmc-supply = <&pm8953_l11>;
+	vqmmc-supply = <&pm8953_l12>;
+
+	cd-gpios = <&tlmm 133 GPIO_ACTIVE_HIGH>;
+
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
+	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
+
+	status = "okay";
+};
+
 &sound_card {
 	status = "okay";
 
@@ -409,34 +416,19 @@
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&cdc_pdm_lines_act &cdc_pdm_lines_2_act &cdc_pdm_comp_lines_act &pri_lines_default &pri_ws_lines_default &ext_pa_power_on>;
 	pinctrl-1 = <&cdc_pdm_lines_sus &cdc_pdm_lines_2_sus &cdc_pdm_comp_lines_sus &pri_lines_sleep &pri_ws_lines_sleep &ext_pa_power_off>;
-
-	/*quaternary-mi2s-dai-link {
-		link-name = "Quaternary MI2S";
-		cpu {
-			sound-dai = <&q6afedai QUATERNARY_MI2S_RX>;
-		};
-
-		platform {
-			sound-dai = <&q6routing>;
-		};
-
-		codec {
-			sound-dai = <&max98927_codec>;
-		};
-	};*/
 };
 
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <16 4>, <135 4>;
 
-	gpio_hall_sensor_default: gpio-hall-sensor-pins {
+	gpio_hall_sensor_default: gpio-hall-sensor-state {
 		pins = "gpio44";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
 	};
 
-	pmx_mdss_default: pmx-mdss-default-pins {
+	pmx_mdss_default: pmx-mdss-default-state {
 		pins = "gpio61";
 		function = "gpio";
 		drive-strength = <8>;
@@ -444,61 +436,61 @@
 		output-high;
 	};
 
-	pmx_mdss_sleep: pmx-mdss-sleep-pins {
+	pmx_mdss_sleep: pmx-mdss-sleep-state {
 		pins = "gpio61";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-down;
 	};
 
-	ts_int_default: ts-int-default-pins {
+	ts_int_default: ts-int-default-state {
 		pins = "gpio65";
 		function = "gpio";
 		drive-strength = <2>;
 		bias-pull-up;
 	};
 
-	cdc_mclk2_default: cdc-mclk2-default-pins {
+	cdc_mclk2_default: cdc-mclk2-default-state {
 		pins = "gpio66";
 		function = "pri_mi2s";
 		drive-strength = <8>;
 		bias-disable;
 	};
 
-	cdc_mclk2_sleep: cdc-mclk2-sleep-pins {
+	cdc_mclk2_sleep: cdc-mclk2-sleep-state {
 		pins = "gpio66";
 		function = "pri_mi2s";
 		drive-strength = <2>;
 		bias-pull-down;
 	};
 
-	pri_lines_default: pri-lines-default-pins {
+	pri_lines_default: pri-lines-default-state {
 		pins = "gpio88", "gpio91", "gpio93";
 		function = "pri_mi2s";
 		drive-strength = <8>;
 	};
 
-	pri_lines_sleep: pri-lines-sleep-pins {
+	pri_lines_sleep: pri-lines-sleep-state {
 		pins = "gpio88", "gpio91", "gpio93";
 		function = "pri_mi2s";
 		drive-strength = <2>;
 		bias-pull-down;
 	};
 
-	pri_ws_lines_default: pri-ws-default-pins {
+	pri_ws_lines_default: pri-ws-default-state {
 		pins = "gpio92";
 		function = "pri_mi2s_ws";
 		drive-strength = <8>;
 	};
 
-	pri_ws_lines_sleep: pri-ws-sleep-pins {
+	pri_ws_lines_sleep: pri-ws-sleep-state {
 		pins = "gpio92";
 		function = "pri_mi2s_ws";
 		drive-strength = <2>;
 		bias-pull-down;
 	};
 
-	ext_pa_power_on: ext-pa-power-on-pins {
+	ext_pa_power_on: ext-pa-power-on-state {
 		pins = "gpio141";
 		function = "gpio";
 		drive-strength = <16>;
@@ -506,7 +498,7 @@
 		output-high;
 	};
 
-	ext_pa_power_off: ext-pa-power-off-pins {
+	ext_pa_power_off: ext-pa-power-off-state {
 		pins = "gpio141";
 		function = "gpio";
 		drive-strength = <16>;
@@ -516,9 +508,10 @@
 };
 
 &uart_0 {
-	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart_console_active>;
+
+	status = "okay";
 };
 
 &usb3 {
