@@ -5,6 +5,8 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
+#include <dt-bindings/sound/qcom,q6afe.h>
+#include <dt-bindings/sound/qcom,q6asm.h>
 
 / {
 	model = "LGE MSM 8974 HAMMERHEAD";
@@ -578,6 +580,36 @@
 	};
 };
 
+&sound {
+	compatible	= "qcom,apq8096-sndcard";
+	qcom,model = "msm8974-taiko";
+	audio-routing =
+		"RX_BIAS", "MCLK",
+		"LDO_H", "MCLK";
+
+	mm1-dai-link {
+		link-name = "MultiMedia1";
+		cpu {
+			sound-dai = <&q6asmdai  MSM_FRONTEND_DAI_MULTIMEDIA1>;
+		};
+	};
+
+	slim-dai-link {
+		link-name = "SLIM Playback";
+		cpu {
+			sound-dai = <&q6afedai SLIMBUS_0_RX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&wcd9320 0>;
+		};
+	};
+};
+
 &tlmm {
 	sdc1_on: sdc1-on-state {
 		clk-pins {
@@ -694,4 +726,12 @@
 	v3p3-supply = <&pm8941_l24>;
 
 	qcom,init-seq = /bits/ 8 <0x1 0x64>;
+};
+
+&wcd9320 {
+    vdd-buck-supply = <&pm8941_s2>;
+    vdd-rx-supply = <&pm8941_s3>;
+    vdd-buck-sido-supply = <&pm8941_s2>;
+    vdd-tx-supply = <&pm8941_s3>;
+    vdd-io-supply = <&pm8941_l1>;
 };
