@@ -1233,6 +1233,58 @@
 			};
 		};
 
+		slimbam: dma-controller@fe104000 {
+			compatible = "qcom,bam-v1.4.0";
+			qcom,controlled-remotely;
+			reg = <0xfe104000 0x20000>;
+			num-channels = <31>;
+			interrupts = <0 164 IRQ_TYPE_LEVEL_HIGH>;
+			#dma-cells = <1>;
+			qcom,ee = <1>;
+			qcom,num-ees = <2>;
+		};
+
+		slim_msm: slim@fe12f000 {
+			compatible = "qcom,slim-ngd-v1.5.0";
+			reg = <0xfe12f000 0x35000>;
+			reg-names = "ctrl";
+			interrupts = <0 163 IRQ_TYPE_LEVEL_HIGH>;
+			dmas = <&slimbam 3>, <&slimbam 4>,
+				<&slimbam 5>, <&slimbam 6>;
+			dma-names = "rx", "tx", "tx2", "rx2";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			ngd@1 {
+				reg = <1>;
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				taiko_ifd: tai-ifd {
+					compatible = "slim217,0a0";
+					reg = <0 0>;
+				};
+
+				wcd9320: codec@1{
+					pinctrl-0 = <&cdc_reset_active &wcd_intr_default>;
+					pinctrl-names = "default";
+
+					compatible = "slim217,0a0";
+					reg = <1 0>;
+
+					interrupt-parent = <&tlmm>;
+					interrupts = <72 IRQ_TYPE_NONE>;
+					interrupt-names = "intr1";
+					interrupt-controller;
+					#interrupt-cells = <1>;
+					reset-gpios = <&tlmm 63 GPIO_ACTIVE_HIGH>;
+
+					slim-ifc-dev = <&taiko_ifd>;
+
+					#sound-dai-cells = <1>;
+				};
+			};
+		};
+
 		tcsr_mutex_block: syscon@fd484000 {
 			compatible = "syscon";
 			reg = <0xfd484000 0x2000>;
@@ -1463,6 +1515,14 @@
 				bias-pull-up;
 			};
 
+			cdc_reset_active: cdc-reset-active {
+				pins = "gpio63";
+				function = "gpio";
+				drive-strength = <16>;
+				bias-pull-down;
+				output-high;
+			};
+
 			spi8_default: spi8_default {
 				mosi {
 					pins = "gpio45";
@@ -1480,6 +1540,14 @@
 					pins = "gpio48";
 					function = "blsp_spi8";
 				};
+			};
+
+			wcd_intr_default: wcd-intr-default{
+				pins = "gpio72";
+				function = "gpio";
+				drive-strength = <2>;
+				bias-pull-down;
+				input-enable;
 			};
 		};
 

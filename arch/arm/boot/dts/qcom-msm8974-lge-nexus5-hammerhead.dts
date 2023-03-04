@@ -696,3 +696,11 @@
 		};
 	};
 };
+
+&wcd9320 {
+    vdd-buck-supply = <&pm8941_s2>;
+    vdd-rx-supply = <&pm8941_s3>;
+    vdd-buck-sido-supply = <&pm8941_s2>;
+    vdd-tx-supply = <&pm8941_s3>;
+    vdd-io-supply = <&pm8941_l1>;
+};
