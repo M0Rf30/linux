@@ -155,6 +155,8 @@
 };
 
 &sound_card {
+	status = "okay";
+
 	model = "xiaomi-vince";
 
 	pinctrl-names = "default", "sleep";
@@ -167,10 +169,27 @@
 		&cdc_pdm_comp_lines_sus
 		&tlmm_pri_sus>;
 
-	status = "okay";
+	quinary-mi2s-dai-link {
+		link-name = "Quinary MI2S";
+		cpu {
+			sound-dai = <&q6afedai QUINARY_MI2S_RX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai =  <&tas2557_codec>;
+		};
+	};
 };
 
 &spi_6 {
+	status = "okay";
+};
+
+&tas2557_codec {
 	status = "okay";
 };
 
