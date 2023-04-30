@@ -24,6 +24,13 @@
 		};
 	};
 
+	irda_regulator: regulator-irda {
+		compatible = "regulator-fixed";
+		gpio = <&tlmm 73 GPIO_ACTIVE_HIGH>;
+		regulator-name = "irda_regulator";
+		enable-active-high;
+	};
+
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vph_pwr";
