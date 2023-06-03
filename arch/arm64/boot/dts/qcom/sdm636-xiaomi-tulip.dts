@@ -182,6 +182,15 @@
 		regulator-always-on;
 		regulator-boot-on;
 	};
+
+	wqhd_vddio: wqhd-vddio-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "wqhd_vddio";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1950000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
 };
 
 &adsp_pil {
@@ -238,6 +247,89 @@
 
 &dsi0_phy {
 	vcca-supply = <&vreg_l1b_0p925>;
+	status = "okay";
+};
+
+		dsi_panel_pwr_supply {
+			#address-cells = <0x01>;
+			#size-cells = <0x00>;
+			phandle = <0x272>;
+
+			qcom,panel-supply-entry@0 {
+				reg = <0x00>;
+				qcom,supply-name = "wqhd-vddio";
+				qcom,supply-min-voltage = <0x1b7740>;
+				qcom,supply-max-voltage = <0x1dc130>;
+				qcom,supply-enable-load = <0x7d00>;
+				qcom,supply-disable-load = <0x50>;
+				qcom,supply-post-on-sleep = <0x02>;
+				qcom,supply-pre-off-sleep = <0x0a>;
+			};
+
+			qcom,panel-supply-entry@1 {
+				reg = <0x01>;
+				qcom,supply-name = "lab";
+				qcom,supply-min-voltage = <0x4630c0>;
+				qcom,supply-max-voltage = <0x5b8d80>;
+				qcom,supply-enable-load = <0x186a0>;
+				qcom,supply-disable-load = <0x64>;
+				qcom,supply-pre-on-sleep = <0x08>;
+			};
+
+			qcom,panel-supply-entry@2 {
+				reg = <0x02>;
+				qcom,supply-name = "ibb";
+				qcom,supply-min-voltage = <0x4630c0>;
+				qcom,supply-max-voltage = <0x5b8d80>;
+				qcom,supply-enable-load = <0x186a0>;
+				qcom,supply-disable-load = <0x64>;
+				qcom,supply-post-on-sleep = <0x0a>;
+				qcom,supply-pre-on-sleep = <0x08>;
+			};
+		};
+
+&dsi0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+    status = "okay";
+
+	vdda-supply = <&vreg_l1a_1p225>;
+
+	panel@0 {
+		compatible = "mdss,nt36672a-tianma-tulip";
+		reg = <0>;
+
+		reset-gpios = <&tlmm 53 GPIO_ACTIVE_LOW>;
+		disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
+
+		backlight = <&pm660l_wled>;
+
+		lab-supply = <&lab_vreg>;
+		ibb-supply = <&ibb_vreg>;
+		wqhd-vddio-supply = <&ibb_vreg>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&panel_reset_n &mdp_vsync_n>;
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&dsi0_out>;
+			};
+		};
+	};
+};
+
+&dsi0_out {
+	data-lanes = <0 1 2 3>;
+	remote-endpoint = <&panel_in>;
+};
+
+&dsi0_phy {
+	vcca-supply = <&vreg_l1b_0p925>;
+	status = "okay";
+};
+
+&mdss {
 	status = "okay";
 };
 
@@ -532,6 +624,20 @@
 
 &tlmm {
 	gpio-reserved-ranges = <8 4>;
+
+	panel_reset_n: panel-rst-n {
+		pins = "gpio53";
+		function = "gpio";
+		drive-strength = <8>;
+		bias-disable;
+	};
+
+	mdp_vsync_n: mdp-vsync-n {
+		pins = "gpio59";
+		function = "mdp_vsync";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
 
 	ts_int_active: ts-int-active-state {
 		pins = "gpio67";

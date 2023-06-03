@@ -405,6 +405,15 @@ config DRM_PANEL_NOVATEK_NT36672_TIANMA_JASMINE
 	  Say Y here if you want to enable support for Tianma nt36672
 	  command mode panel used in Xiaomi Mi A2 phone (codename jasmine)
 
+config DRM_PANEL_NOVATEK_NT36672A_TIANMA_TULIP
+	tristate "Novatek NT36672A Tianma panel for xiaomi-tulip"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for Tianma nt36672
+	  command mode panel used in Xiaomi Redmi Note 6 Pro phone (codename tulip)
+
 config DRM_PANEL_NOVATEK_NT39016
 	tristate "Novatek NT39016 RGB/SPI panel"
 	depends on OF && SPI
