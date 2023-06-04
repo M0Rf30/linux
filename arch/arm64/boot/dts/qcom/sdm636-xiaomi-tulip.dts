@@ -195,6 +195,22 @@
 
 &blsp_i2c1 {
 	status = "okay";
+
+	touchscreen@62 {
+		compatible = "novatek,nt36525";
+		reg = <0x62>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <67 IRQ_TYPE_EDGE_FALLING>;
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&ts_default>;
+		pinctrl-1 = <&ts_int_sleep>, <&ts_reset_sleep>;
+		reset-gpios = <&tlmm 66 GPIO_ACTIVE_HIGH>;
+		touchscreen-size-x = <1080>;
+		touchscreen-size-y = <2280>;
+		vdd-supply = <&vreg_l11a_1p8>;
+
+		status = "okay";
+	};
 };
 
 &blsp_i2c2 {
@@ -518,6 +534,27 @@
 
 &tlmm {
 	gpio-reserved-ranges = <8 4>;
+
+	ts_default: ts-pins-default-state {
+		pins = "gpio66", "gpio67";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-pull-up;
+	};
+
+	ts_int_sleep: ts-int-sleep-state {
+		pins = "gpio67";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	ts_reset_sleep: ts-reset-sleep-state {
+		pins = "gpio66";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-down;
+	};
 };
 
 &usb3 {
