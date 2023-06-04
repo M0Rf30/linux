@@ -13,8 +13,6 @@
 /delete-node/ &qhee_code;
 /delete-node/ &smem_region;
 /delete-node/ &tz_mem;
-/delete-node/ &mpss_region;
-/delete-node/ &mba_region;
 /delete-node/ &adsp_region;
 /delete-node/ &buffer_mem;
 /delete-node/ &zap_shader_region;
@@ -104,11 +102,6 @@
 			no-map;
 		};
 
-		modem_fw_mem: modem_fw_region@8ac00000 {
-			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
-			no-map;
-		};
-
 		adsp_region: adsp@92a00000 {
 			reg = <0x0 0x92a00000 0x0 0x1e00000>;
 			no-map;
@@ -121,11 +114,6 @@
 
 		framebuffer_memory@9d400000 {
 			reg = <0x0 0x9d400000 0x0 (1080 * 2280 * 4)>;
-			no-map;
-		};
-
-		pil_mba_mem: mba@94800000 {
-			reg = <0x0 0x94800000 0x0 0x200000>;
 			no-map;
 		};
 
@@ -480,6 +468,12 @@
 	};
 };
 
+&remoteproc_mss {
+	firmware-name = "mba.mbn", "modem.mdt";
+
+	status = "okay";
+};
+
 &sdhc_1 {
 	status = "okay";
 };
@@ -504,6 +498,15 @@
 
 &venus {
 	firmware-name = "qcom/venus-4.4/venus.mdt";
+
+	status = "okay";
+};
+
+&wifi {
+	vdd-0.8-cx-mx-supply = <&vreg_l5a_0p848>;
+	vdd-1.8-xo-supply = <&vreg_l9a_1p8>;
+	vdd-1.3-rfa-supply = <&vreg_l6a_1p3>;
+	vdd-3.3-ch0-supply = <&vreg_l19a_3p3>;
 
 	status = "okay";
 };
