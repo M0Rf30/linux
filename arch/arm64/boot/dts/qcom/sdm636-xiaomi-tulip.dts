@@ -139,45 +139,10 @@
 		};
 	};
 
-	/* Add support of Wi-Fi */
-	soc {
-		wifi: wifi@18800000 {
-			compatible = "qcom,wcn3990-wifi";
-			reg = <0x18800000 0x800000>;
-			reg-names = "membase";
-			memory-region = <&wlan_msa_mem>;
-			clocks = <&rpmcc RPM_SMD_RF_CLK1_PIN>;
-			clock-names = "cxo_ref_clk_pin";
-			interrupts =
-				<GIC_SPI 413 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 414 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 415 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 416 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 417 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 418 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 420 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 421 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 422 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 423 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 424 IRQ_TYPE_LEVEL_HIGH>,
-				<GIC_SPI 425 IRQ_TYPE_LEVEL_HIGH>;
-
-			iommus = <&anoc2_smmu 0x1a00>,
-				 <&anoc2_smmu 0x1a01>;
-            qcom,msa-fixed-perm;
-			status = "okay";
-
-			vdd-0.8-cx-mx-supply = <&vreg_l5a_0p848>;
-			vdd-1.8-xo-supply = <&vreg_l9a_1p8>;
-			vdd-1.3-rfa-supply = <&vreg_l6a_1p3>;
-			vdd-3.3-ch0-supply = <&vreg_l19a_3p3>;
-		};
-	};
-
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vph_pwr";
-		regulator-min-microvolt = <3300000>;
+		regulator-min-microvolt = <3500000>;
 		regulator-max-microvolt = <3500000>;
 		regulator-always-on;
 		regulator-boot-on;
@@ -190,27 +155,11 @@
 };
 
 &anoc2_smmu {
-		status = "okay";
+	status = "okay";
 };
 
 &blsp_i2c1 {
 	status = "okay";
-
-	touchscreen@62 {
-		compatible = "novatek,nt36525";
-		reg = <0x62>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <67 IRQ_TYPE_EDGE_FALLING>;
-		pinctrl-names = "default", "sleep";
-		pinctrl-0 = <&ts_default>;
-		pinctrl-1 = <&ts_int_sleep>, <&ts_reset_sleep>;
-		reset-gpios = <&tlmm 66 GPIO_ACTIVE_HIGH>;
-		touchscreen-size-x = <1080>;
-		touchscreen-size-y = <2280>;
-		vdd-supply = <&vreg_l11a_1p8>;
-
-		status = "okay";
-	};
 };
 
 &blsp_i2c2 {
@@ -230,16 +179,17 @@
 };
 
 &dsi0 {
-	status = "okay";
-
 	#address-cells = <1>;
 	#size-cells = <0>;
 	vdd-supply = <&vreg_l6b_3p3>;
 	vdda-supply = <&vreg_l11a_1p8>;
+
+	status = "okay";
 };
 
 &dsi0_phy {
 	vcca-supply = <&vreg_l1b_0p925>;
+
 	status = "okay";
 };
 
@@ -248,7 +198,7 @@
 };
 
 &lpass_smmu {
-		status = "okay";
+	status = "okay";
 };
 
 &mdss {
@@ -264,8 +214,9 @@
 };
 
 &pm660_charger {
-	status = "okay";
 	monitored-battery = <&battery>;
+
+	status = "okay";
 };
 
 &pm660_fg {
@@ -281,8 +232,9 @@
 };
 
 &pm660l_wled {
-	status = "okay";
 	default-brightness = <512>;
+
+	status = "okay";
 };
 
 &pon_pwrkey {
@@ -290,6 +242,10 @@
 };
 
 &qusb2phy0 {
+	vdd-supply = <&vreg_l1b_0p925>;
+	vdda-pll-supply = <&vreg_l10a_1p8>;
+	vdda-phy-dpdm-supply = <&vreg_l7b_3p125>;
+
 	status = "okay";
 };
 
@@ -534,27 +490,6 @@
 
 &tlmm {
 	gpio-reserved-ranges = <8 4>;
-
-	ts_default: ts-pins-default-state {
-		pins = "gpio66", "gpio67";
-		function = "gpio";
-		drive-strength = <16>;
-		bias-pull-up;
-	};
-
-	ts_int_sleep: ts-int-sleep-state {
-		pins = "gpio67";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-disable;
-	};
-
-	ts_reset_sleep: ts-reset-sleep-state {
-		pins = "gpio66";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-down;
-	};
 };
 
 &usb3 {
@@ -562,11 +497,13 @@
 };
 
 &usb3_dwc3 {
-	status = "okay";
 	dr_mode = "peripheral";
+
+	status = "okay";
 };
 
 &venus {
-	status = "okay";
 	firmware-name = "qcom/venus-4.4/venus.mdt";
+
+	status = "okay";
 };
