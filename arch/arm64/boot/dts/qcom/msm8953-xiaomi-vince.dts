@@ -124,6 +124,14 @@
 	voltage-max-design-microvolt = <4380000>;
 };
 
+&mdss {
+	status = "okay";
+};
+
+&modem {
+	status = "okay";
+};
+
 &panel {
 	compatible = "xiaomi,vince-panel";
 };
