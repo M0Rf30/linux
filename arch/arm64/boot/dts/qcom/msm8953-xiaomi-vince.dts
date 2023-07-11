@@ -101,15 +101,15 @@
 					"0", "0", "1";
 		};
 
-		imu@6a {
-			compatible = "st,lsm6dsl";
-			reg = <0x6a>;
-			vdd-supply = <&pm8953_l10>;
-			vddio-supply = <&pm8953_l6>;
-			mount-matrix = "1", "0", "0",
-					"0", "-1", "0",
-					"0", "0", "1";
-		};
+		// imu@6a {
+		// 	compatible = "st,lsm6dsl";
+		// 	reg = <0x6a>;
+		// 	vdd-supply = <&pm8953_l10>;
+		// 	vddio-supply = <&pm8953_l6>;
+		// 	mount-matrix = "1", "0", "0",
+		// 			"0", "-1", "0",
+		// 			"0", "0", "1";
+		// };
 	};
 };
 
@@ -122,6 +122,61 @@
 	constant-charge-current-max-microamp = <2500000>;
 	voltage-min-design-microvolt = <3400000>;
 	voltage-max-design-microvolt = <4380000>;
+};
+
+&camss {
+	status = "okay";
+	vdda-supply = <&pm8953_s3>;
+
+	ports {
+		port@2 {
+			reg = <2>;
+			csiphy2_ep: endpoint@1 {
+				data-lanes = <1 2>;
+				remote-endpoint = <&front_cam_ep>;
+				status = "okay";
+			};
+		};
+	};
+};
+
+&cci {
+	status = "okay";
+};
+
+&cci_i2c0 {
+    ov5675: camera-sensor@2 {
+        compatible = "ovti,ov5675";
+        reg = <0x02>;
+
+
+		reset-gpios = <&tlmm 129 GPIO_ACTIVE_LOW>;
+        pinctrl-names = "default";
+        pinctrl-0 = <&cif_clkout_m0>;
+		pinctrl-1 = <0x140 0x141>;
+
+        clocks = <&gcc GCC_CAMSS_MCLK1_CLK>;
+		clock-frequency = <24000000>;
+
+        assigned-clocks = <&gcc GCC_CAMSS_MCLK1_CLK>;
+        assigned-clock-rates = <19200000>;
+
+		dovdd-supply = <&pm8953_l6>;
+		dvdd-supply = <&pm8953_l2>;
+		avdd-supply = <&pm8953_l22>;
+
+		// nvmem = <&front_calib_eeprom>;
+
+		// rotation = <90>;
+		// orientation = <0>;
+
+		port {
+			front_cam_ep: endpoint {
+				data-lanes = <1 2>;
+				remote-endpoint = <&csiphy2_ep>;
+			};
+		};
+    };
 };
 
 &panel {
