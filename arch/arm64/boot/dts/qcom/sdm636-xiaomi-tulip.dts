@@ -191,6 +191,14 @@
 
 &blsp2_uart1 {
 	status = "okay";
+
+	bluetooth {
+		compatible = "qcom,wcn3990-bt"; // common for all QCOM
+		vddxo-supply = <&vreg_l9a_1p8>; // downstream: vdd-core-supply
+		vddrf-supply = <&vreg_l6a_1p3>; // vdd-pa-supply
+		vddch0-supply = <&vreg_l19a_3p3>; // vdd-ldo-supply
+		max-speed = <3200000>;
+	};
 };
 
 &blsp1_uart2 {
