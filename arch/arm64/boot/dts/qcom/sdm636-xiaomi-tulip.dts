@@ -13,8 +13,6 @@
 /delete-node/ &qhee_code;
 /delete-node/ &smem_region;
 /delete-node/ &tz_mem;
-/delete-node/ &mpss_region;
-/delete-node/ &mba_region;
 /delete-node/ &adsp_region;
 /delete-node/ &buffer_mem;
 /delete-node/ &zap_shader_region;
@@ -88,11 +86,6 @@
 			no-map;
 		};
 
-		modem_fw_mem: modem_fw_region@8ac00000 {
-			reg = <0x0 0x8ac00000 0x0 0x7e00000>;
-			no-map;
-		};
-
 		adsp_region: adsp@92a00000 {
 			reg = <0x0 0x92a00000 0x0 0x1e00000>;
 			no-map;
@@ -111,11 +104,6 @@
 		dfps_data_mem: dfps@9f7ff000 {
 			reg = <0x00 0x9f7ff000 0x00 0x1000>;
 			label = "dfps_data_mem";
-		};
-
-		pil_mba_mem: mba@94800000 {
-			reg = <0x0 0x94800000 0x0 0x200000>;
-			no-map;
 		};
 
 		ramoops@a0000000 {
@@ -209,7 +197,7 @@
 	status = "okay";
 };
 
-&dsi0 {
+&mdss_dsi0 {
 	status = "okay";
 
 	#address-cells = <1>;
@@ -218,11 +206,11 @@
 	vdda-supply = <&vreg_l11a_1p8>;
 
 	panel@0 {
-		compatible = "tianma,xiaomi-tulip-fhd-video", "novatek,nt36672a";
+		compatible = "tianma,xiaomi-tulip-fhd-video";
 		reg = <0>;
 
 		reset-gpios = <&tlmm 53 GPIO_ACTIVE_LOW>;
-		disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
+		// disp-te-gpios = <&tlmm 59 GPIO_ACTIVE_HIGH>;
 
 		pinctrl-names = "default", "sleep";
 		pinctrl-0 = <&panel_reset_n &mdp_vsync_n>;
@@ -239,29 +227,29 @@
 
 		port {
 			panel_in: endpoint {
-				remote-endpoint = <&dsi0_out>;
+				remote-endpoint = <&mdss_dsi0_out>;
 			};
 		};
     };
 };
 
-&dsi0_out {
+&mdss_dsi0_out {
 	data-lanes = <0 1 2 3>;
 	remote-endpoint = <&panel_in>;
 };
 
-&dsi0_phy {
+&mdss_dsi0_phy {
 	status = "okay";
 
 	vcca-supply = <&vreg_l1b_0p925>;
 
 };
 
-&dsi1{
+&mdss_dsi1{
 	status = "disabled";
 };
 
-&dsi1_phy{
+&mdss_dsi1_phy{
 	status = "disabled";
 };
 
@@ -278,7 +266,7 @@
 };
 
 &lpass_smmu {
-		status = "okay";
+	status = "okay";
 };
 
 &mdss {
