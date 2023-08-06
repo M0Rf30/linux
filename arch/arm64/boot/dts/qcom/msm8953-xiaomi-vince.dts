@@ -206,6 +206,12 @@
 	regulator-min-microvolt = <1200000>;
 };
 
+&pmi8950_haptics {
+	status = "okay";
+
+	qcom,wave-play-rage-us = <5263>;
+};
+
 &pmi8950_wled {
 	qcom,external-pfet;
 	qcom,cabc;
