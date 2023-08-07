@@ -157,13 +157,29 @@
 &spi_6 {
 	status = "okay";
 
+	// irled@0 {
+	// 	compatible = "ir-spi-led";
+	// 	reg = <0x0>;
+	// 	spi-max-frequency = <5000000>;
+	// 	power-supply = <&irda_regulator>;
+	// 	duty-cycle = /bits/ 8 <60>;
+	// 	led-active-low;
+	// };
+
 	irled@0 {
-		compatible = "ir-spi-led";
+		compatible = "ir-spi-peel";
 		reg = <0x0>;
-		spi-max-frequency = <5000000>;
-		power-supply = <&irda_regulator>;
-		duty-cycle = /bits/ 8 <60>;
-		led-active-low;
+		spi-max-frequency = <19200000>;
+		vdd-supply = <&pm8953_l8>; //vdd
+		ir-spi-peel,reg-id = "vdd";
+		ir-spi-peel,lr-gpio = <73>;
+		ir-spi-peel,lr-gpio-valid = <0>;
+		ir-spi-peel,spi-bpw = <32>;
+		ir-spi-peel,spi-clk-speed = <960000>;
+		ir-spi-peel,spi-mode = <0>;
+		ir-spi-peel,peel-field = <2345>;
+
+		status = "okay";
 	};
 };
 

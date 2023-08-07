@@ -46,6 +46,7 @@ obj-$(CONFIG_IR_REDRAT3) += redrat3.o
 obj-$(CONFIG_IR_RX51) += ir-rx51.o
 obj-$(CONFIG_IR_SERIAL) += serial_ir.o
 obj-$(CONFIG_IR_SPI) += ir-spi.o
+obj-$(CONFIG_IR_SPI_PEEL) += ir-spi-peel.o
 obj-$(CONFIG_IR_STREAMZAP) += streamzap.o
 obj-$(CONFIG_IR_SUNXI) += sunxi-cir.o
 obj-$(CONFIG_IR_TOY) += ir_toy.o
@@ -55,3 +56,4 @@ obj-$(CONFIG_RC_ATI_REMOTE) += ati_remote.o
 obj-$(CONFIG_RC_LOOPBACK) += rc-loopback.o
 obj-$(CONFIG_RC_ST) += st_rc.o
 obj-$(CONFIG_RC_XBOX_DVD) += xbox_remote.o
+
