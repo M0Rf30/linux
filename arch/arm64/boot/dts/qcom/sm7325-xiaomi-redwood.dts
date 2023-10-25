@@ -44,6 +44,32 @@
 		};
 	};
 
+	// ipa: ipa@1e00000 {
+	// 	compatible = "qcom,sc7280-ipa";
+	// 	iommus = <&apps_smmu 0x480 0x0>,
+	// 		 <&apps_smmu 0x482 0x0>;
+	// 	reg = <0 0x01e00000 0 0x8400>,
+	// 	      <0 0x01e04000 0 0x23000>;
+	// 	reg-names = "ipa-reg",
+	// 		    "gsi";
+	// 	interrupts-extended = <&intc GIC_SPI 654 IRQ_TYPE_EDGE_RISING>,
+	// 			      <&intc GIC_SPI 432 IRQ_TYPE_LEVEL_HIGH>,
+	// 	interrupt-names = "ipa",
+	// 			  "gsi",
+	// 	clocks = <&rpmhcc RPMH_IPA_CLK>;
+	// 	clock-names = "core";
+	// 	interconnects = <&aggre2_noc MASTER_IPA 0 &mc_virt SLAVE_EBI1 0>,
+	// 			<&gem_noc MASTER_APPSS_PROC 0 &cnoc2 SLAVE_IPA_CFG 0>;
+	// 	interconnect-names = "memory",
+	// 			     "config";
+	// 	qcom,qmp = <&aoss_qmp>;
+	// 	qcom,smem-states = <&ipa_smp2p_out 0>,
+	// 			   <&ipa_smp2p_out 1>;
+	// 	qcom,smem-state-names = "ipa-clock-enabled-valid",
+	// 				"ipa-clock-enabled";
+	// 	status = "disabled";
+	// };
+
 	pmic-glink {
 		compatible = "qcom,sm7325-pmic-glink", "qcom,pmic-glink";
 
@@ -620,27 +646,6 @@
 &mdss_dsi_phy {
 	vdds-supply = <&vreg_l10c>;
 	status = "okay";
-};
-
-&pmr735a_adc {
-	channel@3 {
-		reg = <ADC5_AMUX_THM1_100K_PU>;
-		qcom,ratiometric;
-		qcom,hw-settle-time = <200>;
-		qcom,pre-scaling = <1 1>;
-		label = "charger_skin_therm";
-	};
-};
-
-&pmr735a_adc_tm {
-	status = "okay";
-
-	die-therm@3 {
-		reg = <3>;
-		io-channels = <&pmr735a_adc ADC5_AMUX_THM3_100K_PU>;
-		qcom,ratiometric;
-		qcom,hw-settle-time-us = <200>;
-	};
 };
 
 &pm7325_gpios {
