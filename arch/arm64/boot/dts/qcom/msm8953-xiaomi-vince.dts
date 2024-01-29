@@ -117,6 +117,10 @@
 	status = "okay";
 };
 
+&aw2023_led {
+	status = "okay";
+};
+
 &battery {
 	charge-full-design-microamp-hours = <4000000>;
 	constant-charge-current-max-microamp = <2500000>;
