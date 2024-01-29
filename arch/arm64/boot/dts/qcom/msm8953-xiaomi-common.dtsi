@@ -98,7 +98,8 @@
 		compatible = "awinic,aw2013";
 		reg = <0x45>;
 
-		vcc-supply = <&pm8953_l10>;
+		vcc-supply = <&pm8953_l5>;
+		vio-supply = <&pm8953_l10>;
 
 		status = "disabled";
 
@@ -117,7 +118,9 @@
 		compatible = "awinic,aw2023";
 		reg = <0x46>;
 
-		vcc-supply = <&pm8953_l10>;
+		imax = <2>;
+		vcc-supply = <&pm8953_l5>;
+		vio-supply = <&pm8953_l10>;
 
 		status = "disabled";
 
@@ -129,15 +132,6 @@
 			led-max-microamp = <5000>;
 			function = LED_FUNCTION_INDICATOR;
 			color = <LED_COLOR_ID_WHITE>;
-			aw2023,name = "red";
-			aw2023,id = <9>;
-			aw2023,imax = <2>;
-			aw2023,led-current = <3>;
-			aw2023,max-brightness = <255>;
-			aw2023,rise-time-ms = <6>;
-			aw2023,hold-time-ms = <0>;
-			aw2023,fall-time-ms = <6>;
-			aw2023,off-time-ms = <4>;
 		};
 	};
 };
