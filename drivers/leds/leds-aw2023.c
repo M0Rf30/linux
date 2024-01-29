@@ -28,8 +28,7 @@
 
 /* LED channel control registers */
 #define AW2023_LCFG(x) (0x31 + (x))
-#define AW2023_LCFG_LED_CURRENT_MASK (BIT(0) | BIT(1) | BIT(2) | BIT(3)) // Should be 0-3
-#define AW2023_LCFG_MD BIT(4)
+#define AW2023_LCFG_LED_CURRENT_MASK (BIT(0) | BIT(1) | BIT(2) | BIT(3))
 #define AW2023_LCFG_FI BIT(5)
 #define AW2023_LCFG_FO BIT(6)
 
@@ -37,15 +36,15 @@
 #define AW2023_REG_PWM(x) (0x34 + (x))
 
 /* LED channel timing registers */
-#define AW2023_LEDT0(x) (0x37 + (x) * 3)
+#define AW2023_LEDT0(x) (0x37 + (x)*3)
 #define AW2023_LEDT0_T1(x) ((x) << 4) // Should be 0-7
 #define AW2023_LEDT0_T2(x) (x) // Should be 0-5
 
-#define AW2023_LEDT1(x) (0x38 + (x) * 3)
+#define AW2023_LEDT1(x) (0x38 + (x)*3)
 #define AW2023_LEDT1_T3(x) ((x) << 4) // Should be 0-7
 #define AW2023_LEDT1_T4(x) (x) // Should be 0-7
 
-#define AW2023_LEDT2(x) (0x39 + (x) * 3)
+#define AW2023_LEDT2(x) (0x39 + (x)*3)
 #define AW2023_LEDT2_T0(x) ((x) << 4) // Should be 0-8
 #define AW2023_LEDT2_REPEAT(x) (x) // Should be 0-15
 
@@ -83,7 +82,7 @@ struct aw2023_led {
 
 struct aw2023 {
 	struct mutex mutex; /* held when writing to registers */
-	struct regulator *vcc_regulator;
+	struct regulator_bulk_data regulators[2];
 	struct i2c_client *client;
 	struct aw2023_led leds[AW2023_MAX_LEDS];
 	struct regmap *regmap;
@@ -104,10 +103,8 @@ static int aw2023_chip_init(struct aw2023 *chip)
 		return ret;
 	}
 
-	ret = regmap_update_bits(chip->regmap,
-				AW2023_GCR2,
-				AW2023_GCR2_IMAX_MASK,
-				chip->imax);
+	ret = regmap_update_bits(chip->regmap, AW2023_GCR2,
+				 AW2023_GCR2_IMAX_MASK, chip->imax);
 	if (ret) {
 		dev_err(&chip->client->dev, "Failed to set the chip IMAX: %d\n",
 			ret);
@@ -160,8 +157,8 @@ static int aw2023_chip_enable(struct aw2023 *chip)
 	ret = regulator_bulk_enable(ARRAY_SIZE(chip->regulators),
 				    chip->regulators);
 	if (ret) {
-		dev_err(&chip->client->dev,
-			"Failed to enable regulators: %d\n", ret);
+		dev_err(&chip->client->dev, "Failed to enable regulators: %d\n",
+			ret);
 		return ret;
 	}
 	chip->enabled = true;
@@ -268,8 +265,8 @@ error:
 // 	mutex_unlock(&led->pdata->led->lock);
 // }
 
-static int aw2023_blink_set(struct led_classdev *cdev,
-			    unsigned long *delay_on, unsigned long *delay_off)
+static int aw2023_blink_set(struct led_classdev *cdev, unsigned long *delay_on,
+			    unsigned long *delay_off)
 {
 	struct aw2023_led *led = container_of(cdev, struct aw2023_led, cdev);
 	int ret, num = led->num;
@@ -311,12 +308,12 @@ static int aw2023_blink_set(struct led_classdev *cdev,
 	*delay_on = BIT(on) * AW2023_TIME_STEP;
 
 	/* Set timings */
-	ret = regmap_write(led->chip->regmap,
-			   AW2023_LEDT0(num), AW2023_LEDT0_T2(on));
+	ret = regmap_write(led->chip->regmap, AW2023_LEDT0(num),
+			   AW2023_LEDT0_T2(on));
 	if (ret)
 		goto out;
-	ret = regmap_write(led->chip->regmap,
-			   AW2023_LEDT1(num), AW2023_LEDT1_T4(off));
+	ret = regmap_write(led->chip->regmap, AW2023_LEDT1(num),
+			   AW2023_LEDT1_T4(off));
 	if (ret)
 		goto out;
 
@@ -595,9 +592,8 @@ static int aw2023_probe(struct i2c_client *client)
 
 	chip->regulators[0].supply = "vcc";
 	chip->regulators[1].supply = "vio";
-	ret = devm_regulator_bulk_get(&client->dev,
-				      ARRAY_SIZE(chip->regulators),
-				      chip->regulators);
+	ret = devm_regulator_bulk_get(
+		&client->dev, ARRAY_SIZE(chip->regulators), chip->regulators);
 	if (ret < 0) {
 		if (ret != -EPROBE_DEFER)
 			dev_err(&client->dev,
@@ -608,21 +604,18 @@ static int aw2023_probe(struct i2c_client *client)
 	ret = regulator_bulk_enable(ARRAY_SIZE(chip->regulators),
 				    chip->regulators);
 	if (ret) {
-		dev_err(&client->dev,
-			"Failed to enable regulators: %d\n", ret);
+		dev_err(&client->dev, "Failed to enable regulators: %d\n", ret);
 		goto error;
 	}
 
 	ret = regmap_read(chip->regmap, AW2023_RSTR, &chipid);
 	if (ret) {
-		dev_err(&client->dev, "Failed to read chip ID: %d\n",
-			ret);
+		dev_err(&client->dev, "Failed to read chip ID: %d\n", ret);
 		goto error_reg;
 	}
 
 	if (chipid != AW2023_RSTR_CHIP_ID) {
-		dev_err(&client->dev, "Chip reported wrong ID: %x\n",
-			chipid);
+		dev_err(&client->dev, "Chip reported wrong ID: %x\n", chipid);
 		ret = -ENODEV;
 		goto error_reg;
 	}
@@ -634,8 +627,8 @@ static int aw2023_probe(struct i2c_client *client)
 	ret = regulator_bulk_disable(ARRAY_SIZE(chip->regulators),
 				     chip->regulators);
 	if (ret) {
-		dev_err(&client->dev,
-			"Failed to disable regulators: %d\n", ret);
+		dev_err(&client->dev, "Failed to disable regulators: %d\n",
+			ret);
 		goto error;
 	}
 
@@ -644,8 +637,7 @@ static int aw2023_probe(struct i2c_client *client)
 	return 0;
 
 error_reg:
-	regulator_bulk_disable(ARRAY_SIZE(chip->regulators),
-			       chip->regulators);
+	regulator_bulk_disable(ARRAY_SIZE(chip->regulators), chip->regulators);
 
 error:
 	mutex_destroy(&chip->mutex);
@@ -662,7 +654,9 @@ static void aw2023_remove(struct i2c_client *client)
 }
 
 static const struct of_device_id aw2023_match_table[] = {
-	{ .compatible = "awinic,aw2023", },
+	{
+		.compatible = "awinic,aw2023",
+	},
 	{ /* sentinel */ },
 };
 
