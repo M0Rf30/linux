@@ -10,10 +10,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/gpio-keys.h>
 
-/delete-node/ &adsp_mem;
 /delete-node/ &qhee_code;
-/delete-node/ &qseecom_mem;
-/delete-node/ &rmtfs_mem;
 /delete-node/ &tz_mem;
 /delete-node/ &zap_shader_region;
 
@@ -67,9 +64,19 @@
 		#size-cells = <2>;
 		ranges;
 
+		qhee_code: qhee-code@85800000 {
+			reg = <0x0 0x85800000 0x0 0x600000>;
+			no-map;
+		};
+
 		framebuffer_memory@9d400000 {
 			reg = <0x0 0x9d400000 0x0 (1080 * 2280 * 4)>;
 			no-map;
+		};
+
+		dfps_data_mem@9f7ff000 {
+			reg = <0x00 0x9f7ff000 0x00 0x1000>;
+			label = "dfps-data-mem";
 		};
 
 		ramoops@a0000000 {
@@ -79,11 +86,6 @@
 			record-size = <0x20000>;
 			ftrace-size = <0x0>;
 			pmsg-size = <0x20000>;
-		};
-
-		qseecom_mem: qseecom-region@f5800000 {
-			reg = <0x0 0xf5800000 0x0 0x1400000>;
-			no-map;
 		};
 	};
 
