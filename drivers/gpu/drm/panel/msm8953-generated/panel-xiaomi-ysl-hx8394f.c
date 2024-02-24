@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2023 FIXME
+// Copyright (c) 2024 FIXME
 // Generated with linux-mdss-dsi-panel-driver-generator from vendor device tree:
 //   Copyright (c) 2013, The Linux Foundation. All rights reserved. (FIXME)
 
@@ -181,16 +181,6 @@ static int truly720_prepare(struct drm_panel *panel)
 
 	truly720_reset(ctx);
 
-	ctx->prepared = true;
-	return 0;
-}
-
-static int truly720_enable(struct drm_panel *panel)
-{
-	struct truly720 *ctx = to_truly720(panel);
-	struct device *dev = &ctx->dsi->dev;
-	int ret;
-
 	ret = truly720_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
@@ -199,34 +189,27 @@ static int truly720_enable(struct drm_panel *panel)
 		return ret;
 	}
 
+	ctx->prepared = true;
 	return 0;
 }
 
 static int truly720_unprepare(struct drm_panel *panel)
 {
 	struct truly720 *ctx = to_truly720(panel);
+	struct device *dev = &ctx->dsi->dev;
+	int ret;
 
 	if (!ctx->prepared)
 		return 0;
-
-
-	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-
-	ctx->prepared = false;
-	return 0;
-}
-
-static int truly720_disable(struct drm_panel *panel)
-{
-	struct truly720 *ctx = to_truly720(panel);
-	struct device *dev = &ctx->dsi->dev;
-	int ret;
 
 	ret = truly720_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
+	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
+	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+
+	ctx->prepared = false;
 	return 0;
 }
 
@@ -265,9 +248,7 @@ static int truly720_get_modes(struct drm_panel *panel,
 
 static const struct drm_panel_funcs truly720_panel_funcs = {
 	.prepare = truly720_prepare,
-	.enable = truly720_enable,
 	.unprepare = truly720_unprepare,
-	.disable= truly720_disable,
 	.get_modes = truly720_get_modes,
 };
 
@@ -303,7 +284,6 @@ static int truly720_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_init(&ctx->panel, dev, &truly720_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
-
 	ctx->panel.prepare_prev_first = true;
 
 	ret = drm_panel_of_backlight(&ctx->panel);

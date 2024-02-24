@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2023 FIXME
+// Copyright (c) 2024 FIXME
 // Generated with linux-mdss-dsi-panel-driver-generator from vendor device tree:
 //   Copyright (c) 2013, The Linux Foundation. All rights reserved. (FIXME)
 
@@ -115,16 +115,6 @@ static int csot_622_v0_prepare(struct drm_panel *panel)
 
 	csot_622_v0_reset(ctx);
 
-	ctx->prepared = true;
-	return 0;
-}
-
-static int csot_622_v0_enable(struct drm_panel *panel)
-{
-	struct csot_622_v0 *ctx = to_csot_622_v0(panel);
-	struct device *dev = &ctx->dsi->dev;
-	int ret;
-
 	ret = csot_622_v0_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
@@ -133,34 +123,27 @@ static int csot_622_v0_enable(struct drm_panel *panel)
 		return ret;
 	}
 
+	ctx->prepared = true;
 	return 0;
 }
 
 static int csot_622_v0_unprepare(struct drm_panel *panel)
 {
 	struct csot_622_v0 *ctx = to_csot_622_v0(panel);
+	struct device *dev = &ctx->dsi->dev;
+	int ret;
 
 	if (!ctx->prepared)
 		return 0;
-
-
-	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-
-	ctx->prepared = false;
-	return 0;
-}
-
-static int csot_622_v0_disable(struct drm_panel *panel)
-{
-	struct csot_622_v0 *ctx = to_csot_622_v0(panel);
-	struct device *dev = &ctx->dsi->dev;
-	int ret;
 
 	ret = csot_622_v0_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
+	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
+	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+
+	ctx->prepared = false;
 	return 0;
 }
 
@@ -199,9 +182,7 @@ static int csot_622_v0_get_modes(struct drm_panel *panel,
 
 static const struct drm_panel_funcs csot_622_v0_panel_funcs = {
 	.prepare = csot_622_v0_prepare,
-	.enable = csot_622_v0_enable,
 	.unprepare = csot_622_v0_unprepare,
-	.disable= csot_622_v0_disable,
 	.get_modes = csot_622_v0_get_modes,
 };
 
@@ -237,7 +218,6 @@ static int csot_622_v0_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_init(&ctx->panel, dev, &csot_622_v0_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
-
 	ctx->panel.prepare_prev_first = true;
 
 	ret = drm_panel_of_backlight(&ctx->panel);

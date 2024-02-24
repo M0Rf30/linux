@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2023 FIXME
+// Copyright (c) 2024 FIXME
 // Generated with linux-mdss-dsi-panel-driver-generator from vendor device tree:
 //   Copyright (c) 2013, The Linux Foundation. All rights reserved. (FIXME)
 
@@ -135,16 +135,6 @@ static int boe_hx8394f_prepare(struct drm_panel *panel)
 
 	boe_hx8394f_reset(ctx);
 
-	ctx->prepared = true;
-	return 0;
-}
-
-static int boe_hx8394f_enable(struct drm_panel *panel)
-{
-	struct boe_hx8394f *ctx = to_boe_hx8394f(panel);
-	struct device *dev = &ctx->dsi->dev;
-	int ret;
-
 	ret = boe_hx8394f_on(ctx);
 	if (ret < 0) {
 		dev_err(dev, "Failed to initialize panel: %d\n", ret);
@@ -153,34 +143,27 @@ static int boe_hx8394f_enable(struct drm_panel *panel)
 		return ret;
 	}
 
+	ctx->prepared = true;
 	return 0;
 }
 
 static int boe_hx8394f_unprepare(struct drm_panel *panel)
 {
 	struct boe_hx8394f *ctx = to_boe_hx8394f(panel);
+	struct device *dev = &ctx->dsi->dev;
+	int ret;
 
 	if (!ctx->prepared)
 		return 0;
-
-
-	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
-	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
-
-	ctx->prepared = false;
-	return 0;
-}
-
-static int boe_hx8394f_disable(struct drm_panel *panel)
-{
-	struct boe_hx8394f *ctx = to_boe_hx8394f(panel);
-	struct device *dev = &ctx->dsi->dev;
-	int ret;
 
 	ret = boe_hx8394f_off(ctx);
 	if (ret < 0)
 		dev_err(dev, "Failed to un-initialize panel: %d\n", ret);
 
+	gpiod_set_value_cansleep(ctx->reset_gpio, 1);
+	regulator_bulk_disable(ARRAY_SIZE(ctx->supplies), ctx->supplies);
+
+	ctx->prepared = false;
 	return 0;
 }
 
@@ -219,9 +202,7 @@ static int boe_hx8394f_get_modes(struct drm_panel *panel,
 
 static const struct drm_panel_funcs boe_hx8394f_panel_funcs = {
 	.prepare = boe_hx8394f_prepare,
-	.enable = boe_hx8394f_enable,
 	.unprepare = boe_hx8394f_unprepare,
-	.disable= boe_hx8394f_disable,
 	.get_modes = boe_hx8394f_get_modes,
 };
 
@@ -293,7 +274,6 @@ static int boe_hx8394f_probe(struct mipi_dsi_device *dsi)
 
 	drm_panel_init(&ctx->panel, dev, &boe_hx8394f_panel_funcs,
 		       DRM_MODE_CONNECTOR_DSI);
-
 	ctx->panel.prepare_prev_first = true;
 
 	ctx->panel.backlight = boe_hx8394f_create_backlight(dsi);
