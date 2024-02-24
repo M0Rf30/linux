@@ -181,6 +181,20 @@
 	};
 };
 
+&i2c_2 {
+	tas2557_codec: audio-codec@4c {
+		compatible = "ti,tas2557";
+		reg = <0x4c>;
+
+		ti,tas2557-reset-gpio = <&tlmm 86 0>;
+		ti,tas2557-addr = <0x4c>;
+
+		#sound-dai-cells = <0>;
+
+		status = "okay";
+	};
+};
+
 &i2c_3 {
 	touchscreen@62 {
 		compatible = "novatek,nt36525-i2c";
