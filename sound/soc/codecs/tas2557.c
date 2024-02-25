@@ -45,74 +45,74 @@
 
 #include "tas2557.h"
 
-struct TBlock {
+struct tasdevice_block {
 	unsigned int mnType;
 	unsigned char mbPChkSumPresent;
 	unsigned char mnPChkSum;
 	unsigned int mnCommands;
-	unsigned char *mpData;
+	unsigned char *data;
 };
 
-struct TData {
-	char mpName[64];
-	char *mpDescription;
-	unsigned int mnBlocks;
-	struct TBlock *mpBlocks;
+struct tasdevice_data {
+	char name[64];
+	char *description;
+	unsigned int dev_blks;
+	struct tasdevice_block *dev_blkcs;
 };
 
-struct TProgram {
-	char mpName[64];
-	char *mpDescription;
-	unsigned char mnAppMode;
-	unsigned short mnBoost;
-	struct TData mData;
+struct tasdevice_program {
+	char name[64];
+	char *description;
+	unsigned char app_mode;
+	unsigned short boost;
+	struct tasdevice_data mData;
 };
 
-struct TPLL {
-	char mpName[64];
-	char *mpDescription;
-	struct TBlock mBlock;
+struct tasdevice_pll {
+	char name[64];
+	char *description;
+	struct tasdevice_block mBlock;
 };
 
-struct TConfiguration {
-	char mpName[64];
-	char *mpDescription;
+struct tasdevice_config {
+	char name[64];
+	char *description;
 	unsigned int mnDevices;
 	unsigned int mnProgram;
 	unsigned int mnPLL;
-	unsigned int mnSamplingRate;
-	unsigned char mnPLLSrc;
-	unsigned int mnPLLSrcRate;
-	struct TData mData;
+	unsigned int sampling_rate;
+	unsigned char pll_src;
+	unsigned int pll_src_rate;
+	struct tasdevice_data mData;
 };
 
-struct TCalibration {
-	char mpName[64];
-	char *mpDescription;
+struct tasdevice_calibration {
+	char name[64];
+	char *description;
 	unsigned int mnProgram;
 	unsigned int mnConfiguration;
-	struct TData mData;
+	struct tasdevice_data mData;
 };
 
-struct TFirmware {
+struct tasdevice_fw {
 	unsigned int mnFWSize;
 	unsigned int mnChecksum;
 	unsigned int mnPPCVersion;
 	unsigned int mnFWVersion;
 	unsigned int mnDriverVersion;
 	unsigned int mnTimeStamp;
-	char mpDDCName[64];
-	char *mpDescription;
+	char ddc_name[64];
+	char *description;
 	unsigned int mnDeviceFamily;
 	unsigned int mnDevice;
 	unsigned int mnPLLs;
-	struct TPLL *mpPLLs;
+	struct tasdevice_pll *plls;
 	unsigned int mnPrograms;
-	struct TProgram *mpPrograms;
+	struct tasdevice_program *programs;
 	unsigned int mnConfigurations;
-	struct TConfiguration *mpConfigurations;
+	struct tasdevice_config *configurations;
 	unsigned int mnCalibrations;
-	struct TCalibration *mpCalibrations;
+	struct tasdevice_calibration *calibrations;
 };
 
 struct tas2557_register {
@@ -123,10 +123,10 @@ struct tas2557_register {
 
 struct tas2557_priv {
 	struct device *dev;
-	struct regmap *mpRegmap;
+	struct regmap *regmap;
 	struct i2c_client *client;
 	struct mutex dev_lock;
-	struct TFirmware *mpFirmware;
+	struct tasdevice_fw *fmw;
 	unsigned int mnCurrentProgram;
 	unsigned int mnCurrentSampleRate;
 	unsigned int mnCurrentConfiguration;
@@ -136,12 +136,12 @@ struct tas2557_priv {
 	bool mbLoadConfigurationPrePowerUp;
 
 	/* parameters for TAS2557 */
-	struct gpio_desc *mnGPIORST;
-	unsigned char mnAddr;
+	struct gpio_desc *reset;
+	unsigned char dev_addr;
 	unsigned char mnCurrentBook;
 	unsigned char mnCurrentPage;
 
-	unsigned int mnErrCode;
+	unsigned int error_code;
 	unsigned int mnRestart;
 	struct mutex codec_lock;
 };
@@ -229,418 +229,418 @@ static unsigned int p_tas2557_shutdown_data[] = {
 	0xFFFFFFFF
 };
 
-static int tas2557_i2c_read_device(struct tas2557_priv *pTAS2557,
+static int tas2557_i2c_read_device(struct tas2557_priv *tas2557,
 				   unsigned char addr, unsigned char reg,
 				   unsigned char *p_value)
 {
-	int nResult = 0;
+	int result = 0;
 	unsigned int val = 0;
 
-	pTAS2557->client->addr = addr;
-	nResult = regmap_read(pTAS2557->mpRegmap, reg, &val);
+	tas2557->client->addr = addr;
+	result = regmap_read(tas2557->regmap, reg, &val);
 
-	if (nResult < 0)
-		dev_err(pTAS2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
-			nResult);
+	if (result < 0)
+		dev_err(tas2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
+			result);
 	else
 		*p_value = (unsigned char)val;
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_i2c_write_device(struct tas2557_priv *pTAS2557,
+static int tas2557_i2c_write_device(struct tas2557_priv *tas2557,
 				    unsigned char addr, unsigned char reg,
 				    unsigned char value)
 {
-	int nResult = 0;
+	int result = 0;
 
-	pTAS2557->client->addr = addr;
-	nResult = regmap_write(pTAS2557->mpRegmap, reg, value);
+	tas2557->client->addr = addr;
+	result = regmap_write(tas2557->regmap, reg, value);
 
-	if (nResult < 0)
-		dev_err(pTAS2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
-			nResult);
+	if (result < 0)
+		dev_err(tas2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
+			result);
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_i2c_update_bits(struct tas2557_priv *pTAS2557,
+static int tas2557_i2c_update_bits(struct tas2557_priv *tas2557,
 				   unsigned char addr, unsigned char reg,
 				   unsigned char mask, unsigned char value)
 {
-	int nResult = 0;
+	int result = 0;
 
-	pTAS2557->client->addr = addr;
-	nResult = regmap_update_bits(pTAS2557->mpRegmap, reg, mask, value);
+	tas2557->client->addr = addr;
+	result = regmap_update_bits(tas2557->regmap, reg, mask, value);
 
-	if (nResult < 0)
-		dev_err(pTAS2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
-			nResult);
+	if (result < 0)
+		dev_err(tas2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
+			result);
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_i2c_bulkwrite_device(struct tas2557_priv *pTAS2557,
+static int tas2557_i2c_bulkwrite_device(struct tas2557_priv *tas2557,
 					unsigned char addr, unsigned char reg,
 					unsigned char *pBuf, unsigned int len)
 {
-	int nResult = 0;
+	int result = 0;
 
-	pTAS2557->client->addr = addr;
-	nResult = regmap_bulk_write(pTAS2557->mpRegmap, reg, pBuf, len);
+	tas2557->client->addr = addr;
+	result = regmap_bulk_write(tas2557->regmap, reg, pBuf, len);
 
-	if (nResult < 0)
-		dev_err(pTAS2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
-			nResult);
+	if (result < 0)
+		dev_err(tas2557->dev, "%s[0x%x] Error %d\n", __func__, addr,
+			result);
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_change_book_page(struct tas2557_priv *pTAS2557,
+static int tas2557_change_book_page(struct tas2557_priv *tas2557,
 				    unsigned char nBook, unsigned char nPage)
 {
-	int nResult = 0;
+	int result = 0;
 
-	if (pTAS2557->mnCurrentBook == nBook) {
-		if (pTAS2557->mnCurrentPage != nPage) {
-			nResult = tas2557_i2c_write_device(pTAS2557,
-							   pTAS2557->mnAddr,
+	if (tas2557->mnCurrentBook == nBook) {
+		if (tas2557->mnCurrentPage != nPage) {
+			result = tas2557_i2c_write_device(tas2557,
+							   tas2557->dev_addr,
 							   TAS2557_BOOKCTL_PAGE,
 							   nPage);
-			if (nResult >= 0)
-				pTAS2557->mnCurrentPage = nPage;
+			if (result >= 0)
+				tas2557->mnCurrentPage = nPage;
 		}
 	} else {
-		nResult = tas2557_i2c_write_device(pTAS2557, pTAS2557->mnAddr,
+		result = tas2557_i2c_write_device(tas2557, tas2557->dev_addr,
 						   TAS2557_BOOKCTL_PAGE, 0);
-		if (nResult >= 0) {
-			pTAS2557->mnCurrentPage = 0;
-			nResult = tas2557_i2c_write_device(pTAS2557,
-							   pTAS2557->mnAddr,
+		if (result >= 0) {
+			tas2557->mnCurrentPage = 0;
+			result = tas2557_i2c_write_device(tas2557,
+							   tas2557->dev_addr,
 							   TAS2557_BOOKCTL_REG,
 							   nBook);
-			pTAS2557->mnCurrentBook = nBook;
+			tas2557->mnCurrentBook = nBook;
 			if (nPage != 0) {
-				nResult = tas2557_i2c_write_device(
-					pTAS2557, pTAS2557->mnAddr,
+				result = tas2557_i2c_write_device(
+					tas2557, tas2557->dev_addr,
 					TAS2557_BOOKCTL_PAGE, nPage);
-				pTAS2557->mnCurrentPage = nPage;
+				tas2557->mnCurrentPage = nPage;
 			}
 		}
 	}
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_dev_read(struct tas2557_priv *pTAS2557,
+static int tas2557_dev_read(struct tas2557_priv *tas2557,
 			    unsigned int nRegister, unsigned int *pValue)
 {
-	int nResult = 0;
+	int result = 0;
 	unsigned char Value = 0;
 
-	mutex_lock(&pTAS2557->dev_lock);
+	mutex_lock(&tas2557->dev_lock);
 
-	nResult = tas2557_change_book_page(pTAS2557, TAS2557_BOOK_ID(nRegister),
+	result = tas2557_change_book_page(tas2557, TAS2557_BOOK_ID(nRegister),
 					   TAS2557_PAGE_ID(nRegister));
 
-	if (nResult >= 0) {
-		nResult = tas2557_i2c_read_device(pTAS2557, pTAS2557->mnAddr,
+	if (result >= 0) {
+		result = tas2557_i2c_read_device(tas2557, tas2557->dev_addr,
 						  TAS2557_PAGE_REG(nRegister),
 						  &Value);
-		if (nResult >= 0)
+		if (result >= 0)
 			*pValue = Value;
 	}
 
-	mutex_unlock(&pTAS2557->dev_lock);
-	return nResult;
+	mutex_unlock(&tas2557->dev_lock);
+	return result;
 }
 
-static int tas2557_dev_write(struct tas2557_priv *pTAS2557,
+static int tas2557_dev_write(struct tas2557_priv *tas2557,
 			     unsigned int nRegister, unsigned int nValue)
 {
-	int nResult = 0;
+	int result = 0;
 
-	mutex_lock(&pTAS2557->dev_lock);
+	mutex_lock(&tas2557->dev_lock);
 
-	nResult = tas2557_change_book_page(pTAS2557, TAS2557_BOOK_ID(nRegister),
+	result = tas2557_change_book_page(tas2557, TAS2557_BOOK_ID(nRegister),
 					   TAS2557_PAGE_ID(nRegister));
 
-	if (nResult >= 0) {
-		nResult = tas2557_i2c_write_device(pTAS2557, pTAS2557->mnAddr,
+	if (result >= 0) {
+		result = tas2557_i2c_write_device(tas2557, tas2557->dev_addr,
 						   TAS2557_PAGE_REG(nRegister),
 						   nValue);
 	}
 
-	mutex_unlock(&pTAS2557->dev_lock);
-	return nResult;
+	mutex_unlock(&tas2557->dev_lock);
+	return result;
 }
 
-static int tas2557_dev_bulk_write(struct tas2557_priv *pTAS2557,
-				  unsigned int nRegister, unsigned char *pData,
+static int tas2557_dev_bulk_write(struct tas2557_priv *tas2557,
+				  unsigned int nRegister, unsigned char *data,
 				  unsigned int nLength)
 {
-	int nResult = 0;
+	int result = 0;
 	unsigned char reg = 0;
 
-	mutex_lock(&pTAS2557->dev_lock);
+	mutex_lock(&tas2557->dev_lock);
 
-	nResult = tas2557_change_book_page(pTAS2557, TAS2557_BOOK_ID(nRegister),
+	result = tas2557_change_book_page(tas2557, TAS2557_BOOK_ID(nRegister),
 					   TAS2557_PAGE_ID(nRegister));
 
-	if (nResult >= 0) {
+	if (result >= 0) {
 		reg = TAS2557_PAGE_REG(nRegister);
 
-		nResult = tas2557_i2c_bulkwrite_device(
-			pTAS2557, pTAS2557->mnAddr, reg, pData, nLength);
+		result = tas2557_i2c_bulkwrite_device(
+			tas2557, tas2557->dev_addr, reg, data, nLength);
 	}
 
-	mutex_unlock(&pTAS2557->dev_lock);
-	return nResult;
+	mutex_unlock(&tas2557->dev_lock);
+	return result;
 }
 
-static int tas2557_dev_update_bits(struct tas2557_priv *pTAS2557,
+static int tas2557_dev_update_bits(struct tas2557_priv *tas2557,
 				   unsigned int nRegister, unsigned int nMask,
 				   unsigned int nValue)
 {
-	int nResult = 0;
+	int result = 0;
 
-	mutex_lock(&pTAS2557->dev_lock);
+	mutex_lock(&tas2557->dev_lock);
 
-	nResult = tas2557_change_book_page(pTAS2557, TAS2557_BOOK_ID(nRegister),
+	result = tas2557_change_book_page(tas2557, TAS2557_BOOK_ID(nRegister),
 					   TAS2557_PAGE_ID(nRegister));
 
-	if (nResult >= 0) {
-		nResult = tas2557_i2c_update_bits(pTAS2557, pTAS2557->mnAddr,
+	if (result >= 0) {
+		result = tas2557_i2c_update_bits(tas2557, tas2557->dev_addr,
 						  TAS2557_PAGE_REG(nRegister),
 						  nMask, nValue);
 	}
 
-	mutex_unlock(&pTAS2557->dev_lock);
-	return nResult;
+	mutex_unlock(&tas2557->dev_lock);
+	return result;
 }
 
-static void tas2557_hw_reset(struct tas2557_priv *pTAS2557)
+static void tas2557_hw_reset(struct tas2557_priv *tas2557)
 {
-	dev_dbg(pTAS2557->dev, "%s\n", __func__);
+	dev_dbg(tas2557->dev, "%s\n", __func__);
 
-	gpiod_set_value_cansleep(pTAS2557->mnGPIORST, 0);
+	gpiod_set_value_cansleep(tas2557->reset, 0);
 	msleep(5);
-	gpiod_set_value_cansleep(pTAS2557->mnGPIORST, 1);
+	gpiod_set_value_cansleep(tas2557->reset, 1);
 	msleep(2);
 
-	pTAS2557->mnCurrentBook = -1;
-	pTAS2557->mnCurrentPage = -1;
+	tas2557->mnCurrentBook = -1;
+	tas2557->mnCurrentPage = -1;
 
-	if (pTAS2557->mnErrCode)
-		dev_info(pTAS2557->dev, "%s, ErrCode=0x%x\n", __func__,
-			 pTAS2557->mnErrCode);
+	if (tas2557->error_code)
+		dev_info(tas2557->dev, "%s, ErrCode=0x%x\n", __func__,
+			 tas2557->error_code);
 
-	pTAS2557->mnErrCode = 0;
+	tas2557->error_code = 0;
 }
 
-static int tas2557_dev_load_data(struct tas2557_priv *pTAS2557,
-				 unsigned int *pData)
+static int tas2557_dev_load_data(struct tas2557_priv *tas2557,
+				 unsigned int *data)
 {
-	int nResult = 0;
+	int result = 0;
 	unsigned int n = 0;
 	unsigned int nRegister;
 	unsigned int nData;
 
 	do {
-		nRegister = pData[n * 3 + 1];
-		nData = pData[n * 3 + 2];
+		nRegister = data[n * 3 + 1];
+		nData = data[n * 3 + 2];
 		if (nRegister == TAS2557_UDELAY) {
 			udelay(nData);
 		} else if (nRegister == TAS2557_MDELAY) {
 			mdelay(nData);
 		} else if (nRegister != 0xFFFFFFFF) {
-			nResult = tas2557_dev_write(pTAS2557, nRegister, nData);
-			if (nResult < 0)
+			result = tas2557_dev_write(tas2557, nRegister, nData);
+			if (result < 0)
 				break;
 		}
 
 		n++;
 	} while (nRegister != 0xFFFFFFFF);
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_DevStartup(struct tas2557_priv *pTAS2557, unsigned int dev)
+static int tas2557_DevStartup(struct tas2557_priv *tas2557, unsigned int dev)
 {
-	int nResult = 0;
+	int result = 0;
 
-	dev_dbg(pTAS2557->dev, "%s\n", __func__);
-	nResult = tas2557_dev_load_data(pTAS2557, p_tas2557_startup_data);
+	dev_dbg(tas2557->dev, "%s\n", __func__);
+	result = tas2557_dev_load_data(tas2557, p_tas2557_startup_data);
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_DevShutdown(struct tas2557_priv *pTAS2557)
+static int tas2557_DevShutdown(struct tas2557_priv *tas2557)
 {
-	int nResult = 0;
+	int result = 0;
 
-	dev_dbg(pTAS2557->dev, "%s\n", __func__);
+	dev_dbg(tas2557->dev, "%s\n", __func__);
 
-	nResult = tas2557_dev_load_data(pTAS2557, p_tas2557_shutdown_data);
+	result = tas2557_dev_load_data(tas2557, p_tas2557_shutdown_data);
 
-	return nResult;
+	return result;
 }
 
-int tas2557_set_DAC_gain(struct tas2557_priv *pTAS2557, unsigned int nGain)
+int tas2557_set_DAC_gain(struct tas2557_priv *tas2557, unsigned int nGain)
 {
-	int nResult = 0;
+	int result = 0;
 	int gain = (nGain & 0x0f);
 
-	dev_dbg(pTAS2557->dev, "%s, nGain: %d", __func__, nGain);
+	dev_dbg(tas2557->dev, "%s, nGain: %d", __func__, nGain);
 
-	nResult = tas2557_dev_update_bits(pTAS2557, TAS2557_SPK_CTRL_REG, 0x78,
+	result = tas2557_dev_update_bits(tas2557, TAS2557_SPK_CTRL_REG, 0x78,
 					  (gain << 3));
 
-	if (nResult < 0)
+	if (result < 0)
 		goto end;
 
 end:
 
-	return nResult;
+	return result;
 }
 
-int tas2557_get_DAC_gain(struct tas2557_priv *pTAS2557, unsigned char *pnGain)
+int tas2557_get_DAC_gain(struct tas2557_priv *tas2557, unsigned char *pnGain)
 {
-	int nResult = 0;
+	int result = 0;
 	int nGain;
 
-	nResult = tas2557_dev_read(pTAS2557, TAS2557_SPK_CTRL_REG, &nGain);
+	result = tas2557_dev_read(tas2557, TAS2557_SPK_CTRL_REG, &nGain);
 
-	if (nResult >= 0)
+	if (result >= 0)
 		*pnGain = ((nGain >> 3) & 0x0f);
 
-	return nResult;
+	return result;
 }
 
-int tas2557_DevMute(struct tas2557_priv *pTAS2557, bool mute)
+int tas2557_DevMute(struct tas2557_priv *tas2557, bool mute)
 {
-	int nResult = 0;
+	int result = 0;
 
-	dev_dbg(pTAS2557->dev, "%s, mute=%d\n", __func__, mute);
+	dev_dbg(tas2557->dev, "%s, mute=%d\n", __func__, mute);
 
 	if (mute)
-		nResult = tas2557_dev_load_data(pTAS2557, p_tas2557_mute_data);
+		result = tas2557_dev_load_data(tas2557, p_tas2557_mute_data);
 	else
-		nResult =
-			tas2557_dev_load_data(pTAS2557, p_tas2557_unmute_data);
+		result =
+			tas2557_dev_load_data(tas2557, p_tas2557_unmute_data);
 
-	return nResult;
+	return result;
 }
 
-int tas2557_load_default(struct tas2557_priv *pTAS2557)
+int tas2557_load_default(struct tas2557_priv *tas2557)
 {
-	int nResult = 0;
+	int result = 0;
 
-	dev_dbg(pTAS2557->dev, "%s\n", __func__);
+	dev_dbg(tas2557->dev, "%s\n", __func__);
 
-	nResult = tas2557_dev_load_data(pTAS2557, p_tas2557_default_data);
-	if (nResult < 0)
+	result = tas2557_dev_load_data(tas2557, p_tas2557_default_data);
+	if (result < 0)
 		goto end;
 
 	// Set default bit rate of 16A
-	nResult = tas2557_dev_update_bits(pTAS2557, TAS2557_ASI1_DAC_FORMAT_REG,
+	result = tas2557_dev_update_bits(tas2557, TAS2557_ASI1_DAC_FORMAT_REG,
 					  0x18, 0);
-	if (nResult < 0)
+	if (result < 0)
 		goto end;
 
 	/* enable DOUT tri-state for extra BCLKs */
-	nResult = tas2557_dev_update_bits(pTAS2557, TAS2557_ASI1_DAC_FORMAT_REG,
+	result = tas2557_dev_update_bits(tas2557, TAS2557_ASI1_DAC_FORMAT_REG,
 					  0x01, 0x01);
-	if (nResult < 0)
+	if (result < 0)
 		goto end;
 
 	/* Interrupt pin, low-highZ, high active driven */
-	nResult = tas2557_dev_update_bits(pTAS2557, TAS2557_GPIO_HIZ_CTRL2_REG,
+	result = tas2557_dev_update_bits(tas2557, TAS2557_GPIO_HIZ_CTRL2_REG,
 					  0x30, 0x30);
 
 end:
-	return nResult;
+	return result;
 }
 
-void tas2557_clear_firmware(struct TFirmware *pFirmware)
+void tas2557_clear_firmware(struct tasdevice_fw *fmw)
 {
 	unsigned int n, nn;
 
-	if (!pFirmware)
+	if (!fmw)
 		return;
 
-	kfree(pFirmware->mpDescription);
+	kfree(fmw->description);
 
-	if (pFirmware->mpPLLs != NULL) {
-		for (n = 0; n < pFirmware->mnPLLs; n++) {
-			kfree(pFirmware->mpPLLs[n].mpDescription);
-			kfree(pFirmware->mpPLLs[n].mBlock.mpData);
+	if (fmw->plls != NULL) {
+		for (n = 0; n < fmw->mnPLLs; n++) {
+			kfree(fmw->plls[n].description);
+			kfree(fmw->plls[n].mBlock.data);
 		}
 
-		kfree(pFirmware->mpPLLs);
+		kfree(fmw->plls);
 	}
 
-	if (pFirmware->mpPrograms != NULL) {
-		for (n = 0; n < pFirmware->mnPrograms; n++) {
-			kfree(pFirmware->mpPrograms[n].mpDescription);
-			kfree(pFirmware->mpPrograms[n].mData.mpDescription);
+	if (fmw->programs != NULL) {
+		for (n = 0; n < fmw->mnPrograms; n++) {
+			kfree(fmw->programs[n].description);
+			kfree(fmw->programs[n].mData.description);
 
 			for (nn = 0;
-			     nn < pFirmware->mpPrograms[n].mData.mnBlocks; nn++)
-				kfree(pFirmware->mpPrograms[n]
-					      .mData.mpBlocks[nn]
-					      .mpData);
+			     nn < fmw->programs[n].mData.dev_blks; nn++)
+				kfree(fmw->programs[n]
+					      .mData.dev_blkcs[nn]
+					      .data);
 
-			kfree(pFirmware->mpPrograms[n].mData.mpBlocks);
+			kfree(fmw->programs[n].mData.dev_blkcs);
 		}
 
-		kfree(pFirmware->mpPrograms);
+		kfree(fmw->programs);
 	}
 
-	if (pFirmware->mpConfigurations != NULL) {
-		for (n = 0; n < pFirmware->mnConfigurations; n++) {
-			kfree(pFirmware->mpConfigurations[n].mpDescription);
-			kfree(pFirmware->mpConfigurations[n]
-				      .mData.mpDescription);
+	if (fmw->configurations != NULL) {
+		for (n = 0; n < fmw->mnConfigurations; n++) {
+			kfree(fmw->configurations[n].description);
+			kfree(fmw->configurations[n]
+				      .mData.description);
 
 			for (nn = 0;
-			     nn < pFirmware->mpConfigurations[n].mData.mnBlocks;
+			     nn < fmw->configurations[n].mData.dev_blks;
 			     nn++)
-				kfree(pFirmware->mpConfigurations[n]
-					      .mData.mpBlocks[nn]
-					      .mpData);
+				kfree(fmw->configurations[n]
+					      .mData.dev_blkcs[nn]
+					      .data);
 
-			kfree(pFirmware->mpConfigurations[n].mData.mpBlocks);
+			kfree(fmw->configurations[n].mData.dev_blkcs);
 		}
 
-		kfree(pFirmware->mpConfigurations);
+		kfree(fmw->configurations);
 	}
 
-	if (pFirmware->mpCalibrations != NULL) {
-		for (n = 0; n < pFirmware->mnCalibrations; n++) {
-			kfree(pFirmware->mpCalibrations[n].mpDescription);
-			kfree(pFirmware->mpCalibrations[n].mData.mpDescription);
+	if (fmw->calibrations != NULL) {
+		for (n = 0; n < fmw->mnCalibrations; n++) {
+			kfree(fmw->calibrations[n].description);
+			kfree(fmw->calibrations[n].mData.description);
 
 			for (nn = 0;
-			     nn < pFirmware->mpCalibrations[n].mData.mnBlocks;
+			     nn < fmw->calibrations[n].mData.dev_blks;
 			     nn++)
-				kfree(pFirmware->mpCalibrations[n]
-					      .mData.mpBlocks[nn]
-					      .mpData);
+				kfree(fmw->calibrations[n]
+					      .mData.dev_blkcs[nn]
+					      .data);
 
-			kfree(pFirmware->mpCalibrations[n].mData.mpBlocks);
+			kfree(fmw->calibrations[n].mData.dev_blkcs);
 		}
 
-		kfree(pFirmware->mpCalibrations);
+		kfree(fmw->calibrations);
 	}
 
-	memset(pFirmware, 0x00, sizeof(struct TFirmware));
+	memset(fmw, 0x00, sizeof(struct tasdevice_fw));
 }
 
-static int tas2557_load_block(struct tas2557_priv *pTAS2557,
-			      struct TBlock *pBlock)
+static int tas2557_load_block(struct tas2557_priv *tas2557,
+			      struct tasdevice_block *pBlock)
 {
-	int nResult = 0;
+	int result = 0;
 	unsigned int nCommand = 0;
 	unsigned char nBook;
 	unsigned char nPage;
@@ -649,57 +649,57 @@ static int tas2557_load_block(struct tas2557_priv *pTAS2557,
 	unsigned int nValue1;
 	unsigned int nLength;
 	unsigned int nSleep;
-	unsigned char *pData = pBlock->mpData;
+	unsigned char *data = pBlock->data;
 
-	dev_dbg(pTAS2557->dev, "%s: Type = %d, commands = %d\n", __func__,
+	dev_dbg(tas2557->dev, "%s: Type = %d, commands = %d\n", __func__,
 		pBlock->mnType, pBlock->mnCommands);
 
 	if (pBlock->mbPChkSumPresent) {
-		nResult = tas2557_dev_write(pTAS2557, TAS2557_CRC_RESET_REG, 1);
-		if (nResult < 0)
+		result = tas2557_dev_write(tas2557, TAS2557_CRC_RESET_REG, 1);
+		if (result < 0)
 			goto end;
 	}
 
 	nCommand = 0;
 	while (nCommand < pBlock->mnCommands) {
-		pData = pBlock->mpData + nCommand * 4;
-		nBook = pData[0];
-		nPage = pData[1];
-		nOffset = pData[2];
-		nData = pData[3];
+		data = pBlock->data + nCommand * 4;
+		nBook = data[0];
+		nPage = data[1];
+		nOffset = data[2];
+		nData = data[3];
 		nCommand++;
 
 		if (nOffset <= 0x7F) {
-			nResult = tas2557_dev_write(
-				pTAS2557, TAS2557_REG(nBook, nPage, nOffset),
+			result = tas2557_dev_write(
+				tas2557, TAS2557_REG(nBook, nPage, nOffset),
 				nData);
-			if (nResult < 0)
+			if (result < 0)
 				goto end;
 
 		} else if (nOffset == 0x81) {
 			nSleep = (nBook << 8) + nPage;
 			msleep(nSleep);
 		} else if (nOffset == 0x85) {
-			pData += 4;
+			data += 4;
 			nLength = (nBook << 8) + nPage;
-			nBook = pData[0];
-			nPage = pData[1];
-			nOffset = pData[2];
+			nBook = data[0];
+			nPage = data[1];
+			nOffset = data[2];
 
 			if (nLength > 1) {
-				nResult = tas2557_dev_bulk_write(
-					pTAS2557,
+				result = tas2557_dev_bulk_write(
+					tas2557,
 					TAS2557_REG(nBook, nPage, nOffset),
-					pData + 3, nLength);
-				if (nResult < 0)
+					data + 3, nLength);
+				if (result < 0)
 					goto end;
 
 			} else {
-				nResult = tas2557_dev_write(
-					pTAS2557,
+				result = tas2557_dev_write(
+					tas2557,
 					TAS2557_REG(nBook, nPage, nOffset),
-					pData[3]);
-				if (nResult < 0)
+					data[3]);
+				if (result < 0)
 					goto end;
 			}
 
@@ -710,334 +710,334 @@ static int tas2557_load_block(struct tas2557_priv *pTAS2557,
 	}
 
 	if (pBlock->mbPChkSumPresent) {
-		nResult = tas2557_dev_read(pTAS2557, TAS2557_CRC_CHECKSUM_REG,
+		result = tas2557_dev_read(tas2557, TAS2557_CRC_CHECKSUM_REG,
 					   &nValue1);
 
-		if (nResult < 0)
+		if (result < 0)
 			goto end;
 
 		if (nValue1 != pBlock->mnPChkSum) {
-			dev_err(pTAS2557->dev,
+			dev_err(tas2557->dev,
 				"Block PChkSum Error: FW = 0x%x, Reg = 0x%x\n",
 				pBlock->mnPChkSum, (nValue1 & 0xff));
-			nResult = -EAGAIN;
-			pTAS2557->mnErrCode |= ERROR_PRAM_CRCCHK;
+			result = -EAGAIN;
+			tas2557->error_code |= ERROR_PRAM_CRCCHK;
 		}
 	}
 
 end:
 
-	if (nResult < 0)
-		dev_err(pTAS2557->dev, "Block (%d) load error\n",
+	if (result < 0)
+		dev_err(tas2557->dev, "Block (%d) load error\n",
 			pBlock->mnType);
 
-	return nResult;
+	return result;
 }
 
-static int tas2557_load_data(struct tas2557_priv *pTAS2557, struct TData *pData,
+static int tas2557_load_data(struct tas2557_priv *tas2557, struct tasdevice_data *data,
 			     unsigned int nType)
 {
-	int nResult = 0;
+	int result = 0;
 	unsigned int nBlock;
-	struct TBlock *pBlock;
+	struct tasdevice_block *pBlock;
 
-	dev_dbg(pTAS2557->dev,
+	dev_dbg(tas2557->dev,
 		"TAS2557 load data: %s, Blocks = %d, Block Type = %d\n",
-		pData->mpName, pData->mnBlocks, nType);
+		data->name, data->dev_blks, nType);
 
-	for (nBlock = 0; nBlock < pData->mnBlocks; nBlock++) {
-		pBlock = &(pData->mpBlocks[nBlock]);
+	for (nBlock = 0; nBlock < data->dev_blks; nBlock++) {
+		pBlock = &(data->dev_blkcs[nBlock]);
 
 		if (pBlock->mnType == nType) {
-			nResult = tas2557_load_block(pTAS2557, pBlock);
+			result = tas2557_load_block(tas2557, pBlock);
 
-			if (nResult < 0)
+			if (result < 0)
 				break;
 		}
 	}
 
-	return nResult;
+	return result;
 }
 
-static void failsafe(struct tas2557_priv *pTAS2557)
+static void failsafe(struct tas2557_priv *tas2557)
 {
-	dev_err(pTAS2557->dev, "%s\n", __func__);
-	pTAS2557->mnErrCode |= ERROR_FAILSAFE;
+	dev_err(tas2557->dev, "%s\n", __func__);
+	tas2557->error_code |= ERROR_FAILSAFE;
 
-	tas2557_DevShutdown(pTAS2557);
-	pTAS2557->mbPowerUp = false;
-	tas2557_hw_reset(pTAS2557);
-	tas2557_dev_write(pTAS2557, TAS2557_SW_RESET_REG, 0x01);
+	tas2557_DevShutdown(tas2557);
+	tas2557->mbPowerUp = false;
+	tas2557_hw_reset(tas2557);
+	tas2557_dev_write(tas2557, TAS2557_SW_RESET_REG, 0x01);
 	msleep(1);
-	tas2557_dev_write(pTAS2557, TAS2557_SPK_CTRL_REG, 0x04);
+	tas2557_dev_write(tas2557, TAS2557_SPK_CTRL_REG, 0x04);
 
-	if (pTAS2557->mpFirmware != NULL)
-		tas2557_clear_firmware(pTAS2557->mpFirmware);
+	if (tas2557->fmw != NULL)
+		tas2557_clear_firmware(tas2557->fmw);
 }
 
-static int tas2557_load_coefficient(struct tas2557_priv *pTAS2557,
+static int tas2557_load_coefficient(struct tas2557_priv *tas2557,
 				    int nPrevConfig, int nNewConfig,
 				    bool bPowerOn)
 {
-	int nResult = 0;
-	struct TPLL *pPLL;
-	struct TProgram *pProgram = NULL;
-	struct TConfiguration *pPrevConfiguration;
-	struct TConfiguration *pNewConfiguration;
+	int result = 0;
+	struct tasdevice_pll *pPLL;
+	struct tasdevice_program *program = NULL;
+	struct tasdevice_config *pPrevConfiguration;
+	struct tasdevice_config *pNewConfiguration;
 	bool bRestorePower = false;
 
-	dev_dbg(pTAS2557->dev, "%s, Prev=%d, new=%d, Pow=%d\n", __func__,
+	dev_dbg(tas2557->dev, "%s, Prev=%d, new=%d, Pow=%d\n", __func__,
 		nPrevConfig, nNewConfig, bPowerOn);
 
-	if (!pTAS2557->mpFirmware->mnConfigurations) {
-		dev_err(pTAS2557->dev, "%s, firmware not loaded\n", __func__);
+	if (!tas2557->fmw->mnConfigurations) {
+		dev_err(tas2557->dev, "%s, firmware not loaded\n", __func__);
 		goto end;
 	}
 
-	if (nNewConfig >= pTAS2557->mpFirmware->mnConfigurations) {
-		dev_err(pTAS2557->dev,
+	if (nNewConfig >= tas2557->fmw->mnConfigurations) {
+		dev_err(tas2557->dev,
 			"%s, invalid configuration New=%d, total=%d\n",
 			__func__, nNewConfig,
-			pTAS2557->mpFirmware->mnConfigurations);
+			tas2557->fmw->mnConfigurations);
 		goto end;
 	}
 
 	if (nPrevConfig < 0) {
 		pPrevConfiguration = NULL;
 	} else if (nPrevConfig == nNewConfig) {
-		dev_dbg(pTAS2557->dev, "%d configuration is already loaded\n",
+		dev_dbg(tas2557->dev, "%d configuration is already loaded\n",
 			nNewConfig);
 		goto end;
 	} else {
 		pPrevConfiguration =
-			&(pTAS2557->mpFirmware->mpConfigurations[nPrevConfig]);
+			&(tas2557->fmw->configurations[nPrevConfig]);
 	}
 
 	pNewConfiguration =
-		&(pTAS2557->mpFirmware->mpConfigurations[nNewConfig]);
-	pTAS2557->mnCurrentConfiguration = nNewConfig;
+		&(tas2557->fmw->configurations[nNewConfig]);
+	tas2557->mnCurrentConfiguration = nNewConfig;
 
 	if (pPrevConfiguration) {
 		if ((pPrevConfiguration->mnPLL == pNewConfiguration->mnPLL) &&
 		    (pPrevConfiguration->mnDevices ==
 		     pNewConfiguration->mnDevices)) {
-			dev_dbg(pTAS2557->dev, "%s, PLL and device same\n",
+			dev_dbg(tas2557->dev, "%s, PLL and device same\n",
 				__func__);
 			goto prog_coefficient;
 		}
 	}
 
-	pProgram =
-		&(pTAS2557->mpFirmware->mpPrograms[pTAS2557->mnCurrentProgram]);
+	program =
+		&(tas2557->fmw->programs[tas2557->mnCurrentProgram]);
 
 	if (bPowerOn) {
-		nResult = tas2557_DevShutdown(pTAS2557);
+		result = tas2557_DevShutdown(tas2557);
 
-		if (nResult < 0)
+		if (result < 0)
 			goto end;
 
 		bRestorePower = true;
 	}
 
 	/* load PLL */
-	pPLL = &(pTAS2557->mpFirmware->mpPLLs[pNewConfiguration->mnPLL]);
-	dev_dbg(pTAS2557->dev, "load PLL: %s block for Configuration %s\n",
-		pPLL->mpName, pNewConfiguration->mpName);
-	nResult = tas2557_load_block(pTAS2557, &(pPLL->mBlock));
+	pPLL = &(tas2557->fmw->plls[pNewConfiguration->mnPLL]);
+	dev_dbg(tas2557->dev, "load PLL: %s block for Configuration %s\n",
+		pPLL->name, pNewConfiguration->name);
+	result = tas2557_load_block(tas2557, &(pPLL->mBlock));
 
-	if (nResult < 0)
+	if (result < 0)
 		goto end;
 
-	pTAS2557->mnCurrentSampleRate = pNewConfiguration->mnSamplingRate;
+	tas2557->mnCurrentSampleRate = pNewConfiguration->sampling_rate;
 
-	dev_dbg(pTAS2557->dev, "load configuration %s conefficient pre block\n",
-		pNewConfiguration->mpName);
+	dev_dbg(tas2557->dev, "load configuration %s conefficient pre block\n",
+		pNewConfiguration->name);
 
 	if (pNewConfiguration->mnDevices) {
-		nResult = tas2557_load_data(pTAS2557,
+		result = tas2557_load_data(tas2557,
 					    &(pNewConfiguration->mData),
 					    TAS2557_BLOCK_CFG_PRE_DEV_A);
 
-		if (nResult < 0)
+		if (result < 0)
 			goto end;
 	}
 
 prog_coefficient:
-	dev_dbg(pTAS2557->dev, "load new configuration: %s, coeff block data\n",
-		pNewConfiguration->mpName);
+	dev_dbg(tas2557->dev, "load new configuration: %s, coeff block data\n",
+		pNewConfiguration->name);
 
 	if (pNewConfiguration->mnDevices) {
-		nResult = tas2557_load_data(pTAS2557,
+		result = tas2557_load_data(tas2557,
 					    &(pNewConfiguration->mData),
 					    TAS2557_BLOCK_CFG_COEFF_DEV_A);
-		if (nResult < 0)
+		if (result < 0)
 			goto end;
 	}
 
 	if (bRestorePower) {
-		nResult = tas2557_DevStartup(pTAS2557,
+		result = tas2557_DevStartup(tas2557,
 					     pNewConfiguration->mnDevices);
-		if (nResult < 0)
+		if (result < 0)
 			goto end;
 
-		dev_dbg(pTAS2557->dev, "device powered up, load unmute\n");
-		nResult = tas2557_DevMute(pTAS2557, false);
-		if (nResult < 0)
+		dev_dbg(tas2557->dev, "device powered up, load unmute\n");
+		result = tas2557_DevMute(tas2557, false);
+		if (result < 0)
 			goto end;
 	}
 
 end:
 
-	if (nResult < 0)
-		dev_err(pTAS2557->dev, "%s, load new conf %s error\n", __func__,
-			pNewConfiguration->mpName);
+	if (result < 0)
+		dev_err(tas2557->dev, "%s, load new conf %s error\n", __func__,
+			pNewConfiguration->name);
 
-	pTAS2557->mnNewConfiguration = pTAS2557->mnCurrentConfiguration;
-	return nResult;
+	tas2557->mnNewConfiguration = tas2557->mnCurrentConfiguration;
+	return result;
 }
 
-static int tas2557_load_configuration(struct tas2557_priv *pTAS2557,
+static int tas2557_load_configuration(struct tas2557_priv *tas2557,
 				      unsigned int nConfiguration,
 				      bool bLoadSame)
 {
-	int nResult = 0;
-	struct TConfiguration *pCurrentConfiguration = NULL;
-	struct TConfiguration *pNewConfiguration = NULL;
+	int result = 0;
+	struct tasdevice_config *pCurrentConfiguration = NULL;
+	struct tasdevice_config *pNewConfiguration = NULL;
 
-	dev_dbg(pTAS2557->dev, "%s: %d\n", __func__, nConfiguration);
+	dev_dbg(tas2557->dev, "%s: %d\n", __func__, nConfiguration);
 
-	if ((!pTAS2557->mpFirmware->mpPrograms) ||
-	    (!pTAS2557->mpFirmware->mpConfigurations)) {
-		dev_err(pTAS2557->dev, "Firmware not loaded\n");
-		nResult = 0;
+	if ((!tas2557->fmw->programs) ||
+	    (!tas2557->fmw->configurations)) {
+		dev_err(tas2557->dev, "Firmware not loaded\n");
+		result = 0;
 		goto end;
 	}
 
-	if (nConfiguration >= pTAS2557->mpFirmware->mnConfigurations) {
-		dev_err(pTAS2557->dev, "Configuration %d doesn't exist\n",
+	if (nConfiguration >= tas2557->fmw->mnConfigurations) {
+		dev_err(tas2557->dev, "Configuration %d doesn't exist\n",
 			nConfiguration);
-		nResult = 0;
+		result = 0;
 		goto end;
 	}
 
-	if ((!pTAS2557->mbLoadConfigurationPrePowerUp) &&
-	    (nConfiguration == pTAS2557->mnCurrentConfiguration) &&
+	if ((!tas2557->mbLoadConfigurationPrePowerUp) &&
+	    (nConfiguration == tas2557->mnCurrentConfiguration) &&
 	    (!bLoadSame)) {
-		dev_info(pTAS2557->dev, "Configuration %d is already loaded\n",
+		dev_info(tas2557->dev, "Configuration %d is already loaded\n",
 			 nConfiguration);
-		nResult = 0;
+		result = 0;
 		goto end;
 	}
 
 	pCurrentConfiguration =
-		&(pTAS2557->mpFirmware
-			  ->mpConfigurations[pTAS2557->mnCurrentConfiguration]);
+		&(tas2557->fmw
+			  ->configurations[tas2557->mnCurrentConfiguration]);
 	pNewConfiguration =
-		&(pTAS2557->mpFirmware->mpConfigurations[nConfiguration]);
+		&(tas2557->fmw->configurations[nConfiguration]);
 
 	if (pNewConfiguration->mnProgram != pCurrentConfiguration->mnProgram) {
-		dev_err(pTAS2557->dev,
+		dev_err(tas2557->dev,
 			"Configuration %d, %s doesn't share the same program as current %d\n",
-			nConfiguration, pNewConfiguration->mpName,
+			nConfiguration, pNewConfiguration->name,
 			pCurrentConfiguration->mnProgram);
-		nResult = 0;
+		result = 0;
 		goto end;
 	}
 
-	if (pNewConfiguration->mnPLL >= pTAS2557->mpFirmware->mnPLLs) {
-		dev_err(pTAS2557->dev,
+	if (pNewConfiguration->mnPLL >= tas2557->fmw->mnPLLs) {
+		dev_err(tas2557->dev,
 			"Configuration %d, %s doesn't have a valid PLL index %d\n",
-			nConfiguration, pNewConfiguration->mpName,
+			nConfiguration, pNewConfiguration->name,
 			pNewConfiguration->mnPLL);
-		nResult = 0;
+		result = 0;
 		goto end;
 	}
 
-	if (pTAS2557->mbPowerUp) {
-		dev_err(pTAS2557->dev,
+	if (tas2557->mbPowerUp) {
+		dev_err(tas2557->dev,
 			"%s, device power on, load new conf[%d] %s\n", __func__,
-			nConfiguration, pNewConfiguration->mpName);
-		nResult = tas2557_load_coefficient(
-			pTAS2557, pTAS2557->mnCurrentConfiguration,
+			nConfiguration, pNewConfiguration->name);
+		result = tas2557_load_coefficient(
+			tas2557, tas2557->mnCurrentConfiguration,
 			nConfiguration, true);
-		pTAS2557->mbLoadConfigurationPrePowerUp = false;
+		tas2557->mbLoadConfigurationPrePowerUp = false;
 	} else {
-		dev_dbg(pTAS2557->dev,
+		dev_dbg(tas2557->dev,
 			"TAS2557 was powered down, will load coefficient when power up\n");
-		pTAS2557->mbLoadConfigurationPrePowerUp = true;
-		pTAS2557->mnNewConfiguration = nConfiguration;
+		tas2557->mbLoadConfigurationPrePowerUp = true;
+		tas2557->mnNewConfiguration = nConfiguration;
 	}
 
 end:
 
-	if (nResult < 0) {
-		if (pTAS2557->mnErrCode &
+	if (result < 0) {
+		if (tas2557->error_code &
 		    (ERROR_DEVA_I2C_COMM | ERROR_PRAM_CRCCHK |
 		     ERROR_YRAM_CRCCHK))
-			failsafe(pTAS2557);
+			failsafe(tas2557);
 	}
 
-	return nResult;
+	return result;
 }
 
-int tas2557_set_program(struct tas2557_priv *pTAS2557, unsigned int nProgram,
+int tas2557_set_program(struct tas2557_priv *tas2557, unsigned int nProgram,
 			int nConfig)
 {
-	struct TProgram *pProgram;
-	struct TConfiguration *pConfiguration;
+	struct tasdevice_program *program;
+	struct tasdevice_config *config;
 	unsigned int nConfiguration = 0;
 	unsigned int nSampleRate = 0;
 	bool bFound = false;
-	int nResult = 0;
+	int result = 0;
 
-	if ((!pTAS2557->mpFirmware->mpPrograms) ||
-	    (!pTAS2557->mpFirmware->mpConfigurations)) {
-		dev_err(pTAS2557->dev, "Firmware not loaded\n");
-		nResult = 0;
+	if ((!tas2557->fmw->programs) ||
+	    (!tas2557->fmw->configurations)) {
+		dev_err(tas2557->dev, "Firmware not loaded\n");
+		result = 0;
 		goto end;
 	}
 
-	if (nProgram >= pTAS2557->mpFirmware->mnPrograms) {
-		dev_err(pTAS2557->dev, "TAS2557: Program %d doesn't exist\n",
+	if (nProgram >= tas2557->fmw->mnPrograms) {
+		dev_err(tas2557->dev, "TAS2557: Program %d doesn't exist\n",
 			nProgram);
-		nResult = 0;
+		result = 0;
 		goto end;
 	}
 
 	if (nProgram == 1)
-		pTAS2557->mnCurrentSampleRate = 96000;
+		tas2557->mnCurrentSampleRate = 96000;
 	else
-		pTAS2557->mnCurrentSampleRate = 48000;
+		tas2557->mnCurrentSampleRate = 48000;
 
 	if (nConfig < 0) {
 		nConfiguration = 0;
-		nSampleRate = pTAS2557->mnCurrentSampleRate;
-		dev_err(pTAS2557->dev, "nSampleRate: %d\n", nSampleRate);
+		nSampleRate = tas2557->mnCurrentSampleRate;
+		dev_err(tas2557->dev, "nSampleRate: %d\n", nSampleRate);
 
 		while (!bFound && (nConfiguration <
-				   pTAS2557->mpFirmware->mnConfigurations)) {
-			dev_err(pTAS2557->dev,
-				"mpConfigurations SampleRate: %d\n",
-				pTAS2557->mpFirmware
-					->mpConfigurations[nConfiguration]
-					.mnSamplingRate);
-			if (pTAS2557->mpFirmware
-				    ->mpConfigurations[nConfiguration]
+				   tas2557->fmw->mnConfigurations)) {
+			dev_err(tas2557->dev,
+				"configurations SampleRate: %d\n",
+				tas2557->fmw
+					->configurations[nConfiguration]
+					.sampling_rate);
+			if (tas2557->fmw
+				    ->configurations[nConfiguration]
 				    .mnProgram == nProgram) {
 				if (nSampleRate == 0) {
 					bFound = true;
 					dev_info(
-						pTAS2557->dev,
+						tas2557->dev,
 						"find default configuration %d\n",
 						nConfiguration);
 				} else if (nSampleRate ==
-					   pTAS2557->mpFirmware
-						   ->mpConfigurations
+					   tas2557->fmw
+						   ->configurations
 							   [nConfiguration]
-						   .mnSamplingRate) {
+						   .sampling_rate) {
 					bFound = true;
 					dev_info(
-						pTAS2557->dev,
+						tas2557->dev,
 						"find matching configuration %d\n",
 						nConfiguration);
 				} else {
@@ -1049,783 +1049,773 @@ int tas2557_set_program(struct tas2557_priv *pTAS2557, unsigned int nProgram,
 		}
 
 		if (!bFound) {
-			dev_err(pTAS2557->dev,
+			dev_err(tas2557->dev,
 				"Program %d, no valid configuration found for sample rate %d, ignore\n",
 				nProgram, nSampleRate);
-			nResult = 0;
+			result = 0;
 			goto end;
 		}
 	} else {
-		if (pTAS2557->mpFirmware->mpConfigurations[nConfig].mnProgram !=
+		if (tas2557->fmw->configurations[nConfig].mnProgram !=
 		    nProgram) {
-			dev_err(pTAS2557->dev,
+			dev_err(tas2557->dev,
 				"%s, configuration program doesn't match\n",
 				__func__);
-			nResult = 0;
+			result = 0;
 			goto end;
 		}
 
 		nConfiguration = nConfig;
 	}
 
-	pProgram = &(pTAS2557->mpFirmware->mpPrograms[nProgram]);
+	program = &(tas2557->fmw->programs[nProgram]);
 
-	if (pTAS2557->mbPowerUp) {
+	if (tas2557->mbPowerUp) {
 		dev_info(
-			pTAS2557->dev,
+			tas2557->dev,
 			"device powered up, power down to load program %d (%s)\n",
-			nProgram, pProgram->mpName);
+			nProgram, program->name);
 
-		nResult = tas2557_DevShutdown(pTAS2557);
+		result = tas2557_DevShutdown(tas2557);
 
-		if (nResult < 0)
+		if (result < 0)
 			goto end;
 	}
 
-	tas2557_hw_reset(pTAS2557);
-	nResult = tas2557_dev_write(pTAS2557, TAS2557_SW_RESET_REG, 0x01);
-	if (nResult < 0)
+	tas2557_hw_reset(tas2557);
+	result = tas2557_dev_write(tas2557, TAS2557_SW_RESET_REG, 0x01);
+	if (result < 0)
 		goto end;
 
 	msleep(1);
-	nResult = tas2557_load_default(pTAS2557);
-	if (nResult < 0)
+	result = tas2557_load_default(tas2557);
+	if (result < 0)
 		goto end;
 
-	dev_info(pTAS2557->dev, "load program %d (%s)\n", nProgram,
-		 pProgram->mpName);
-	nResult = tas2557_load_data(pTAS2557, &(pProgram->mData),
+	dev_info(tas2557->dev, "load program %d (%s)\n", nProgram,
+		 program->name);
+	result = tas2557_load_data(tas2557, &(program->mData),
 				    TAS2557_BLOCK_PGM_DEV_A);
-	if (nResult < 0)
+	if (result < 0)
 		goto end;
 
-	nResult = tas2557_load_data(pTAS2557, &(pProgram->mData),
+	result = tas2557_load_data(tas2557, &(program->mData),
 				    TAS2557_BLOCK_PGM_DEV_B);
-	if (nResult < 0)
+	if (result < 0)
 		goto end;
 
-	pTAS2557->mnCurrentProgram = nProgram;
+	tas2557->mnCurrentProgram = nProgram;
 
-	nResult = tas2557_load_coefficient(pTAS2557, -1, nConfiguration, false);
-	if (nResult < 0)
+	result = tas2557_load_coefficient(tas2557, -1, nConfiguration, false);
+	if (result < 0)
 		goto end;
 
-	if (pTAS2557->mbPowerUp) {
-		pConfiguration = &(pTAS2557->mpFirmware->mpConfigurations
-					   [pTAS2557->mnCurrentConfiguration]);
-		nResult =
-			tas2557_DevStartup(pTAS2557, pConfiguration->mnDevices);
-		if (nResult < 0)
+	if (tas2557->mbPowerUp) {
+		config = &(tas2557->fmw->configurations
+					   [tas2557->mnCurrentConfiguration]);
+		result =
+			tas2557_DevStartup(tas2557, config->mnDevices);
+		if (result < 0)
 			goto end;
 
-		nResult = tas2557_DevMute(pTAS2557, false);
-		if (nResult < 0)
+		result = tas2557_DevMute(tas2557, false);
+		if (result < 0)
 			goto end;
 	}
 
 end:
 
-	if (nResult < 0) {
-		if (pTAS2557->mnErrCode &
+	if (result < 0) {
+		if (tas2557->error_code &
 		    (ERROR_DEVA_I2C_COMM | ERROR_PRAM_CRCCHK |
 		     ERROR_YRAM_CRCCHK))
-			failsafe(pTAS2557);
+			failsafe(tas2557);
 	}
 
-	return nResult;
+	return result;
 }
 
-static void fw_print_header(struct tas2557_priv *pTAS2557,
-			    struct TFirmware *pFirmware)
+static void fw_print_header(struct tas2557_priv *tas2557,
+			    struct tasdevice_fw *fmw)
 {
-	dev_info(pTAS2557->dev, "FW Size       = %d", pFirmware->mnFWSize);
-	dev_info(pTAS2557->dev, "Checksum      = 0x%04X",
-		 pFirmware->mnChecksum);
-	dev_info(pTAS2557->dev, "PPC Version   = 0x%04X",
-		 pFirmware->mnPPCVersion);
-	dev_info(pTAS2557->dev, "FW  Version    = 0x%04X",
-		 pFirmware->mnFWVersion);
-	dev_info(pTAS2557->dev, "Driver Version= 0x%04X",
-		 pFirmware->mnDriverVersion);
-	dev_info(pTAS2557->dev, "Timestamp     = %d", pFirmware->mnTimeStamp);
-	dev_info(pTAS2557->dev, "DDC Name      = %s", pFirmware->mpDDCName);
-	dev_info(pTAS2557->dev, "Description   = %s", pFirmware->mpDescription);
+	dev_info(tas2557->dev, "FW Size       = %d", fmw->mnFWSize);
+	dev_info(tas2557->dev, "Checksum      = 0x%04X",
+		 fmw->mnChecksum);
+	dev_info(tas2557->dev, "PPC Version   = 0x%04X",
+		 fmw->mnPPCVersion);
+	dev_info(tas2557->dev, "FW  Version    = 0x%04X",
+		 fmw->mnFWVersion);
+	dev_info(tas2557->dev, "Driver Version= 0x%04X",
+		 fmw->mnDriverVersion);
+	dev_info(tas2557->dev, "Timestamp     = %d", fmw->mnTimeStamp);
+	dev_info(tas2557->dev, "DDC Name      = %s", fmw->ddc_name);
+	dev_info(tas2557->dev, "Description   = %s", fmw->description);
 }
 
-static inline unsigned int fw_convert_number(unsigned char *pData)
+static inline unsigned int fw_convert_number(unsigned char *data)
 {
-	return pData[3] + (pData[2] << 8) + (pData[1] << 16) + (pData[0] << 24);
+	return data[3] + (data[2] << 8) + (data[1] << 16) + (data[0] << 24);
 }
 
-static int fw_parse_header(struct tas2557_priv *pTAS2557,
-			   struct TFirmware *pFirmware, unsigned char *pData,
+static int fw_parse_header(struct tas2557_priv *tas2557,
+			   struct tasdevice_fw *fmw, unsigned char *data,
 			   unsigned int nSize)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int n;
 	unsigned char pMagicNumber[] = { 0x35, 0x35, 0x35, 0x32 };
 
 	if (nSize < 104) {
-		dev_err(pTAS2557->dev, "Firmware: Header too short");
+		dev_err(tas2557->dev, "Firmware: Header too short");
 		return -EINVAL;
 	}
 
-	if (memcmp(pData, pMagicNumber, 4)) {
-		dev_err(pTAS2557->dev, "Firmware: Magic number doesn't match");
+	if (memcmp(data, pMagicNumber, 4)) {
+		dev_err(tas2557->dev, "Firmware: Magic number doesn't match");
 		return -EINVAL;
 	}
 
-	pData += 4;
+	data += 4;
 
-	pFirmware->mnFWSize = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnFWSize = fw_convert_number(data);
+	data += 4;
 
-	pFirmware->mnChecksum = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnChecksum = fw_convert_number(data);
+	data += 4;
 
-	pFirmware->mnPPCVersion = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnPPCVersion = fw_convert_number(data);
+	data += 4;
 
-	pFirmware->mnFWVersion = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnFWVersion = fw_convert_number(data);
+	data += 4;
 
-	pFirmware->mnDriverVersion = fw_convert_number(pData);
-	dev_err(pTAS2557->dev, "Firmware driver: 0x%x",
-		pFirmware->mnDriverVersion);
-	pData += 4;
+	fmw->mnDriverVersion = fw_convert_number(data);
+	dev_err(tas2557->dev, "Firmware driver: 0x%x",
+		fmw->mnDriverVersion);
+	data += 4;
 
-	pFirmware->mnTimeStamp = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnTimeStamp = fw_convert_number(data);
+	data += 4;
 
-	memcpy(pFirmware->mpDDCName, pData, 64);
-	pData += 64;
+	memcpy(fmw->ddc_name, data, 64);
+	data += 64;
 
-	n = strlen(pData);
-	pFirmware->mpDescription = kmemdup(pData, n + 1, GFP_KERNEL);
-	pData += n + 1;
+	n = strlen(data);
+	fmw->description = kmemdup(data, n + 1, GFP_KERNEL);
+	data += n + 1;
 
-	if ((pData - pDataStart) >= nSize) {
-		dev_err(pTAS2557->dev,
+	if ((data - data_start) >= nSize) {
+		dev_err(tas2557->dev,
 			"Firmware: Header too short after DDC description");
 		return -EINVAL;
 	}
 
-	pFirmware->mnDeviceFamily = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnDeviceFamily = fw_convert_number(data);
+	data += 4;
 
-	if (pFirmware->mnDeviceFamily != 0) {
-		dev_err(pTAS2557->dev, "deviceFamily %d, not TAS device",
-			pFirmware->mnDeviceFamily);
+	if (fmw->mnDeviceFamily != 0) {
+		dev_err(tas2557->dev, "deviceFamily %d, not TAS device",
+			fmw->mnDeviceFamily);
 		return -EINVAL;
 	}
 
-	pFirmware->mnDevice = fw_convert_number(pData);
-	pData += 4;
+	fmw->mnDevice = fw_convert_number(data);
+	data += 4;
 
-	if (pFirmware->mnDevice != 2) {
-		dev_err(pTAS2557->dev, "device %d, not TAS2557",
-			pFirmware->mnDevice);
+	if (fmw->mnDevice != 2) {
+		dev_err(tas2557->dev, "device %d, not TAS2557",
+			fmw->mnDevice);
 		return -EINVAL;
 	}
 
-	fw_print_header(pTAS2557, pFirmware);
+	fw_print_header(tas2557, fmw);
 
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse_block_data(struct tas2557_priv *pTAS2557,
-			       struct TFirmware *pFirmware,
-			       struct TBlock *pBlock, unsigned char *pData)
+static int fw_parse_block_data(struct tas2557_priv *tas2557,
+			       struct tasdevice_fw *fmw,
+			       struct tasdevice_block *pBlock, unsigned char *data)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int n;
 
-	pBlock->mnType = fw_convert_number(pData);
-	pData += 4;
+	pBlock->mnType = fw_convert_number(data);
+	data += 4;
 
-	if (pFirmware->mnDriverVersion >= PPC_DRIVER_CRCCHK) {
-		pBlock->mbPChkSumPresent = pData[0];
-		pData++;
+	if (fmw->mnDriverVersion >= PPC_DRIVER_CRCCHK) {
+		pBlock->mbPChkSumPresent = data[0];
+		data++;
 
-		pBlock->mnPChkSum = pData[0];
-		pData++;
+		pBlock->mnPChkSum = data[0];
+		data++;
 
 		// skip YRAM checksum data for simplicity
-		pData += 2;
+		data += 2;
 	} else {
 		pBlock->mbPChkSumPresent = 0;
 	}
 
-	pBlock->mnCommands = fw_convert_number(pData);
-	pData += 4;
+	pBlock->mnCommands = fw_convert_number(data);
+	data += 4;
 
 	n = pBlock->mnCommands * 4;
-	pBlock->mpData = kmemdup(pData, n, GFP_KERNEL);
-	pData += n;
+	pBlock->data = kmemdup(data, n, GFP_KERNEL);
+	data += n;
 
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse_data(struct tas2557_priv *pTAS2557,
-			 struct TFirmware *pFirmware, struct TData *pImageData,
-			 unsigned char *pData)
+static int fw_parse_data(struct tas2557_priv *tas2557,
+			 struct tasdevice_fw *fmw, struct tasdevice_data *pImageData,
+			 unsigned char *data)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int nBlock;
 	unsigned int n;
 
-	memcpy(pImageData->mpName, pData, 64);
-	pData += 64;
+	memcpy(pImageData->name, data, 64);
+	data += 64;
 
-	n = strlen(pData);
-	pImageData->mpDescription = kmemdup(pData, n + 1, GFP_KERNEL);
-	pData += n + 1;
+	n = strlen(data);
+	pImageData->description = kmemdup(data, n + 1, GFP_KERNEL);
+	data += n + 1;
 
-	pImageData->mnBlocks = (pData[0] << 8) + pData[1];
-	pData += 2;
+	pImageData->dev_blks = (data[0] << 8) + data[1];
+	data += 2;
 
-	pImageData->mpBlocks = kmalloc(
-		sizeof(struct TBlock) * pImageData->mnBlocks, GFP_KERNEL);
+	pImageData->dev_blkcs = kmalloc(
+		sizeof(struct tasdevice_block) * pImageData->dev_blks, GFP_KERNEL);
 
-	for (nBlock = 0; nBlock < pImageData->mnBlocks; nBlock++) {
-		n = fw_parse_block_data(pTAS2557, pFirmware,
-					&(pImageData->mpBlocks[nBlock]), pData);
-		pData += n;
+	for (nBlock = 0; nBlock < pImageData->dev_blks; nBlock++) {
+		n = fw_parse_block_data(tas2557, fmw,
+					&(pImageData->dev_blkcs[nBlock]), data);
+		data += n;
 	}
 
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse_pll_data(struct tas2557_priv *pTAS2557,
-			     struct TFirmware *pFirmware, unsigned char *pData)
+static int fw_parse_pll_data(struct tas2557_priv *tas2557,
+			     struct tasdevice_fw *fmw, unsigned char *data)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int n;
 	unsigned int nPLL;
-	struct TPLL *pPLL;
+	struct tasdevice_pll *pPLL;
 
-	pFirmware->mnPLLs = (pData[0] << 8) + pData[1];
-	pData += 2;
+	fmw->mnPLLs = (data[0] << 8) + data[1];
+	data += 2;
 
-	if (pFirmware->mnPLLs == 0)
+	if (fmw->mnPLLs == 0)
 		goto end;
 
-	pFirmware->mpPLLs = kmalloc_array(pFirmware->mnPLLs,
-					  sizeof(struct TPLL), GFP_KERNEL);
+	fmw->plls = kmalloc_array(fmw->mnPLLs,
+					  sizeof(struct tasdevice_pll), GFP_KERNEL);
 
-	for (nPLL = 0; nPLL < pFirmware->mnPLLs; nPLL++) {
-		pPLL = &(pFirmware->mpPLLs[nPLL]);
+	for (nPLL = 0; nPLL < fmw->mnPLLs; nPLL++) {
+		pPLL = &(fmw->plls[nPLL]);
 
-		memcpy(pPLL->mpName, pData, 64);
-		pData += 64;
+		memcpy(pPLL->name, data, 64);
+		data += 64;
 
-		n = strlen(pData);
-		pPLL->mpDescription = kmemdup(pData, n + 1, GFP_KERNEL);
-		pData += n + 1;
+		n = strlen(data);
+		pPLL->description = kmemdup(data, n + 1, GFP_KERNEL);
+		data += n + 1;
 
-		n = fw_parse_block_data(pTAS2557, pFirmware, &(pPLL->mBlock),
-					pData);
-		pData += n;
+		n = fw_parse_block_data(tas2557, fmw, &(pPLL->mBlock),
+					data);
+		data += n;
 	}
 
 end:
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse_program_data(struct tas2557_priv *pTAS2557,
-				 struct TFirmware *pFirmware,
-				 unsigned char *pData)
+static int fw_parse_program_data(struct tas2557_priv *tas2557,
+				 struct tasdevice_fw *fmw,
+				 unsigned char *data)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int n;
 	unsigned int nProgram;
-	struct TProgram *pProgram;
+	struct tasdevice_program *program;
 
-	pFirmware->mnPrograms = (pData[0] << 8) + pData[1];
-	pData += 2;
+	fmw->mnPrograms = (data[0] << 8) + data[1];
+	data += 2;
 
-	if (pFirmware->mnPrograms == 0)
+	if (fmw->mnPrograms == 0)
 		goto end;
 
-	pFirmware->mpPrograms = kmalloc(
-		sizeof(struct TProgram) * pFirmware->mnPrograms, GFP_KERNEL);
+	fmw->programs = kmalloc(
+		sizeof(struct tasdevice_program) * fmw->mnPrograms, GFP_KERNEL);
 
-	for (nProgram = 0; nProgram < pFirmware->mnPrograms; nProgram++) {
-		pProgram = &(pFirmware->mpPrograms[nProgram]);
-		memcpy(pProgram->mpName, pData, 64);
-		pData += 64;
+	for (nProgram = 0; nProgram < fmw->mnPrograms; nProgram++) {
+		program = &(fmw->programs[nProgram]);
+		memcpy(program->name, data, 64);
+		data += 64;
 
-		n = strlen(pData);
-		pProgram->mpDescription = kmemdup(pData, n + 1, GFP_KERNEL);
-		pData += n + 1;
+		n = strlen(data);
+		program->description = kmemdup(data, n + 1, GFP_KERNEL);
+		data += n + 1;
 
-		pProgram->mnAppMode = pData[0];
-		pData++;
+		program->app_mode = data[0];
+		data++;
 
-		pProgram->mnBoost = (pData[0] << 8) + pData[1];
-		pData += 2;
+		program->boost = (data[0] << 8) + data[1];
+		data += 2;
 
-		n = fw_parse_data(pTAS2557, pFirmware, &(pProgram->mData),
-				  pData);
-		pData += n;
+		n = fw_parse_data(tas2557, fmw, &(program->mData),
+				  data);
+		data += n;
 	}
 
 end:
 
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse_configuration_data(struct tas2557_priv *pTAS2557,
-				       struct TFirmware *pFirmware,
-				       unsigned char *pData)
+static int fw_parse_configuration_data(struct tas2557_priv *tas2557,
+				       struct tasdevice_fw *fmw,
+				       unsigned char *data)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int n;
 	unsigned int nConfiguration;
-	struct TConfiguration *pConfiguration;
+	struct tasdevice_config *config;
 
-	pFirmware->mnConfigurations = (pData[0] << 8) + pData[1];
-	pData += 2;
+	fmw->mnConfigurations = (data[0] << 8) + data[1];
+	data += 2;
 
-	if (pFirmware->mnConfigurations == 0)
+	if (fmw->mnConfigurations == 0)
 		goto end;
 
-	pFirmware->mpConfigurations = kmalloc(
-		sizeof(struct TConfiguration) * pFirmware->mnConfigurations,
+	fmw->configurations = kmalloc(
+		sizeof(struct tasdevice_config) * fmw->mnConfigurations,
 		GFP_KERNEL);
 
-	for (nConfiguration = 0; nConfiguration < pFirmware->mnConfigurations;
+	for (nConfiguration = 0; nConfiguration < fmw->mnConfigurations;
 	     nConfiguration++) {
-		pConfiguration = &(pFirmware->mpConfigurations[nConfiguration]);
-		memcpy(pConfiguration->mpName, pData, 64);
-		pData += 64;
+		config = &(fmw->configurations[nConfiguration]);
+		memcpy(config->name, data, 64);
+		data += 64;
 
-		n = strlen(pData);
-		pConfiguration->mpDescription =
-			kmemdup(pData, n + 1, GFP_KERNEL);
-		pData += n + 1;
+		n = strlen(data);
+		config->description =
+			kmemdup(data, n + 1, GFP_KERNEL);
+		data += n + 1;
 
-		if ((pFirmware->mnDriverVersion >= PPC_DRIVER_CONFDEV) ||
-		    ((pFirmware->mnDriverVersion >= PPC_DRIVER_CFGDEV_NONCRC) &&
-		     (pFirmware->mnDriverVersion < PPC_DRIVER_CRCCHK))) {
-			pConfiguration->mnDevices = (pData[0] << 8) + pData[1];
-			pData += 2;
+		if ((fmw->mnDriverVersion >= PPC_DRIVER_CONFDEV) ||
+		    ((fmw->mnDriverVersion >= PPC_DRIVER_CFGDEV_NONCRC) &&
+		     (fmw->mnDriverVersion < PPC_DRIVER_CRCCHK))) {
+			config->mnDevices = (data[0] << 8) + data[1];
+			data += 2;
 		}
 
-		pConfiguration->mnProgram = pData[0];
-		pData++;
+		config->mnProgram = data[0];
+		data++;
 
-		pConfiguration->mnPLL = pData[0];
-		pData++;
+		config->mnPLL = data[0];
+		data++;
 
-		pConfiguration->mnSamplingRate = fw_convert_number(pData);
-		pData += 4;
+		config->sampling_rate = fw_convert_number(data);
+		data += 4;
 
-		if (pFirmware->mnDriverVersion >= PPC_DRIVER_MTPLLSRC) {
-			pConfiguration->mnPLLSrc = pData[0];
-			pData++;
+		if (fmw->mnDriverVersion >= PPC_DRIVER_MTPLLSRC) {
+			config->pll_src = data[0];
+			data++;
 
-			pConfiguration->mnPLLSrcRate = fw_convert_number(pData);
-			pData += 4;
-			dev_err(pTAS2557->dev,
-				"line:%d, pData: 0x%x, 0x%x, 0x%x, 0x%x",
-				__LINE__, pData[0], pData[1], pData[2],
-				pData[3]);
+			config->pll_src_rate = fw_convert_number(data);
+			data += 4;
+			dev_err(tas2557->dev,
+				"line:%d, data: 0x%x, 0x%x, 0x%x, 0x%x",
+				__LINE__, data[0], data[1], data[2],
+				data[3]);
 		}
 
-		n = fw_parse_data(pTAS2557, pFirmware, &(pConfiguration->mData),
-				  pData);
-		pData += n;
+		n = fw_parse_data(tas2557, fmw, &(config->mData),
+				  data);
+		data += n;
 	}
 
 end:
 
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse_calibration_data(struct tas2557_priv *pTAS2557,
-				     struct TFirmware *pFirmware,
-				     unsigned char *pData)
+static int fw_parse_calibration_data(struct tas2557_priv *tas2557,
+				     struct tasdevice_fw *fmw,
+				     unsigned char *data)
 {
-	unsigned char *pDataStart = pData;
+	unsigned char *data_start = data;
 	unsigned int n;
 	unsigned int nCalibration;
-	struct TCalibration *pCalibration;
+	struct tasdevice_calibration *pCalibration;
 
-	pFirmware->mnCalibrations = (pData[0] << 8) + pData[1];
-	pData += 2;
+	fmw->mnCalibrations = (data[0] << 8) + data[1];
+	data += 2;
 
-	if (pFirmware->mnCalibrations == 0)
+	if (fmw->mnCalibrations == 0)
 		goto end;
 
-	pFirmware->mpCalibrations =
-		kmalloc(sizeof(struct TCalibration) * pFirmware->mnCalibrations,
+	fmw->calibrations =
+		kmalloc(sizeof(struct tasdevice_calibration) * fmw->mnCalibrations,
 			GFP_KERNEL);
 
-	for (nCalibration = 0; nCalibration < pFirmware->mnCalibrations;
+	for (nCalibration = 0; nCalibration < fmw->mnCalibrations;
 	     nCalibration++) {
-		pCalibration = &(pFirmware->mpCalibrations[nCalibration]);
-		memcpy(pCalibration->mpName, pData, 64);
-		pData += 64;
+		pCalibration = &(fmw->calibrations[nCalibration]);
+		memcpy(pCalibration->name, data, 64);
+		data += 64;
 
-		n = strlen(pData);
-		pCalibration->mpDescription = kmemdup(pData, n + 1, GFP_KERNEL);
-		pData += n + 1;
+		n = strlen(data);
+		pCalibration->description = kmemdup(data, n + 1, GFP_KERNEL);
+		data += n + 1;
 
-		pCalibration->mnProgram = pData[0];
-		pData++;
+		pCalibration->mnProgram = data[0];
+		data++;
 
-		pCalibration->mnConfiguration = pData[0];
-		pData++;
+		pCalibration->mnConfiguration = data[0];
+		data++;
 
-		n = fw_parse_data(pTAS2557, pFirmware, &(pCalibration->mData),
-				  pData);
-		pData += n;
+		n = fw_parse_data(tas2557, fmw, &(pCalibration->mData),
+				  data);
+		data += n;
 	}
 
 end:
 
-	return pData - pDataStart;
+	return data - data_start;
 }
 
-static int fw_parse(struct tas2557_priv *pTAS2557, struct TFirmware *pFirmware,
-		    unsigned char *pData, unsigned int nSize)
+static int fw_parse(struct tas2557_priv *tas2557, struct tasdevice_fw *fmw,
+		    unsigned char *data, unsigned int nSize)
 {
 	int nPosition = 0;
 
-	nPosition = fw_parse_header(pTAS2557, pFirmware, pData, nSize);
+	nPosition = fw_parse_header(tas2557, fmw, data, nSize);
 
 	if (nPosition < 0) {
-		dev_err(pTAS2557->dev, "Firmware: Wrong Header");
+		dev_err(tas2557->dev, "Firmware: Wrong Header");
 		return -EINVAL;
 	}
 
 	if (nPosition >= nSize) {
-		dev_err(pTAS2557->dev, "Firmware: Too short");
+		dev_err(tas2557->dev, "Firmware: Too short");
 		return -EINVAL;
 	}
 
-	pData += nPosition;
+	data += nPosition;
 	nSize -= nPosition;
 	nPosition = 0;
 
-	nPosition = fw_parse_pll_data(pTAS2557, pFirmware, pData);
+	nPosition = fw_parse_pll_data(tas2557, fmw, data);
 
-	pData += nPosition;
+	data += nPosition;
 	nSize -= nPosition;
 	nPosition = 0;
 
-	nPosition = fw_parse_program_data(pTAS2557, pFirmware, pData);
+	nPosition = fw_parse_program_data(tas2557, fmw, data);
 
-	pData += nPosition;
+	data += nPosition;
 	nSize -= nPosition;
 	nPosition = 0;
 
-	nPosition = fw_parse_configuration_data(pTAS2557, pFirmware, pData);
+	nPosition = fw_parse_configuration_data(tas2557, fmw, data);
 
-	pData += nPosition;
+	data += nPosition;
 	nSize -= nPosition;
 	nPosition = 0;
 
 	if (nSize > 64)
 		nPosition =
-			fw_parse_calibration_data(pTAS2557, pFirmware, pData);
+			fw_parse_calibration_data(tas2557, fmw, data);
 
 	return 0;
 }
 
 void tas2557_fw_ready(const struct firmware *pFW, void *pContext)
 {
-	struct tas2557_priv *pTAS2557 = (struct tas2557_priv *)pContext;
-	int nResult;
+	struct tas2557_priv *tas2557 = (struct tas2557_priv *)pContext;
+	int result;
 	unsigned int nProgram = 0;
 	unsigned int nSampleRate = 0;
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	dev_info(pTAS2557->dev, "%s:\n", __func__);
+	dev_info(tas2557->dev, "%s:\n", __func__);
 
 	if (unlikely(!pFW) || unlikely(!pFW->data)) {
-		dev_err(pTAS2557->dev, "%s firmware is not loaded.\n",
+		dev_err(tas2557->dev, "%s firmware is not loaded.\n",
 			TAS2557_FW_NAME);
 		goto end;
 	}
 
-	if (pTAS2557->mpFirmware->mpConfigurations) {
-		nProgram = pTAS2557->mnCurrentProgram;
-		nSampleRate = pTAS2557->mnCurrentSampleRate;
-		dev_dbg(pTAS2557->dev, "clear current firmware\n");
-		tas2557_clear_firmware(pTAS2557->mpFirmware);
+	if (tas2557->fmw->configurations) {
+		nProgram = tas2557->mnCurrentProgram;
+		nSampleRate = tas2557->mnCurrentSampleRate;
+		dev_dbg(tas2557->dev, "clear current firmware\n");
+		tas2557_clear_firmware(tas2557->fmw);
 	}
 
-	nResult = fw_parse(pTAS2557, pTAS2557->mpFirmware,
+	result = fw_parse(tas2557, tas2557->fmw,
 			   (unsigned char *)(pFW->data), pFW->size);
 	release_firmware(pFW);
 
-	if (nResult < 0) {
-		dev_err(pTAS2557->dev, "firmware is corrupt\n");
+	if (result < 0) {
+		dev_err(tas2557->dev, "firmware is corrupt\n");
 		goto end;
 	}
 
-	if (!pTAS2557->mpFirmware->mnPrograms) {
-		dev_err(pTAS2557->dev, "firmware contains no programs\n");
-		nResult = -EINVAL;
+	if (!tas2557->fmw->mnPrograms) {
+		dev_err(tas2557->dev, "firmware contains no programs\n");
+		result = -EINVAL;
 		goto end;
 	}
 
-	if (!pTAS2557->mpFirmware->mnConfigurations) {
-		dev_err(pTAS2557->dev, "firmware contains no configurations\n");
-		nResult = -EINVAL;
+	if (!tas2557->fmw->mnConfigurations) {
+		dev_err(tas2557->dev, "firmware contains no configurations\n");
+		result = -EINVAL;
 		goto end;
 	}
 
-	if (nProgram >= pTAS2557->mpFirmware->mnPrograms) {
-		dev_info(pTAS2557->dev,
+	if (nProgram >= tas2557->fmw->mnPrograms) {
+		dev_info(tas2557->dev,
 			 "no previous program, set to default\n");
 		nProgram = 0;
 	}
 
-	pTAS2557->mnCurrentSampleRate = nSampleRate;
-	nResult = tas2557_set_program(pTAS2557, nProgram, -1);
+	tas2557->mnCurrentSampleRate = nSampleRate;
+	result = tas2557_set_program(tas2557, nProgram, -1);
 
 end:
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 }
 
-int tas2557_enable(struct tas2557_priv *pTAS2557, bool bEnable)
+int tas2557_enable(struct tas2557_priv *tas2557, bool bEnable)
 {
-	int nResult = 0;
-	struct TProgram *pProgram;
-	struct TConfiguration *pConfiguration;
+	int result = 0;
+	struct tasdevice_program *program;
+	struct tasdevice_config *config;
 	unsigned int nValue;
 
-	dev_dbg(pTAS2557->dev, "%s: %s\n", __func__, bEnable ? "On" : "Off");
+	dev_dbg(tas2557->dev, "%s: %s\n", __func__, bEnable ? "On" : "Off");
 
-	if ((pTAS2557->mpFirmware->mnPrograms == 0) ||
-	    (pTAS2557->mpFirmware->mnConfigurations == 0)) {
-		dev_err(pTAS2557->dev, "%s, firmware not loaded\n", __func__);
+	if ((tas2557->fmw->mnPrograms == 0) ||
+	    (tas2557->fmw->mnConfigurations == 0)) {
+		dev_err(tas2557->dev, "%s, firmware not loaded\n", __func__);
 		/*Load firmware*/
-		nResult = request_firmware_nowait(THIS_MODULE, 1,
+		result = request_firmware_nowait(THIS_MODULE, 1,
 						  TAS2557_FW_NAME,
-						  pTAS2557->dev, GFP_KERNEL,
-						  pTAS2557, tas2557_fw_ready);
-		if (nResult < 0) {
-			dev_err(pTAS2557->dev, "%s, firmware is loaded\n",
+						  tas2557->dev, GFP_KERNEL,
+						  tas2557, tas2557_fw_ready);
+		if (result < 0) {
+			dev_err(tas2557->dev, "%s, firmware is loaded\n",
 				__func__);
 			goto end;
 		}
 	}
 
 	/* check safe guard*/
-	nResult = tas2557_dev_read(pTAS2557, TAS2557_SAFE_GUARD_REG, &nValue);
-	if (nResult < 0)
+	result = tas2557_dev_read(tas2557, TAS2557_SAFE_GUARD_REG, &nValue);
+	if (result < 0)
 		goto end;
 	if ((nValue & 0xff) != TAS2557_SAFE_GUARD_PATTERN) {
-		dev_err(pTAS2557->dev, "ERROR safe guard (0x%x) failure!\n",
+		dev_err(tas2557->dev, "ERROR safe guard (0x%x) failure!\n",
 			nValue);
-		nResult = -EPIPE;
-		pTAS2557->mnErrCode = ERROR_SAFE_GUARD;
-		pTAS2557->mbPowerUp = true;
+		result = -EPIPE;
+		tas2557->error_code = ERROR_SAFE_GUARD;
+		tas2557->mbPowerUp = true;
 		goto end;
 	}
 
-	pProgram =
-		&(pTAS2557->mpFirmware->mpPrograms[pTAS2557->mnCurrentProgram]);
+	program =
+		&(tas2557->fmw->programs[tas2557->mnCurrentProgram]);
 	if (bEnable) {
-		if (!pTAS2557->mbPowerUp) {
-			if (pTAS2557->mbLoadConfigurationPrePowerUp) {
-				pTAS2557->mbLoadConfigurationPrePowerUp = false;
-				nResult = tas2557_load_coefficient(
-					pTAS2557,
-					pTAS2557->mnCurrentConfiguration,
-					pTAS2557->mnNewConfiguration, false);
-				if (nResult < 0)
+		if (!tas2557->mbPowerUp) {
+			if (tas2557->mbLoadConfigurationPrePowerUp) {
+				tas2557->mbLoadConfigurationPrePowerUp = false;
+				result = tas2557_load_coefficient(
+					tas2557,
+					tas2557->mnCurrentConfiguration,
+					tas2557->mnNewConfiguration, false);
+				if (result < 0)
 					goto end;
 			}
 
-			pConfiguration =
-				&(pTAS2557->mpFirmware->mpConfigurations
-					  [pTAS2557->mnCurrentConfiguration]);
-			nResult = tas2557_DevStartup(pTAS2557,
-						     pConfiguration->mnDevices);
-			if (nResult < 0)
+			config =
+				&(tas2557->fmw->configurations
+					  [tas2557->mnCurrentConfiguration]);
+			result = tas2557_DevStartup(tas2557,
+						     config->mnDevices);
+			if (result < 0)
 				goto end;
 
-			nResult = tas2557_DevMute(pTAS2557, false);
-			if (nResult < 0)
+			result = tas2557_DevMute(tas2557, false);
+			if (result < 0)
 				goto end;
 
-			pTAS2557->mbPowerUp = true;
-			pTAS2557->mnRestart = 0;
+			tas2557->mbPowerUp = true;
+			tas2557->mnRestart = 0;
 		}
 	} else {
-		if (pTAS2557->mbPowerUp) {
-			pConfiguration =
-				&(pTAS2557->mpFirmware->mpConfigurations
-					  [pTAS2557->mnCurrentConfiguration]);
+		if (tas2557->mbPowerUp) {
+			config =
+				&(tas2557->fmw->configurations
+					  [tas2557->mnCurrentConfiguration]);
 
-			nResult = tas2557_DevShutdown(pTAS2557);
-			if (nResult < 0)
+			result = tas2557_DevShutdown(tas2557);
+			if (result < 0)
 				goto end;
 
-			pTAS2557->mbPowerUp = false;
-			pTAS2557->mnRestart = 0;
+			tas2557->mbPowerUp = false;
+			tas2557->mnRestart = 0;
 		}
 	}
 
-	nResult = 0;
+	result = 0;
 
 end:
 
-	if (nResult < 0) {
-		if (pTAS2557->mnErrCode &
+	if (result < 0) {
+		if (tas2557->error_code &
 		    (ERROR_DEVA_I2C_COMM | ERROR_PRAM_CRCCHK |
 		     ERROR_YRAM_CRCCHK | ERROR_SAFE_GUARD))
-			failsafe(pTAS2557);
+			failsafe(tas2557);
 	}
 
-	dev_dbg(pTAS2557->dev, "%s: exit\n", __func__);
-	return nResult;
+	dev_dbg(tas2557->dev, "%s: exit\n", __func__);
+	return result;
 }
 
-int tas2557_set_sampling_rate(struct tas2557_priv *pTAS2557,
+int tas2557_set_sampling_rate(struct tas2557_priv *tas2557,
 			      unsigned int nSamplingRate)
 {
-	int nResult = 0;
-	struct TConfiguration *pConfiguration;
+	int result = 0;
+	struct tasdevice_config *config;
 	unsigned int nConfiguration;
 
-	dev_dbg(pTAS2557->dev, "%s: nSamplingRate = %d [Hz]\n", __func__,
+	dev_dbg(tas2557->dev, "%s: nSamplingRate = %d [Hz]\n", __func__,
 		nSamplingRate);
 
-	if ((!pTAS2557->mpFirmware->mpPrograms) ||
-	    (!pTAS2557->mpFirmware->mpConfigurations)) {
-		dev_err(pTAS2557->dev, "Firmware not loaded\n");
-		nResult = -EINVAL;
+	if ((!tas2557->fmw->programs) ||
+	    (!tas2557->fmw->configurations)) {
+		dev_err(tas2557->dev, "Firmware not loaded\n");
+		result = -EINVAL;
 		goto end;
 	}
 
-	pConfiguration =
-		&(pTAS2557->mpFirmware
-			  ->mpConfigurations[pTAS2557->mnCurrentConfiguration]);
+	config =
+		&(tas2557->fmw
+			  ->configurations[tas2557->mnCurrentConfiguration]);
 
-	if (pConfiguration->mnSamplingRate == nSamplingRate) {
+	if (config->sampling_rate == nSamplingRate) {
 		dev_info(
-			pTAS2557->dev,
+			tas2557->dev,
 			"Sampling rate for current configuration matches: %d\n",
 			nSamplingRate);
-		nResult = 0;
+		result = 0;
 		goto end;
 	}
 
 	for (nConfiguration = 0;
-	     nConfiguration < pTAS2557->mpFirmware->mnConfigurations;
+	     nConfiguration < tas2557->fmw->mnConfigurations;
 	     nConfiguration++) {
-		pConfiguration = &(
-			pTAS2557->mpFirmware->mpConfigurations[nConfiguration]);
+		config = &(
+			tas2557->fmw->configurations[nConfiguration]);
 
-		if ((pConfiguration->mnSamplingRate == nSamplingRate) &&
-		    (pConfiguration->mnProgram == pTAS2557->mnCurrentProgram)) {
+		if ((config->sampling_rate == nSamplingRate) &&
+		    (config->mnProgram == tas2557->mnCurrentProgram)) {
 			dev_info(
-				pTAS2557->dev,
+				tas2557->dev,
 				"Found configuration: %s, with compatible sampling rate %d\n",
-				pConfiguration->mpName, nSamplingRate);
-			nResult = tas2557_load_configuration(
-				pTAS2557, nConfiguration, false);
+				config->name, nSamplingRate);
+			result = tas2557_load_configuration(
+				tas2557, nConfiguration, false);
 			goto end;
 		}
 	}
 
-	dev_err(pTAS2557->dev,
+	dev_err(tas2557->dev,
 		"Cannot find a configuration that supports sampling rate: %d\n",
 		nSamplingRate);
 
 end:
 
-	return nResult;
+	return result;
 }
 
-int tas2557_set_config(struct tas2557_priv *pTAS2557, int config)
+int tas2557_set_config(struct tas2557_priv *tas2557, int nr_config)
 {
-	struct TConfiguration *pConfiguration;
-	struct TProgram *pProgram;
-	unsigned int nProgram = pTAS2557->mnCurrentProgram;
-	unsigned int nConfiguration = config;
-	int nResult = 0;
+	struct tasdevice_config *config;
+	struct tasdevice_program *program;
+	unsigned int nProgram = tas2557->mnCurrentProgram;
+	unsigned int nConfiguration = nr_config;
+	int result = 0;
 
-	if ((!pTAS2557->mpFirmware->mpPrograms) ||
-	    (!pTAS2557->mpFirmware->mpConfigurations)) {
-		dev_err(pTAS2557->dev, "Firmware not loaded\n");
-		nResult = -EINVAL;
+	if ((!tas2557->fmw->programs) ||
+	    (!tas2557->fmw->configurations)) {
+		dev_err(tas2557->dev, "Firmware not loaded\n");
+		result = -EINVAL;
 		goto end;
 	}
 
-	if (nConfiguration >= pTAS2557->mpFirmware->mnConfigurations) {
-		dev_err(pTAS2557->dev, "Configuration %d doesn't exist\n",
+	if (nConfiguration >= tas2557->fmw->mnConfigurations) {
+		dev_err(tas2557->dev, "Configuration %d doesn't exist\n",
 			nConfiguration);
-		nResult = -EINVAL;
+		result = -EINVAL;
 		goto end;
 	}
 
-	pConfiguration =
-		&(pTAS2557->mpFirmware->mpConfigurations[nConfiguration]);
-	pProgram = &(pTAS2557->mpFirmware->mpPrograms[nProgram]);
+	config =
+		&(tas2557->fmw->configurations[nConfiguration]);
+	program = &(tas2557->fmw->programs[nProgram]);
 
-	if (nProgram != pConfiguration->mnProgram) {
-		dev_err(pTAS2557->dev,
+	if (nProgram != config->mnProgram) {
+		dev_err(tas2557->dev,
 			"Configuration %d, %s with Program %d isn't compatible with existing Program %d, %s\n",
-			nConfiguration, pConfiguration->mpName,
-			pConfiguration->mnProgram, nProgram, pProgram->mpName);
-		nResult = -EINVAL;
+			nConfiguration, config->name,
+			config->mnProgram, nProgram, program->name);
+		result = -EINVAL;
 		goto end;
 	}
 
-	dev_dbg(pTAS2557->dev, "%s, load new conf %s\n", __func__,
-		pConfiguration->mpName);
-	nResult = tas2557_load_configuration(pTAS2557, nConfiguration, false);
+	dev_dbg(tas2557->dev, "%s, load new conf %s\n", __func__,
+		config->name);
+	result = tas2557_load_configuration(tas2557, nConfiguration, false);
 
 end:
 
-	return nResult;
+	return result;
 }
 
-int tas2557_parse_dt(struct device *dev, struct tas2557_priv *pTAS2557)
+static int tas2557_parse_dt(struct device *dev, struct tas2557_priv *tas2557)
 {
 	struct device_node *np = dev->of_node;
 	int rc = 0, ret = 0;
 	unsigned int value;
 
-	pTAS2557->mnGPIORST =
+	tas2557->reset =
 		devm_gpiod_get(dev, "ti,tas2557-reset", GPIOD_OUT_LOW);
-	if (IS_ERR(pTAS2557->mnGPIORST)) {
-		ret = PTR_ERR(pTAS2557->mnGPIORST);
+	if (IS_ERR(tas2557->reset)) {
+		ret = PTR_ERR(tas2557->reset);
 		dev_err(dev, "Failed to request reset gpio, error %d\n", ret);
 		return ret;
 	} else
-		dev_dbg(pTAS2557->dev, "%s, tas2557 reset gpio\n", __func__);
+		dev_dbg(tas2557->dev, "%s, tas2557 reset gpio\n", __func__);
 
-	rc = of_property_read_u32(np, "ti,tas2557-addr", &value);
+	rc = of_property_read_u32(np, "reg", &value);
 	if (rc) {
-		dev_err(pTAS2557->dev,
+		dev_err(tas2557->dev,
 			"Looking up %s property in node %s failed %d\n",
-			"ti,tas2557-addr", np->full_name, rc);
+			"reg", np->full_name, rc);
 		ret = -EINVAL;
 		goto end;
 	} else {
-		pTAS2557->mnAddr = value;
-		dev_dbg(pTAS2557->dev, "ti,tas2557 addr=0x%x\n",
-			pTAS2557->mnAddr);
+		tas2557->dev_addr = value;
+		dev_dbg(tas2557->dev, "reg addr=0x%x\n",
+			tas2557->dev_addr);
 	}
-
-	rc = of_property_read_u32(np, "ti,tas2557-addr", &value);
-	if (rc) {
-		dev_err(pTAS2557->dev,
-			"Looking up %s property in node %s failed %d\n",
-			"ti,tas2557-addr", np->full_name, rc);
-		ret = -EINVAL;
-		goto end;
-	}
-
 end:
 
 	return ret;
@@ -1854,14 +1844,14 @@ static const struct snd_soc_dapm_route tas2557_audio_map[] = {
 static int tas2557_mute(struct snd_soc_dai *dai, int mute, int direction)
 {
 	struct snd_soc_component *codec = dai->component;
-	struct tas2557_priv *pTAS2557 = snd_soc_component_get_drvdata(codec);
+	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(codec);
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	dev_dbg(pTAS2557->dev, "%s\n", __func__);
-	tas2557_enable(pTAS2557, !mute);
+	dev_dbg(tas2557->dev, "%s\n", __func__);
+	tas2557_enable(tas2557, !mute);
 
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 	return 0;
 }
 
@@ -1870,14 +1860,14 @@ static int tas2557_hw_params(struct snd_pcm_substream *pSubstream,
 			     struct snd_soc_dai *pDAI)
 {
 	struct snd_soc_component *pCodec = pDAI->component;
-	struct tas2557_priv *pTAS2557 = snd_soc_component_get_drvdata(pCodec);
+	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(pCodec);
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	dev_dbg(pTAS2557->dev, "%s\n", __func__);
-	tas2557_set_sampling_rate(pTAS2557, params_rate(pParams));
+	dev_dbg(tas2557->dev, "%s\n", __func__);
+	tas2557_set_sampling_rate(tas2557, params_rate(pParams));
 
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 	return 0;
 }
 
@@ -1885,15 +1875,15 @@ static int tas2557_configuration_get(struct snd_kcontrol *pKcontrol,
 				     struct snd_ctl_elem_value *pValue)
 {
 	struct snd_soc_component *codec = snd_soc_kcontrol_component(pKcontrol);
-	struct tas2557_priv *pTAS2557 = snd_soc_component_get_drvdata(codec);
+	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(codec);
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	pValue->value.integer.value[0] = pTAS2557->mnCurrentConfiguration;
-	dev_dbg(pTAS2557->dev, "%s = %d\n", __func__,
-		pTAS2557->mnCurrentConfiguration);
+	pValue->value.integer.value[0] = tas2557->mnCurrentConfiguration;
+	dev_dbg(tas2557->dev, "%s = %d\n", __func__,
+		tas2557->mnCurrentConfiguration);
 
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 	return 0;
 }
 
@@ -1901,16 +1891,16 @@ static int tas2557_configuration_put(struct snd_kcontrol *pKcontrol,
 				     struct snd_ctl_elem_value *pValue)
 {
 	struct snd_soc_component *codec = snd_soc_kcontrol_component(pKcontrol);
-	struct tas2557_priv *pTAS2557 = snd_soc_component_get_drvdata(codec);
+	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(codec);
 	unsigned int nConfiguration = pValue->value.integer.value[0];
 	int ret = 0;
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	dev_info(pTAS2557->dev, "%s = %d\n", __func__, nConfiguration);
-	ret = tas2557_set_config(pTAS2557, nConfiguration);
+	dev_info(tas2557->dev, "%s = %d\n", __func__, nConfiguration);
+	ret = tas2557_set_config(tas2557, nConfiguration);
 
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 	return ret;
 }
 
@@ -1918,20 +1908,20 @@ static int tas2557_ldac_gain_get(struct snd_kcontrol *pKcontrol,
 				 struct snd_ctl_elem_value *pValue)
 {
 	struct snd_soc_component *codec = snd_soc_kcontrol_component(pKcontrol);
-	struct tas2557_priv *pTAS2557 = snd_soc_component_get_drvdata(codec);
+	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(codec);
 	unsigned char nGain = 0;
 	int ret = -1;
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	ret = tas2557_get_DAC_gain(pTAS2557, &nGain);
+	ret = tas2557_get_DAC_gain(tas2557, &nGain);
 
 	if (ret >= 0)
 		pValue->value.integer.value[0] = nGain;
 
-	dev_dbg(pTAS2557->dev, "%s, ret = %d, %d\n", __func__, ret, nGain);
+	dev_dbg(tas2557->dev, "%s, ret = %d, %d\n", __func__, ret, nGain);
 
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 	return ret;
 }
 
@@ -1939,15 +1929,15 @@ static int tas2557_ldac_gain_put(struct snd_kcontrol *pKcontrol,
 				 struct snd_ctl_elem_value *pValue)
 {
 	struct snd_soc_component *codec = snd_soc_kcontrol_component(pKcontrol);
-	struct tas2557_priv *pTAS2557 = snd_soc_component_get_drvdata(codec);
+	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(codec);
 	unsigned int nGain = pValue->value.integer.value[0];
 	int ret = 0;
 
-	mutex_lock(&pTAS2557->codec_lock);
+	mutex_lock(&tas2557->codec_lock);
 
-	ret = tas2557_set_DAC_gain(pTAS2557, nGain);
+	ret = tas2557_set_DAC_gain(tas2557, nGain);
 
-	mutex_unlock(&pTAS2557->codec_lock);
+	mutex_unlock(&tas2557->codec_lock);
 	return ret;
 }
 
@@ -2018,20 +2008,20 @@ static struct snd_soc_dai_driver tas2557_dai_driver[] = {
 	},
 };
 
-int tas2557_register_codec(struct tas2557_priv *pTAS2557)
+int tas2557_register_codec(struct tas2557_priv *tas2557)
 {
-	int nResult = 0;
+	int result = 0;
 
-	dev_info(pTAS2557->dev, "%s, enter\n", __func__);
-	nResult = devm_snd_soc_register_component(
-		pTAS2557->dev, &soc_codec_driver_tas2557, tas2557_dai_driver,
+	dev_info(tas2557->dev, "%s, enter\n", __func__);
+	result = devm_snd_soc_register_component(
+		tas2557->dev, &soc_codec_driver_tas2557, tas2557_dai_driver,
 		ARRAY_SIZE(tas2557_dai_driver));
-	return nResult;
+	return result;
 }
 
-int tas2557_deregister_codec(struct tas2557_priv *pTAS2557)
+int tas2557_deregister_codec(struct tas2557_priv *tas2557)
 {
-	snd_soc_unregister_component(pTAS2557->dev);
+	snd_soc_unregister_component(tas2557->dev);
 	return 0;
 }
 
@@ -2056,83 +2046,83 @@ static const struct regmap_config tas2557_i2c_regmap = {
 	.max_register = 128,
 };
 
-static int tas2557_i2c_probe(struct i2c_client *pClient)
+static int tas2557_i2c_probe(struct i2c_client *client)
 {
-	struct tas2557_priv *pTAS2557;
-	int nResult;
+	struct tas2557_priv *tas2557;
+	int result;
 
-	dev_info(&pClient->dev, "%s enter\n", __func__);
-	pTAS2557 = devm_kzalloc(&pClient->dev, sizeof(struct tas2557_priv),
+	dev_info(&client->dev, "%s enter\n", __func__);
+	tas2557 = devm_kzalloc(&client->dev, sizeof(struct tas2557_priv),
 				GFP_KERNEL);
 
-	if (!pTAS2557) {
-		dev_err(&pClient->dev, " -ENOMEM\n");
-		nResult = -ENOMEM;
+	if (!tas2557) {
+		dev_err(&client->dev, " -ENOMEM\n");
+		result = -ENOMEM;
 		goto err;
 	}
 
-	pTAS2557->client = pClient;
-	pTAS2557->dev = &pClient->dev;
-	i2c_set_clientdata(pClient, pTAS2557);
-	dev_set_drvdata(&pClient->dev, pTAS2557);
+	tas2557->client = client;
+	tas2557->dev = &client->dev;
+	i2c_set_clientdata(client, tas2557);
+	dev_set_drvdata(&client->dev, tas2557);
 
-	pTAS2557->mpRegmap = devm_regmap_init_i2c(pClient, &tas2557_i2c_regmap);
+	tas2557->regmap = devm_regmap_init_i2c(client, &tas2557_i2c_regmap);
 
-	if (IS_ERR(pTAS2557->mpRegmap)) {
-		nResult = PTR_ERR(pTAS2557->mpRegmap);
-		dev_err(&pClient->dev, "Failed to allocate register map: %d\n",
-			nResult);
+	if (IS_ERR(tas2557->regmap)) {
+		result = PTR_ERR(tas2557->regmap);
+		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+			result);
 		goto err;
 	}
 
-	if (pClient->dev.of_node)
-		tas2557_parse_dt(&pClient->dev, pTAS2557);
+	if (client->dev.of_node)
+		tas2557_parse_dt(&client->dev, tas2557);
 
-	tas2557_hw_reset(pTAS2557);
+	tas2557_hw_reset(tas2557);
 
-	pTAS2557->mnRestart = 0;
+	tas2557->mnRestart = 0;
 
-	mutex_init(&pTAS2557->dev_lock);
+	mutex_init(&tas2557->dev_lock);
 
 	/* Reset the chip */
-	nResult = tas2557_dev_write(pTAS2557, TAS2557_SW_RESET_REG, 1);
-	if (nResult < 0) {
-		dev_err(&pClient->dev, "I2c fail, %d\n", nResult);
+	result = tas2557_dev_write(tas2557, TAS2557_SW_RESET_REG, 1);
+	if (result < 0) {
+		dev_err(&client->dev, "I2c fail, %d\n", result);
 		goto err;
 	}
 	msleep(1);
 
-	pTAS2557->mpFirmware = devm_kzalloc(
-		&pClient->dev, sizeof(struct TFirmware), GFP_KERNEL);
+	tas2557->fmw = devm_kzalloc(
+		&client->dev, sizeof(struct tasdevice_fw), GFP_KERNEL);
 
-	if (!pTAS2557->mpFirmware) {
-		dev_err(&pClient->dev, "mpFirmware ENOMEM\n");
-		nResult = -ENOMEM;
+	if (!tas2557->fmw) {
+		dev_err(&client->dev, "fmw ENOMEM\n");
+		result = -ENOMEM;
 		goto err;
 	}
 
-	mutex_init(&pTAS2557->codec_lock);
-	tas2557_register_codec(pTAS2557);
+	mutex_init(&tas2557->codec_lock);
+	tas2557_register_codec(tas2557);
 
-	nResult = request_firmware_nowait(THIS_MODULE, 1, TAS2557_FW_NAME,
-					  pTAS2557->dev, GFP_KERNEL, pTAS2557,
+	result = request_firmware_nowait(THIS_MODULE, 1, TAS2557_FW_NAME,
+					  tas2557->dev, GFP_KERNEL, tas2557,
 					  tas2557_fw_ready);
 
 err:
 
-	return nResult;
+	return result;
 }
 
-static void tas2557_i2c_remove(struct i2c_client *pClient)
+static void tas2557_i2c_remove(struct i2c_client *client)
 {
-	struct tas2557_priv *pTAS2557 = i2c_get_clientdata(pClient);
+	struct tas2557_priv *tas2557 = i2c_get_clientdata(client);
 
-	dev_info(pTAS2557->dev, "%s\n", __func__);
+	dev_info(tas2557->dev, "%s\n", __func__);
 
-	tas2557_deregister_codec(pTAS2557);
-	mutex_destroy(&pTAS2557->codec_lock);
+	tas2557_deregister_codec(tas2557);
+	mutex_destroy(&tas2557->codec_lock);
 
-	mutex_destroy(&pTAS2557->dev_lock);
+	mutex_destroy(&tas2557->dev_lock);
 	return;
 }
 
