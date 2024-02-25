@@ -2143,9 +2143,7 @@ static struct i2c_driver tas2557_i2c_driver = {
 	.driver = {
 		.name = "tas2557",
 		.owner = THIS_MODULE,
-#if defined(CONFIG_OF)
 		.of_match_table = of_match_ptr(tas2557_of_match),
-#endif
 	},
 	.probe = tas2557_i2c_probe,
 	.remove = tas2557_i2c_remove,
