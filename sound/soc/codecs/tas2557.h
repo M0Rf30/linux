@@ -39,9 +39,11 @@
 #define TAS2557_BOOK_REG(reg) ((unsigned char)(reg % (256 * 128)))
 #define TAS2557_PAGE_REG(reg) ((unsigned char)((reg % (256 * 128)) % 128))
 
-/* Book0, Page0 registers */
-#define TAS2557_SW_RESET_REG TAS2557_REG(0, 0, 1)
+/*Software Reset */
+#define TAS2557_REG_SWRESET TAS2557_REG(0, 0, 1)
+#define TAS2557_REG_SWRESET_RESET	BIT(0)
 
+/* Book0, Page0 registers */
 #define TAS2557_REV_PGID_REG TAS2557_REG(0, 0, 3)
 #define TAS2557_PG_VERSION_1P0 0x80
 #define TAS2557_PG_VERSION_2P0 0x90

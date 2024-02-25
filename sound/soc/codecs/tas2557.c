@@ -767,7 +767,7 @@ static void failsafe(struct tas2557_priv *tas2557)
 	tas2557_DevShutdown(tas2557);
 	tas2557->mbPowerUp = false;
 	tas2557_hw_reset(tas2557);
-	tas2557_dev_write(tas2557, TAS2557_SW_RESET_REG, 0x01);
+	tas2557_dev_write(tas2557, TAS2557_REG_SWRESET, TAS2557_REG_SWRESET_RESET);
 	msleep(1);
 	tas2557_dev_write(tas2557, TAS2557_SPK_CTRL_REG, 0x04);
 
@@ -1083,7 +1083,7 @@ int tas2557_set_program(struct tas2557_priv *tas2557, unsigned int nProgram,
 	}
 
 	tas2557_hw_reset(tas2557);
-	result = tas2557_dev_write(tas2557, TAS2557_SW_RESET_REG, 0x01);
+	result = tas2557_dev_write(tas2557, TAS2557_REG_SWRESET, TAS2557_REG_SWRESET_RESET);
 	if (result < 0)
 		goto end;
 
@@ -2086,7 +2086,7 @@ static int tas2557_i2c_probe(struct i2c_client *client)
 	mutex_init(&tas2557->dev_lock);
 
 	/* Reset the chip */
-	result = tas2557_dev_write(tas2557, TAS2557_SW_RESET_REG, 1);
+	result = tas2557_dev_write(tas2557, TAS2557_REG_SWRESET, TAS2557_REG_SWRESET_RESET);
 	if (result < 0) {
 		dev_err(&client->dev, "I2c fail, %d\n", result);
 		goto err;
