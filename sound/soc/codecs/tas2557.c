@@ -136,7 +136,7 @@ struct tas2557_priv {
 	bool mbLoadConfigurationPrePowerUp;
 
 	/* parameters for TAS2557 */
-	struct gpio_desc *reset;
+	struct gpio_desc *reset_gpio;
 	unsigned char dev_addr;
 	unsigned char mnCurrentBook;
 	unsigned char mnCurrentPage;
@@ -423,9 +423,9 @@ static void tas2557_hw_reset(struct tas2557_priv *tas2557)
 {
 	dev_dbg(tas2557->dev, "%s\n", __func__);
 
-	gpiod_set_value_cansleep(tas2557->reset, 0);
+	gpiod_set_value_cansleep(tas2557->reset_gpio, 0);
 	msleep(5);
-	gpiod_set_value_cansleep(tas2557->reset, 1);
+	gpiod_set_value_cansleep(tas2557->reset_gpio, 1);
 	msleep(2);
 
 	tas2557->mnCurrentBook = -1;
@@ -1795,14 +1795,14 @@ static int tas2557_parse_dt(struct device *dev, struct tas2557_priv *tas2557)
 	int rc = 0, ret = 0;
 	unsigned int value;
 
-	tas2557->reset =
+	tas2557->reset_gpio =
 		devm_gpiod_get(dev, "ti,tas2557-reset", GPIOD_OUT_LOW);
-	if (IS_ERR(tas2557->reset)) {
-		ret = PTR_ERR(tas2557->reset);
-		dev_err(dev, "Failed to request reset gpio, error %d\n", ret);
+	if (IS_ERR(tas2557->reset_gpio)) {
+		ret = PTR_ERR(tas2557->reset_gpio);
+		dev_err(dev, "Failed to request reset_gpio gpio, error %d\n", ret);
 		return ret;
 	} else
-		dev_dbg(tas2557->dev, "%s, tas2557 reset gpio\n", __func__);
+		dev_dbg(tas2557->dev, "%s, tas2557 reset_gpio gpio\n", __func__);
 
 	rc = of_property_read_u32(np, "reg", &value);
 	if (rc) {
