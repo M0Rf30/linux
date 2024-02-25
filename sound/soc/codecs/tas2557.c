@@ -2051,14 +2051,10 @@ static int tas2557_i2c_probe(struct i2c_client *client)
 	struct tas2557_priv *tas2557;
 	int result;
 
-	dev_info(&client->dev, "%s enter\n", __func__);
 	tas2557 = devm_kzalloc(&client->dev, sizeof(struct tas2557_priv),
 				GFP_KERNEL);
-
 	if (!tas2557) {
-		dev_err(&client->dev, " -ENOMEM\n");
-		result = -ENOMEM;
-		goto err;
+		return -ENOMEM;
 	}
 
 	tas2557->client = client;
@@ -2067,16 +2063,21 @@ static int tas2557_i2c_probe(struct i2c_client *client)
 	dev_set_drvdata(&client->dev, tas2557);
 
 	tas2557->regmap = devm_regmap_init_i2c(client, &tas2557_i2c_regmap);
-
 	if (IS_ERR(tas2557->regmap)) {
 		result = PTR_ERR(tas2557->regmap);
 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
 			result);
-		goto err;
+		return result;
 	}
 
-	if (client->dev.of_node)
-		tas2557_parse_dt(&client->dev, tas2557);
+	if (client->dev.of_node) {
+		result = tas2557_parse_dt(&client->dev, tas2557);
+		if (result) {
+			dev_err(tas2557->dev,
+				"%s: Failed to parse devicetree\n", __func__);
+			return result;
+		}
+	}
 
 	tas2557_hw_reset(tas2557);
 
