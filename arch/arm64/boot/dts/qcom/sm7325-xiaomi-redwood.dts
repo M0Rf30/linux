@@ -11,13 +11,13 @@
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+#include <dt-bindings/sound/qcom,q6afe.h>
+#include <dt-bindings/sound/qcom,q6asm.h>
 #include "sc7280.dtsi"
 #include "pm7325.dtsi"
-#include "pm8350c.dtsi" /* PM7350C */
-#include "pmk8350.dtsi" /* PMK7325 */
+#include "pm8350c.dtsi"
+#include "pmk8350.dtsi"
 #include "pmr735a.dtsi"
-
-/delete-node/ &rmtfs_mem;
 
 / {
 	model = "Xiaomi POCO X5 Pro / Redmi Note 12 Pro Speed";
@@ -34,13 +34,23 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-		pinctrl-0 = <&volume_down_default>;
+		pinctrl-0 = <&volume_down_default>, <&hall_sensor_default>;
 		pinctrl-names = "default";
 
 		key-volume-up {
 			label = "Volume up";
 			gpios = <&pm7325_gpios 6 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_VOLUMEUP>;
+		};
+
+		/* Powered by the always-on vreg_l8c */
+		event-hall-sensor {
+			label = "Hall Effect Sensor";
+			gpios = <&tlmm 155 GPIO_ACTIVE_LOW>;
+			linux,input-type = <EV_SW>;
+			linux,code = <SW_LID>;
+			linux,can-disable;
+			wakeup-source;
 		};
 	};
 
@@ -68,13 +78,13 @@
 					};
 				};
 
-				// port@1 {
-				// 	reg = <1>;
+				port@1 {
+					reg = <1>;
 
-				// 	pmic_glink_ss_in: endpoint {
-				// 		remote-endpoint = <&redriver_ss_out>;
-				// 	};
-				// };
+					pmic_glink_ss_in: endpoint {
+						remote-endpoint = <&redriver_ss_out>;
+					};
+				};
 
 				port@2 {
 					reg = <2>;
@@ -85,78 +95,6 @@
 				};
 			};
 		};
-	};
-
-	thermal-zones {
-		quiet-thermal {
-			polling-delay-passive = <0>;
-			polling-delay = <0>;
-			thermal-sensors = <&pmk8350_adc_tm 1>;
-
-			trips {
-				active-config0 {
-					temperature = <125000>;
-					hysteresis = <1000>;
-					type = "passive";
-				};
-			};
-		};
-
-		xo-thermal {
-			polling-delay-passive = <0>;
-			polling-delay = <0>;
-			thermal-sensors = <&pmk8350_adc_tm 0>;
-
-			trips {
-				active-config0 {
-					temperature = <125000>;
-					hysteresis = <1000>;
-					type = "passive";
-				};
-			};
-		};
-	};
-
-	vreg_oled_dvdd: regulator-oled-dvdd {
-		compatible = "regulator-fixed";
-		regulator-name = "oled_dvdd";
-		regulator-min-microvolt = <1230000>;
-		regulator-max-microvolt = <1230000>;
-
-		gpio = <&tlmm 51 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-
-		// vin-supply = <&vreg_s1b>;
-
-		regulator-boot-on;
-	};
-
-	vreg_oled_vci: regulator-oled-vci {
-		compatible = "regulator-fixed";
-		regulator-name = "oled_vci";
-		regulator-min-microvolt = <3000000>;
-		regulator-max-microvolt = <3000000>;
-
-		gpio = <&pm8350c_gpios 7 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-
-		// vin-supply = <&vreg_l13c>;
-
-		regulator-boot-on;
-	};
-
-	vreg_oled_vddio: regulator-oled-vddio {
-		compatible = "regulator-fixed";
-		regulator-name = "oled_vddio";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-
-		gpio = <&tlmm 51 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-
-		// vin-supply = <&vreg_s1b>;
-
-		regulator-boot-on;
 	};
 
 	reserved-memory {
@@ -184,15 +122,106 @@
 			reg = <0x0 0x9ae00000 0x0 0x1900000>;
 			no-map;
 		};
+	};
 
-		// rmtfs_mem: memory@f8500000 {
-		// 	compatible = "qcom,rmtfs-mem";
-		// 	reg = <0x0 0xf8500000 0x0 0x600000>;
-		// 	no-map;
+	thermal-zones {
+		camera-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pmk8350_adc_tm 2>;
 
-		// 	qcom,client-id = <1>;
-		// 	qcom,vmid = <QCOM_SCM_VMID_MSS_MSA>, <QCOM_SCM_VMID_NAV>;
-		// };
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
+
+		chg-skin-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pm7250b_adc_tm 0>;
+
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
+
+		conn-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pm7250b_adc_tm 1>;
+
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
+
+		quiet-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pmk8350_adc_tm 1>;
+
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
+
+		rear-cam-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pmk8350_adc_tm 4>;
+
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
+
+		sdm-skin-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pmk8350_adc_tm 3>;
+
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
+
+		xo-thermal {
+			polling-delay-passive = <0>;
+			polling-delay = <0>;
+			thermal-sensors = <&pmk8350_adc_tm 0>;
+
+			trips {
+				active-config0 {
+					temperature = <125000>;
+					hysteresis = <1000>;
+					type = "passive";
+				};
+			};
+		};
 	};
 };
 
@@ -475,14 +504,6 @@
 	status = "okay";
 };
 
-&gpu {
-	status = "okay";
-};
-
-&gpu_zap_shader {
-	firmware-name = "qcom/sm7325/redwood/a660_zap.mdt";
-};
-
 &i2c1 {
 	status = "okay";
 
@@ -510,138 +531,93 @@
 	/* rtc6226 @ 64 */
 };
 
-&i2c3 {
-	status = "okay";
+// &i2c3 {
+// 	status = "okay";
 
-	aw88261_l: audio-codec@34 {
-		compatible = "awinic,aw88261";
-		reg = <0x34>;
-		awinic,audio-channel = <0>;
-		awinic,sync-flag;
-		#sound-dai-cells = <0>;
-	};
+// 	aw88261_l: audio-codec@34 {
+// 		compatible = "awinic,aw88261";
+// 		reg = <0x34>;
+// 		awinic,audio-channel = <0>;
+// 		awinic,sync-flag;
+// 		#sound-dai-cells = <0>;
+// 	};
 
-	aw88261_r: audio-codec@35 {
-		compatible = "awinic,aw88261";
-		reg = <0x35>;
-		awinic,audio-channel = <1>;
-		awinic,sync-flag;
-		#sound-dai-cells = <0>;
-	};
-};
+// 	aw88261_r: audio-codec@35 {
+// 		compatible = "awinic,aw88261";
+// 		reg = <0x35>;
+// 		awinic,audio-channel = <1>;
+// 		awinic,sync-flag;
+// 		#sound-dai-cells = <0>;
+// 	};
+// };
 
-&i2c4 {
-	status = "okay";
+// &i2c4 {
+// 	status = "okay";
 
-	/* ST21NFC NFC @ 28 */
-};
+// 	/* ST21NFC NFC @ 28 */
+// };
 
-&i2c9 {
-	status = "okay";
+// &i2c9 {
+// 	status = "okay";
 
-	/* ST21NFC NFC @ 28 */
-	haptics@5a {
-		compatible = "awinic,aw8695";
-		reg = <0x5a>;
-		interrupts-extended = <&tlmm 85 IRQ_TYPE_EDGE_FALLING>;
-		// reset-gpios = <&tlmm 90 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&tlmm 35 GPIO_ACTIVE_HIGH>;
+// 	/* ST21NFC NFC @ 28 */
+// 	haptics@5a {
+// 		compatible = "awinic,aw8695";
+// 		reg = <0x5a>;
+// 		interrupts-extended = <&tlmm 85 IRQ_TYPE_EDGE_FALLING>;
+// 		// reset-gpios = <&tlmm 90 GPIO_ACTIVE_HIGH>;
+// 		reset-gpios = <&tlmm 35 GPIO_ACTIVE_HIGH>;
 
-		awinic,f0-preset = <1300>;
-		awinic,f0-coefficient = <260>;
-		awinic,f0-calibration-percent = <7>;
-		awinic,drive-level = <60>;
+// 		awinic,f0-preset = <1300>;
+// 		awinic,f0-coefficient = <260>;
+// 		awinic,f0-calibration-percent = <7>;
+// 		awinic,drive-level = <60>;
 
-		awinic,f0-detection-play-time = <5>;
-		awinic,f0-detection-wait-time = <3>;
-		awinic,f0-detection-repeat = <2>;
-		awinic,f0-detection-trace = <15>;
+// 		awinic,f0-detection-play-time = <5>;
+// 		awinic,f0-detection-wait-time = <3>;
+// 		awinic,f0-detection-repeat = <2>;
+// 		awinic,f0-detection-trace = <15>;
 
-		awinic,boost-debug = /bits/ 8 <0x30 0xeb 0xd4>;
-		awinic,tset = /bits/ 8 <0x1a>;
-		awinic,r-spare = /bits/ 8 <0x68>;
+// 		awinic,boost-debug = /bits/ 8 <0x30 0xeb 0xd4>;
+// 		awinic,tset = /bits/ 8 <0x1a>;
+// 		awinic,r-spare = /bits/ 8 <0x68>;
 
-		awinic,bemf-upper-threshold = <2296>;
-		awinic,bemf-lower-threshold = <239>;
-	};
-};
+// 		awinic,bemf-upper-threshold = <2296>;
+// 		awinic,bemf-lower-threshold = <239>;
+// 	};
+// };
 
-&ipa {
-	qcom,gsi-loader = "self";
-	memory-region = <&ipa_fw_mem>;
-	firmware-name = "qcom/sm7325/redwood/ipa_fws.mdt";
-	status = "okay";
-};
+// &ipa {
+// 	qcom,gsi-loader = "self";
+// 	memory-region = <&ipa_fw_mem>;
+// 	firmware-name = "qcom/sm7325/redwood/ipa_fws.mdt";
+// 	status = "okay";
+// };
 
-&mdss {
-	status = "okay";
-};
+// &mdss {
+// 	status = "okay";
+// };
 
-&mdss_dp {
-	status = "okay";
-};
+// &pmr735a_adc {
+// 	channel@3 {
+// 		reg = <ADC5_AMUX_THM1_100K_PU>;
+// 		qcom,ratiometric;
+// 		qcom,hw-settle-time = <200>;
+// 		qcom,pre-scaling = <1 1>;
+// 		label = "charger_skin_therm";
+// 	};
+// };
 
-&mdss_dp_out {
-	data-lanes = <0 1>;
-	remote-endpoint = <&usb_dp_qmpphy_dp_in>;
-};
+// &pmr735a_adc_tm {
+// 	status = "okay";
 
-&mdss_dsi {
-	vdda-supply = <&vreg_l6b>;
-	status = "okay";
-
-	panel@0 {
-		compatible = "xiaomi,redwood-m20-dsc";
-		reg = <0>;
-
-		reset-gpios = <&tlmm 44 GPIO_ACTIVE_LOW>;
-
-		vdd-supply = <&vreg_oled_vci>;
-		vddio-supply = <&vreg_oled_vddio>;
-		dvdd-supply = <&vreg_oled_dvdd>;
-
-		pinctrl-0 = <&sde_dsi_active &sde_te_active_sleep>;
-		pinctrl-1 = <&sde_dsi_sleep &sde_te_active_sleep>;
-		pinctrl-names = "default", "sleep";
-
-		port {
-			panel_in: endpoint {
-				remote-endpoint = <&mdss_dsi0_out>;
-			};
-		};
-	};
-};
-
-&mdss_dsi0_out {
-	data-lanes = <0 1 2 3>;
-	remote-endpoint = <&panel_in>;
-};
-
-&mdss_dsi_phy {
-	vdds-supply = <&vreg_l10c>;
-	status = "okay";
-};
-
-&pmr735a_adc {
-	channel@3 {
-		reg = <ADC5_AMUX_THM1_100K_PU>;
-		qcom,ratiometric;
-		qcom,hw-settle-time = <200>;
-		qcom,pre-scaling = <1 1>;
-		label = "charger_skin_therm";
-	};
-};
-
-&pmr735a_adc_tm {
-	status = "okay";
-
-	die-therm@3 {
-		reg = <3>;
-		io-channels = <&pmr735a_adc ADC5_AMUX_THM3_100K_PU>;
-		qcom,ratiometric;
-		qcom,hw-settle-time-us = <200>;
-	};
-};
+// 	die-therm@3 {
+// 		reg = <3>;
+// 		io-channels = <&pmr735a_adc ADC5_AMUX_THM3_100K_PU>;
+// 		qcom,ratiometric;
+// 		qcom,hw-settle-time-us = <200>;
+// 	};
+// };
 
 &pm7325_gpios {
 	volume_down_default: volume-down-default-state {
@@ -661,7 +637,7 @@
 &pm8008_regulators {
 	vdd_l1_l2-supply = <&vreg_s8b>;
 	vdd_l3_l4-supply = <&vreg_bob>;
-	vdd_l5-supply = <&vreg_s1b>;
+	vdd_l5-supply = <&vreg_bob>;
 	vdd_l6-supply = <&vreg_s1b>;
 	vdd_l7-supply = <&vreg_bob>;
 };
@@ -674,8 +650,11 @@
 };
 
 &pm8008_l2 {
-	regulator-min-microvolt = <1200000>;
-	regulator-max-microvolt = <1200000>;
+	regulator-min-microvolt = <950000>;
+	/* Adjusted from downstream 1150000 to avoid regulator core failure
+	   since current_uV on boot is 1.2V, but the regulator steps don't
+	   include exactly 1.15V, just 1.152V */
+	regulator-max-microvolt = <1152000>;
 	regulator-min-dropout-voltage-microvolt = <128000>;
 	regulator-always-on; // FIXME
 };
@@ -740,19 +719,44 @@
 &pmk8350_adc_tm {
 	status = "okay";
 
-	die-temp@3 {
-		reg = <3>;
+	xo-therm@0 {
+		reg = <0>;
 		io-channels = <&pmk8350_vadc PMK8350_ADC7_AMUX_THM1_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time-us = <200>;
 	};
 
-	xo-therm@44 {
-		reg = <44>;
-		io-channels = <&pmk8350_vadc PMK8350_ADC7_AMUX_THM1_100K_PU>;
+	quiet-therm@1 {
+		reg = <1>;
+		io-channels = <&pmk8350_vadc PM7325_ADC7_AMUX_THM1_100K_PU>;
 		qcom,ratiometric;
 		qcom,hw-settle-time-us = <200>;
 	};
+
+	cam-flash-therm@2 {
+		reg = <2>;
+		io-channels = <&pmk8350_vadc PM7325_ADC7_AMUX_THM2_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time-us = <200>;
+	};
+
+	sdm-skin-therm@3 {
+		reg = <3>;
+		io-channels = <&pmk8350_vadc PM7325_ADC7_AMUX_THM3_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time-us = <200>;
+	};
+
+	wide-rfc-therm@4 {
+		reg = <4>;
+		io-channels = <&pmk8350_vadc PM7325_ADC7_AMUX_THM4_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time-us = <200>;
+	};
+};
+
+&pmk8350_rtc {
+	status = "okay";
 };
 
 &pmk8350_vadc {
@@ -774,13 +778,47 @@
 
 	channel@403 {
 		reg = <PMR735A_ADC7_DIE_TEMP>;
-		label = "pmr735a_die_temp";
 		qcom,pre-scaling = <1 1>;
+		label = "pmr735a_die_temp";
 	};
-};
 
-&pmk8350_rtc {
-	status = "okay";
+	channel@103 {
+		reg = <PM7325_ADC7_DIE_TEMP>;
+		qcom,pre-scaling = <1 1>;
+		label = "pm7325_die_temp";
+	};
+
+	channel@144 {
+		reg = <PM7325_ADC7_AMUX_THM1_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+		label = "pm7325_quiet_therm";
+	};
+
+	channel@145 {
+		reg = <PM7325_ADC7_AMUX_THM2_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+		label = "pm7325_cam_flash_therm";
+	};
+
+	channel@146 {
+		reg = <PM7325_ADC7_AMUX_THM3_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+		label = "pm7325_sdm_skin_therm";
+	};
+
+	channel@147 {
+		reg = <PM7325_ADC7_AMUX_THM4_100K_PU>;
+		qcom,ratiometric;
+		qcom,hw-settle-time = <200>;
+		qcom,pre-scaling = <1 1>;
+		label = "pm7325_wide_rfc_therm";
+	};
 };
 
 &pon_pwrkey {
@@ -820,26 +858,6 @@
 	status = "okay";
 };
 
-&remoteproc_adsp {
-	firmware-name = "qcom/sm7325/redwood/adsp.mdt";
-	status = "okay";
-};
-
-&remoteproc_cdsp {
-	firmware-name = "qcom/sm7325/redwood/cdsp.mdt";
-	status = "okay";
-};
-
-&remoteproc_mpss {
-	firmware-name = "qcom/sm7325/redwood/modem.mdt";
-	status = "okay";
-};
-
-&remoteproc_wpss {
-	firmware-name = "qcom/sm7325/redwood/wpss.mdt";
-	status = "okay";
-};
-
 &sdc2_clk {
 	drive-strength = <16>;
 	bias-disable;
@@ -865,36 +883,6 @@
 	status = "okay";
 };
 
-&spi13 {
-	status = "okay";
-
-	/* Goodix touchscreen @ 0 */
-	goodix-berlin@0 {
-		compatible = "goodix,brl-a";
-		reg = <0>;
-		spi-max-frequency = <5000000>;
-
-		goodix,avdd-name = "avdd"; //3.0v
-		avdd-supply = <&vreg_l3c>;
-		goodix,iovdd-name = "iovdd"; //1.8v
-		iovdd-supply = <&vreg_l2c>;
-
-		goodix,irq-gpio = <&tlmm 81 0x2802>;
-		goodix,irq-flags = <2>; // 1:trigger rising, 2:trigger falling;
-		goodix,reset-gpio = <&tlmm 105 0x0>;
-
-		goodix,panel-max-x = <10800>;
-		goodix,panel-max-y = <24000>;
-		goodix,panel-max-w = <255>;
-
-		//panel = <&rm692e5_boe_amoled_cmd>;
-
-		goodix.sleep-enable; // enter sleep mode
-		goodix,firmware-name = "qcom/sm7325/redwood/goodix_firmware_m20.bin";
-		goodix,config-name = "qcom/sm7325/redwood/goodix_cfg_group_m20.bin";
-	};
-};
-
 &tlmm {
 	/*
 	 * 32-33: SMB1394 (SPMI)
@@ -906,27 +894,6 @@
 		pins = "gpio85";
 		function = "gpio";
 		output-low;
-		bias-disable;
-	};
-
-	cam_mclk0_default: cam-mclk0-default-state {
-		pins = "gpio64";
-		function = "cam_mclk";
-		drive-strength = <2>;
-		bias-disable;
-	};
-
-	cam_mclk1_default: cam-mclk1-default-state {
-		pins = "gpio65";
-		function = "cam_mclk";
-		drive-strength = <2>;
-		bias-disable;
-	};
-
-	cam_mclk3_default: cam-mclk3-default-state {
-		pins = "gpio67";
-		function = "cam_mclk";
-		drive-strength = <2>;
 		bias-disable;
 	};
 
@@ -975,33 +942,6 @@
 		 */
 		bias-pull-up;
 	};
-
-	sw_ctrl_default: sw-ctrl-default-state {
-		pins = "gpio86";
-		function = "gpio";
-		bias-pull-down;
-	};
-
-	sde_dsi_active: sde_dsi_active-state {
-		pins = "gpio44";
-		function = "gpio";
-		drive-strength = <8>;
-		bias-disable;
-	};
-
-	sde_dsi_sleep: sde-dsi-sleep-state {
-		pins = "gpio44";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-pull-down;
-	};
-
-	sde_te_active_sleep: sde_te_active-state {
-		pins = "gpio80";
-		function = "mdp_vsync";
-		drive-strength = <2>;
-		bias-pull-down;
-	};
 };
 
 &uart5 {
@@ -1014,35 +954,10 @@
 	interrupts-extended = <&intc GIC_SPI 608 IRQ_TYPE_LEVEL_HIGH>,
 			      <&tlmm 31 IRQ_TYPE_EDGE_FALLING>;
 
-	pinctrl-1 = <&qup_uart7_sleep_cts>,
-		<&qup_uart7_sleep_rts>,
-		<&qup_uart7_sleep_tx>,
-		<&qup_uart7_sleep_rx>;
+	pinctrl-1 = <&qup_uart7_sleep_cts>, <&qup_uart7_sleep_rts>, <&qup_uart7_sleep_tx>, <&qup_uart7_sleep_rx>;
 	pinctrl-names = "default", "sleep";
 
 	status = "okay";
-
-	bluetooth: bluetooth {
-		compatible = "qcom,wcn6750-bt";
-
-		pinctrl-0 = <&bluetooth_enable_default>, <&sw_ctrl_default>;
-		pinctrl-names = "default";
-
-		enable-gpios = <&tlmm 85 GPIO_ACTIVE_HIGH>;
-		swctrl-gpios = <&tlmm 86 GPIO_ACTIVE_HIGH>;
-
-		vddio-supply = <&vreg_l19b>;
-		vddaon-supply = <&vreg_s7b>;
-		vddbtcxmx-supply = <&vreg_s7b>;
-		vddrfacmn-supply = <&vreg_s7b>;
-		vddrfa0p8-supply = <&vreg_s7b>;
-		vddrfa1p7-supply = <&vreg_s1b>;
-		vddrfa1p2-supply = <&vreg_s8b>;
-		vddrfa2p2-supply = <&vreg_s1c>;
-		vddasd-supply = <&vreg_l11c>;
-
-		max-speed = <3200000>;
-	};
 };
 
 &ufs_mem_hc {
@@ -1089,17 +1004,6 @@
 	vdda18-supply = <&vreg_l1c>;
 	vdda33-supply = <&vreg_l2b>;
 
-	qcom,hs-crossover-voltage-microvolt = <28000>;
-	qcom,hs-output-impedance-micro-ohms = <2600000>;
-	qcom,hs-rise-fall-time-bp = <5430>;
-	qcom,hs-disconnect-bp = <1743>;
-	qcom,hs-amplitude-bp = <2430>;
-
-	qcom,pre-emphasis-amplitude-bp = <20000>;
-	qcom,pre-emphasis-duration-bp = <20000>;
-
-	qcom,squelch-detector-bp = <(-2090)>;
-
 	status = "okay";
 };
 
@@ -1109,26 +1013,5 @@
 
 	orientation-switch;
 
-	status = "okay";
-};
-
-&usb_dp_qmpphy_dp_in {
-	remote-endpoint = <&mdss_dp_out>;
-};
-
-// &usb_dp_qmpphy_out {
-// 	remote-endpoint = <&redriver_ss_in>;
-// };
-
-&usb_dp_qmpphy_usb_ss_in {
-	remote-endpoint = <&usb_1_dwc3_ss>;
-};
-
-&venus {
-	firmware-name = "qcom/sm7325/redwood/venus.mbn";
-	status = "okay";
-};
-
-&wifi {
 	status = "okay";
 };
