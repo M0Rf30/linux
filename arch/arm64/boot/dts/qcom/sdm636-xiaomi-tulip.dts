@@ -163,6 +163,13 @@
 
 &blsp_spi7 {
 	status = "okay";
+
+        spidev@1 {
+		compatible = "rohm,dh2228fv";
+                reg = <1>;
+                spi-cpol;
+                spi-max-frequency = <1000000>;
+        };
 };
 
 &blsp1_uart2 {
