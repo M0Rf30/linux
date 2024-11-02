@@ -2319,6 +2319,20 @@
 			status = "disabled";
 		};
 
+		lpass_tlmm: pinctrl@15070000 {
+			compatible = "qcom,sdm660-lpass-lpi-pinctrl";
+			reg = <0x15070000 0x0>;			gpio-controller;
+			#gpio-cells = <2>;
+			gpio-ranges = <&lpass_tlmm 0 0 32>;
+
+			sensors_i2c_default: sensors-i2c-default-state {
+				pins = "gpio2", "gpio3";
+				function = "gpio";
+				drive-strength = <2>;
+				bias-disable;
+			};
+		};
+
 		adsp_pil: remoteproc@15700000 {
 			compatible = "qcom,sdm660-adsp-pas";
 			reg = <0x15700000 0x4040>;

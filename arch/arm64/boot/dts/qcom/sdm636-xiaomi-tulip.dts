@@ -84,6 +84,19 @@
 		};
 	};
 
+	i2c-sensors {
+		compatible = "i2c-gpio";
+		sda-gpios = <&lpass_tlmm 2 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&lpass_tlmm 3 (GPIO_ACTIVE_HIGH|GPIO_OPEN_DRAIN)>;
+sensors_i2c_default
+		pinctrl-0 = <&sensors_i2c_default>;
+		pinctrl-names = "default";
+
+		i2c-gpio,delay-us = <2>; /* ~100 kHz */
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
+
 	reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
@@ -175,6 +188,12 @@
 };
 
 &lpass_smmu {
+	status = "okay";
+};
+
+/* PINCTRL */
+
+&lpass_tlmm {
 	status = "okay";
 };
 
