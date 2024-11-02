@@ -1020,17 +1020,17 @@
 			};
 
 			spi7_default: spi7-default-state {
-				pins = "gpio26", "gpio27";
+				pins = "gpio24", "gpio25", "gpio26", "gpio27";
 				function = "blsp_spi7";
-				drive-strength = <2>;
+				drive-strength = <6>;
 				bias-disable;
 			};
 
 			spi7_sleep: spi7-sleep-state {
-				pins = "gpio26", "gpio27";
+				pins = "gpio24", "gpio25", "gpio26", "gpio27";
 				function = "blsp_spi7";
-				drive-strength = <2>;
-				bias-pull-up;
+				drive-strength = <6>;
+				bias-disable;
 			};
 		};
 
