@@ -104,6 +104,44 @@
 	};
 };
 
+&adreno_gpu {
+	status = "okay";
+
+	zap-shader {
+		firmware-name = "qcom/a512_zap.mdt";
+	};
+
+	// These OPPs are correct, but we are lacking support for the
+	// GPU regulator. Hence, disable them for now to prevent the
+	// platform from hanging on high graphics loads
+	opp-table {
+		/delete-node/ opp-700000000;
+
+		// need to mute;
+		// dev_pm_opp_set_rate: failed to find OPP for freq 500000000 (-34)
+		// opp-500000000 {
+		// 	opp-hz = /bits/ 64 <500000000>;
+		// 	opp-level = <RPM_SMD_LEVEL_SVS_PLUS>;
+		// 	// opp-peak-kBps = <2724000>;
+		// 	opp-supported-hw = <0xff>;
+		// };
+
+		opp-430000000 {
+			opp-hz = /bits/ 64 <430000000>;
+			opp-level = <RPM_SMD_LEVEL_SVS_PLUS>;
+			// opp-peak-kBps = <2724000>;
+			opp-supported-hw = <0xff>;
+		};
+
+		opp-370000000 {
+			opp-hz = /bits/ 64 <370000000>;
+			opp-level = <RPM_SMD_LEVEL_SVS>;
+			opp-peak-kBps = <2188000>;
+			opp-supported-hw = <0xff>;
+		};
+	};
+};
+
 &adsp_pil {
 	status = "okay";
 };
@@ -157,7 +195,61 @@
 	};
 };
 
+&gpucc {
+	status = "okay";
+};
+
+&kgsl_smmu {
+	status = "okay";
+};
+
 &lpass_smmu {
+	status = "okay";
+};
+
+&mdss {
+	status = "okay";
+};
+
+&mdss_dsi0 {
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	vdd-supply = <&vreg_l1b_0p925>;
+	vdda-supply = <&vreg_l1a_1p225>;
+
+	panel: panel@0 {
+		compatible = "mdss,nt36672a-e7t-tianmaplus";
+		reg = <0>;
+
+		reset-gpios = <&tlmm 53 GPIO_ACTIVE_LOW>;
+
+		backlight = <&pm660l_wled>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
+
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&mdss_dsi0_out>;
+			};
+		};
+	};
+};
+
+&mdss_dsi0_out {
+	data-lanes = <0 1 2 3>;
+	remote-endpoint = <&panel_in>;
+};
+
+&mdss_dsi0_phy {
+	vcca-supply = <&vreg_l1b_0p925>;
+	status = "okay";
+};
+
+&mmss_smmu {
 	status = "okay";
 };
 
