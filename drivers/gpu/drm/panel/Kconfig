@@ -506,6 +506,15 @@ config DRM_PANEL_NOVATEK_NT36672A
 	  around the Novatek NT36672A display controller, such as some
 	  Tianma panels used in a few Xiaomi Poco F1 mobile phones.
 
+config DRM_PANEL_NOVATEK_NT36672A_TIANMA_TULIP
+	tristate "Novatek NT36672A Tianma panel for xiaomi-tulip"
+	depends on OF
+	depends on DRM_MIPI_DSI
+	depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y here if you want to enable support for Tianma nt36672A
+	  command mode panel used in Xiaomi Redmi Note 6 Pro phone (codename tulip)
+
 config DRM_PANEL_NOVATEK_NT36672E
 	tristate "Novatek NT36672E DSI panel"
 	depends on OF
