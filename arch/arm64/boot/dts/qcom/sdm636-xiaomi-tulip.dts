@@ -159,6 +159,16 @@
 
 &blsp_i2c2 {
 	status = "okay";
+
+	regulator@60 {
+		compatible = "fcs,fan53526";
+		reg = <0x60>;
+		regulator-always-on;
+		regulator-min-microvolt = <1000000>;
+		regulator-max-microvolt = <1100000>;
+		vin-supply = <&vph_pwr>;
+		fcs,suspend-voltage-selector = <1>;
+	};
 };
 
 &blsp_i2c6 {
