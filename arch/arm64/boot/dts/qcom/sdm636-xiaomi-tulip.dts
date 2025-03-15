@@ -10,6 +10,8 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/input/gpio-keys.h>
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/sound/qcom,q6afe.h>
+#include <dt-bindings/sound/qcom,q6asm.h>
 
 / {
 	model = "Xiaomi Redmi Note 6 Pro";
@@ -179,6 +181,10 @@
 	};
 };
 
+&lpass_codec {
+	status = "okay";
+};
+
 &mdss {
 	status = "okay";
 };
@@ -244,6 +250,10 @@
 };
 
 &pm660_rradc {
+	status = "okay";
+};
+
+&pm660l_codec {
 	status = "okay";
 };
 
