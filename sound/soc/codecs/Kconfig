@@ -263,6 +263,7 @@ config SND_SOC_ALL_CODECS
 	imply SND_SOC_STAC9766
 	imply SND_SOC_STI_SAS
 	imply SND_SOC_TAS2552
+	imply SND_SOC_TAS2557
 	imply SND_SOC_TAS2562
 	imply SND_SOC_TAS2764
 	imply SND_SOC_TAS2770
@@ -2052,6 +2053,14 @@ config SND_SOC_STI_SAS
 config SND_SOC_TAS2552
 	tristate "Texas Instruments TAS2552 Mono Audio amplifier"
 	depends on I2C
+
+config SND_SOC_TAS2557
+	tristate "Texas Instruments TAS2557 Smart Audio amplifier"
+	depends on I2C
+	help
+	  Enable support for Texas Instruments TAS2557 high-efficiency
+	  digital input mono Class-D smart audio power amplifier with
+	  integrated DSP, speaker protection and IV sense feedback.
 
 config SND_SOC_TAS2562
 	tristate "Texas Instruments TAS2562 Mono Audio amplifier"
