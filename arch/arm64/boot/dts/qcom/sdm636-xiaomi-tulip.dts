@@ -171,6 +171,8 @@
 		vbat-supply = <&battery>;
 		pvdd-supply = <&vreg_bob>;
 
+		ti,i2s-bits = <32>;
+		ti,channel = <0>;	/* left channel */
 		ti,imon-slot = <0>;
 		ti,vmon-slot = <2>;
 	};
@@ -326,7 +328,29 @@
 	status = "okay";
 };
 
+/*
+ * Remove protection-domain from Q6 services.
+ * The audio_pd on SDM660 firmware doesn't properly signal its availability,
+ * so we need to register these services immediately without waiting for PD.
+ */
+&q6afe {
+	/delete-property/ qcom,protection-domain;
+};
+
+&q6asm {
+	/delete-property/ qcom,protection-domain;
+};
+
+&q6adm {
+	/delete-property/ qcom,protection-domain;
+};
+
 &q6afedai {
+	dai@16 {
+		reg = <PRIMARY_MI2S_RX>;
+		qcom,sd-lines = <0>;
+	};
+
 	dai@81 {
 		reg = <INT0_MI2S_RX>;
 		qcom,sd-lines = <0 1>;
@@ -660,7 +684,8 @@
 	model = "Xiaomi Redmi Note 6 Pro";
 
 	pinctrl-0 = <&cdc_pdm_default>,
-			<&cdc_dmic_default>;
+			<&cdc_dmic_default>,
+			<&pri_mi2s_active>;
 	pinctrl-names = "default";
 
 	audio-routing = "RX_BIAS", "Digital MCLK",
@@ -676,8 +701,8 @@
 			"Digital LPASS_PDM_TX", "PDM_TX",
 			"AMIC1", "MIC BIAS External1",
 			"AMIC2", "MIC BIAS External2",
-			/* TAS2557 Speaker Amp */
-			"ASI1", "INT0 MI2S Playback";
+			/* TAS2557 Speaker Amp - connected via PRIMARY MI2S */
+			"ASI1", "Primary MI2S Playback";
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -708,8 +733,23 @@
 
 		codec {
 			sound-dai = <&pm660l_codec 0>,
-					<&lpass_codec 0>,
-					<&tas2557>  ;
+					<&lpass_codec 0>;
+		};
+	};
+
+	pri-mi2s-dai-link {
+		link-name = "Primary MI2S Playback";
+
+		cpu {
+			sound-dai = <&q6afedai PRIMARY_MI2S_RX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&tas2557>;
 		};
 	};
 
@@ -774,6 +814,56 @@
 		function = "gpio";
 		drive-strength = <2>;
 		bias-disable;
+	};
+
+	/*
+	 * Primary MI2S pins for TAS2557 speaker amplifier.
+	 * GPIO12 = SCK, GPIO13 = WS, GPIO14 = SD0 (data out), GPIO15 = SD1 (IV sense)
+	 */
+	pri_mi2s_active: pri-mi2s-active-state {
+		sck-pins {
+			pins = "gpio12";
+			function = "pri_mi2s";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		ws-pins {
+			pins = "gpio13";
+			function = "pri_mi2s_ws";
+			drive-strength = <8>;
+			bias-disable;
+		};
+
+		data-pins {
+			pins = "gpio14", "gpio15";
+			function = "pri_mi2s";
+			drive-strength = <8>;
+			bias-disable;
+		};
+	};
+
+	pri_mi2s_sleep: pri-mi2s-sleep-state {
+		sck-pins {
+			pins = "gpio12";
+			function = "pri_mi2s";
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+
+		ws-pins {
+			pins = "gpio13";
+			function = "pri_mi2s_ws";
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+
+		data-pins {
+			pins = "gpio14", "gpio15";
+			function = "pri_mi2s";
+			drive-strength = <2>;
+			bias-pull-down;
+		};
 	};
 };
 
