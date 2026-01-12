@@ -137,6 +137,13 @@ static int q6i2s_hw_params(struct snd_pcm_substream *substream,
 	i2s->num_channels = params_channels(params);
 	i2s->sd_line_mask = dai_data->priv[dai->id].sd_line_mask;
 
+	/*
+	 * PRIMARY_MI2S_RX uses 32-bit I2S slots for external codecs (e.g. TAS2557).
+	 * Override the bit width regardless of stream format.
+	 */
+	if (dai->id == PRIMARY_MI2S_RX)
+		i2s->bit_width = 32;
+
 	return 0;
 }
 

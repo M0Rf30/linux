@@ -24,12 +24,14 @@
 #define DEFAULT_INT_MCLK_RATE		9600000
 #define TDM_BCLK_RATE			6144000
 #define MI2S_BCLK_RATE			1536000
+#define MI2S_BCLK_RATE_32BIT		3072000
 
 struct sdm660_int_snd_data {
 	struct snd_soc_jack jack;
 	bool jack_setup;
 	uint32_t pri_tdm_clk_count;
 	uint32_t sec_tdm_clk_count;
+	uint32_t pri_mi2s_clk_count;
 	uint32_t int0_mi2s_clk_count;
 	uint32_t int3_mi2s_clk_count;
 };
@@ -98,6 +100,17 @@ static int snd_sdm660_int_startup(struct snd_pcm_substream *stream)
 		snd_soc_dai_set_fmt(cpu, SND_SOC_DAIFMT_CBP_CFP);
 
 		break;
+	case PRIMARY_MI2S_RX:
+		data->pri_mi2s_clk_count++;
+		if (data->pri_mi2s_clk_count == 1)
+			snd_soc_dai_set_sysclk(cpu,
+				Q6AFE_LPASS_CLK_ID_PRI_MI2S_IBIT,
+				MI2S_BCLK_RATE_32BIT, SNDRV_PCM_STREAM_PLAYBACK);
+
+		/* AFE as clock producer for external codec (TAS2557) */
+		snd_soc_dai_set_fmt(cpu, SND_SOC_DAIFMT_CBP_CFP);
+
+		break;
 	case INT3_MI2S_TX:
 		data->int3_mi2s_clk_count++;
 		if (data->int3_mi2s_clk_count == 1)
@@ -163,6 +176,14 @@ static void snd_sdm660_int_shutdown(struct snd_pcm_substream *stream)
 		if (data->int0_mi2s_clk_count == 0)
 			snd_soc_dai_set_sysclk(cpu,
 				Q6AFE_LPASS_CLK_ID_INT0_MI2S_IBIT,
+				0, SNDRV_PCM_STREAM_PLAYBACK);
+
+		break;
+	case PRIMARY_MI2S_RX:
+		data->pri_mi2s_clk_count--;
+		if (data->pri_mi2s_clk_count == 0)
+			snd_soc_dai_set_sysclk(cpu,
+				Q6AFE_LPASS_CLK_ID_PRI_MI2S_IBIT,
 				0, SNDRV_PCM_STREAM_PLAYBACK);
 
 		break;
@@ -273,7 +294,15 @@ static int sdm660_int_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 	struct snd_soc_dai *cpu = snd_soc_rtd_to_cpu(rtd, 0);
 
 	rate->min = rate->max = DEFAULT_SAMPLE_RATE_48K;
-	snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S16_LE);
+
+	/*
+	 * PRIMARY_MI2S_RX uses 32-bit I2S slots for external codecs like TAS2557.
+	 * Other interfaces use 16-bit format.
+	 */
+	if (cpu->id == PRIMARY_MI2S_RX)
+		snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S32_LE);
+	else
+		snd_mask_set_format(fmt, SNDRV_PCM_FORMAT_S16_LE);
 
 	if (cpu->id == PRIMARY_TDM_TX_0)
 		channels->min = channels->max = 1;
