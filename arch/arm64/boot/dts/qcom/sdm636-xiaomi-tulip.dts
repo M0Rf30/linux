@@ -171,7 +171,7 @@
 		vbat-supply = <&battery>;
 		pvdd-supply = <&vreg_bob>;
 
-		ti,i2s-bits = <32>;
+		ti,i2s-bits = <16>;
 		ti,channel = <0>;	/* left channel */
 		ti,imon-slot = <0>;
 		ti,vmon-slot = <2>;
@@ -701,8 +701,8 @@
 			"Digital LPASS_PDM_TX", "PDM_TX",
 			"AMIC1", "MIC BIAS External1",
 			"AMIC2", "MIC BIAS External2",
-			/* TAS2557 Speaker Amp - connected via PRIMARY MI2S */
-			"ASI1", "Primary MI2S Playback";
+			/* TAS2557 Speaker Amp - connected via PRIMARY MI2S to ASI2 */
+			"ASI2", "Primary MI2S Playback";
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
