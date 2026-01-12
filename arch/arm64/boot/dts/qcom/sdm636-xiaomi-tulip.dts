@@ -158,6 +158,22 @@
 
 &blsp_i2c6 {
 	status = "okay";
+
+	tas2557: codec@4c {
+		compatible = "ti,tas2557";
+		reg = <0x4c>;
+		#sound-dai-cells = <0>;
+
+		reset-gpios = <&tlmm 77 GPIO_ACTIVE_HIGH>;
+		irq-gpios = <&tlmm 73 GPIO_ACTIVE_LOW>;
+
+		vdd-supply = <&vreg_l10a_1p8>;
+		vbat-supply = <&battery>;
+		pvdd-supply = <&vreg_bob>;
+
+		ti,imon-slot = <0>;
+		ti,vmon-slot = <2>;
+	};
 };
 
 &blsp_spi7 {
@@ -659,7 +675,9 @@
 			"PDM_RX3", "Digital PDM_RX3",
 			"Digital LPASS_PDM_TX", "PDM_TX",
 			"AMIC1", "MIC BIAS External1",
-			"AMIC2", "MIC BIAS External2";
+			"AMIC2", "MIC BIAS External2",
+			/* TAS2557 Speaker Amp */
+			"ASI1", "INT0 MI2S Playback";
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -690,7 +708,8 @@
 
 		codec {
 			sound-dai = <&pm660l_codec 0>,
-					<&lpass_codec 0>;
+					<&lpass_codec 0>,
+					<&tas2557>  ;
 		};
 	};
 
