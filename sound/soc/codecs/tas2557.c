@@ -56,8 +56,17 @@ static const unsigned int tas2557_irq_config[] = {
 /* Startup sequence */
 static const unsigned int tas2557_startup_data[] = {
 	TAS2557_GPI_PIN_REG, 0x15,	/* enable DIN, MCLK, CCI */
-	TAS2557_GPIO1_PIN_REG, 0x01,	/* enable BCLK */
-	TAS2557_GPIO2_PIN_REG, 0x01,	/* enable WCLK */
+	TAS2557_GPIO1_PIN_REG, 0x01,	/* enable BCLK (ASI1) */
+	TAS2557_GPIO2_PIN_REG, 0x01,	/* enable WCLK (ASI1) */
+	/* ASI2 GPIO configuration - hardware uses ASI2 interface */
+	TAS2557_GPIO5_PIN_REG, 0x01,	/* GPIO5 as ASI2 BCLK input */
+	TAS2557_GPIO6_PIN_REG, 0x01,	/* GPIO6 as ASI2 WCLK input */
+	TAS2557_GPIO7_PIN_REG, 0x15,	/* GPIO7 as ASI2 DOUT */
+	TAS2557_GPIO8_PIN_REG, 0x02,	/* GPIO8 as ASI2 DIN */
+	/* ASI2 clock configuration - format set dynamically in hw_params */
+	TAS2557_ASI2_BDIV_CLK_SEL_REG, 0x01,	/* BDIV clock select */
+	TAS2557_ASI2_BDIV_CLK_RATIO_REG, 0x81,	/* BDIV ratio with power up */
+	TAS2557_ASI2_WDIV_CLK_RATIO_REG, 0xc0,	/* WDIV ratio with power up */
 	TAS2557_POWER_CTRL2_REG, 0xA0,	/* Class-D, Boost power up */
 	TAS2557_POWER_CTRL2_REG, 0xA3,	/* Class-D, Boost, IV sense power up */
 	TAS2557_POWER_CTRL1_REG, 0xF8,	/* PLL, DSP, clock dividers power up */
@@ -84,8 +93,13 @@ static const unsigned int tas2557_shutdown_data[] = {
 	TAS2557_UDELAY, 2000,		/* delay 2ms */
 	TAS2557_POWER_CTRL2_REG, 0x00,	/* Class-D, Boost power down */
 	TAS2557_POWER_CTRL1_REG, 0x00,	/* all power down */
-	TAS2557_GPIO1_PIN_REG, 0x00,	/* disable BCLK */
-	TAS2557_GPIO2_PIN_REG, 0x00,	/* disable WCLK */
+	TAS2557_GPIO1_PIN_REG, 0x00,	/* disable BCLK (ASI1) */
+	TAS2557_GPIO2_PIN_REG, 0x00,	/* disable WCLK (ASI1) */
+	/* Disable ASI2 GPIOs */
+	TAS2557_GPIO5_PIN_REG, 0x00,	/* disable ASI2 BCLK */
+	TAS2557_GPIO6_PIN_REG, 0x00,	/* disable ASI2 WCLK */
+	TAS2557_GPIO7_PIN_REG, 0x00,	/* disable ASI2 DOUT */
+	TAS2557_GPIO8_PIN_REG, 0x00,	/* disable ASI2 DIN */
 	TAS2557_GPI_PIN_REG, 0x00,	/* disable DIN, MCLK, CCI */
 	0xFFFFFFFF, 0xFFFFFFFF
 };
@@ -1478,6 +1492,9 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 		/* Debug: read back key registers to verify state */
 		{
 			unsigned int pwr1, pwr2, mute, pwr_flag, flags1, flags2;
+			unsigned int gpi, gpio1, gpio2, gpio5, gpio6, gpio7, gpio8;
+			unsigned int asi1_fmt, asi2_fmt;
+
 			tas2557_dev_read(tas2557, TAS2557_POWER_CTRL1_REG, &pwr1);
 			tas2557_dev_read(tas2557, TAS2557_POWER_CTRL2_REG, &pwr2);
 			tas2557_dev_read(tas2557, TAS2557_MUTE_REG, &mute);
@@ -1490,6 +1507,24 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 				 flags1, flags2);
 			if (flags1 & 0x04)
 				dev_warn(tas2557->dev, "WARNING: Clock error detected!\n");
+
+			/* Read GPIO configuration after startup */
+			tas2557_dev_read(tas2557, TAS2557_GPI_PIN_REG, &gpi);
+			tas2557_dev_read(tas2557, TAS2557_GPIO1_PIN_REG, &gpio1);
+			tas2557_dev_read(tas2557, TAS2557_GPIO2_PIN_REG, &gpio2);
+			tas2557_dev_read(tas2557, TAS2557_GPIO5_PIN_REG, &gpio5);
+			tas2557_dev_read(tas2557, TAS2557_GPIO6_PIN_REG, &gpio6);
+			tas2557_dev_read(tas2557, TAS2557_GPIO7_PIN_REG, &gpio7);
+			tas2557_dev_read(tas2557, TAS2557_GPIO8_PIN_REG, &gpio8);
+			tas2557_dev_read(tas2557, TAS2557_ASI1_DAC_FORMAT_REG, &asi1_fmt);
+			tas2557_dev_read(tas2557, TAS2557_ASI2_DAC_FORMAT_REG, &asi2_fmt);
+
+			dev_info(tas2557->dev, "post-startup GPIO: gpi=0x%02x gpio1=0x%02x gpio2=0x%02x\n",
+				 gpi, gpio1, gpio2);
+			dev_info(tas2557->dev, "post-startup GPIO5-8: 0x%02x 0x%02x 0x%02x 0x%02x\n",
+				 gpio5, gpio6, gpio7, gpio8);
+			dev_info(tas2557->dev, "post-startup ASI: ASI1_FMT=0x%02x ASI2_FMT=0x%02x\n",
+				 asi1_fmt, asi2_fmt);
 		}
 
 	} else if (!enable && tas2557->powered) {
@@ -1550,8 +1585,17 @@ static int tas2557_set_bit_rate(struct tas2557_priv *tas2557,
 		return -EINVAL;
 	}
 
+	/* Set ASI1 format */
 	ret = tas2557_dev_update_bits(tas2557, TAS2557_ASI1_DAC_FORMAT_REG,
 				      TAS2557_WORDLENGTH_MASK, n << 3);
+	if (ret < 0)
+		return ret;
+
+	/* Set ASI2 format - hardware may use ASI2 interface */
+	ret = tas2557_dev_update_bits(tas2557, TAS2557_ASI2_DAC_FORMAT_REG,
+				      TAS2557_WORDLENGTH_MASK, n << 3);
+
+	dev_info(tas2557->dev, "ASI format set to %u-bit (n=%d)\n", bit_rate, n);
 	return ret;
 }
 
@@ -1584,7 +1628,7 @@ static int tas2557_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		return ret;
 
-	/* Configure ASI1 DAC offset based on channel selection */
+	/* Configure ASI DAC offset based on channel selection */
 	/* For I2S with 32-bit slots: left=offset 0, right=offset 32 bits (4 bytes) */
 	{
 		unsigned int offset;
@@ -1594,11 +1638,17 @@ static int tas2557_hw_params(struct snd_pcm_substream *substream,
 		else
 			offset = tas2557->i2s_bits / 8;  /* Right channel */
 
+		/* Configure ASI1 offset */
 		ret = tas2557_dev_write(tas2557, TAS2557_ASI1_OFFSET1_REG, offset);
 		if (ret < 0)
-			dev_warn(tas2557->dev, "failed to set ASI offset: %d\n", ret);
+			dev_warn(tas2557->dev, "failed to set ASI1 offset: %d\n", ret);
+
+		/* Configure ASI2 offset - hardware uses ASI2 interface */
+		ret = tas2557_dev_write(tas2557, TAS2557_ASI2_OFFSET1_REG, offset);
+		if (ret < 0)
+			dev_warn(tas2557->dev, "failed to set ASI2 offset: %d\n", ret);
 		else
-			dev_info(tas2557->dev, "ASI1 DAC offset set to %u (%s channel, %u-bit)\n",
+			dev_info(tas2557->dev, "ASI2 DAC offset set to %u (%s channel, %u-bit)\n",
 				 offset, tas2557->channel ? "right" : "left", tas2557->i2s_bits);
 	}
 
@@ -1645,18 +1695,27 @@ static int tas2557_hw_params(struct snd_pcm_substream *substream,
 	/* Debug: read ASI configuration registers */
 	tas2557_dev_read(tas2557, TAS2557_ASI1_DAC_FORMAT_REG, &asi_fmt);
 	dev_info(tas2557->dev, "ASI1_DAC_FORMAT=0x%02x\n", asi_fmt);
+	tas2557_dev_read(tas2557, TAS2557_ASI2_DAC_FORMAT_REG, &asi_fmt);
+	dev_info(tas2557->dev, "ASI2_DAC_FORMAT=0x%02x\n", asi_fmt);
 
 	{
 		unsigned int offset1, offset2, gpi, gpio1, gpio2, pll_clkin;
+		unsigned int gpio5, gpio6, gpio7, gpio8;
 		tas2557_dev_read(tas2557, TAS2557_ASI1_OFFSET1_REG, &offset1);
 		tas2557_dev_read(tas2557, TAS2557_ASI1_OFFSET2_REG, &offset2);
 		tas2557_dev_read(tas2557, TAS2557_GPI_PIN_REG, &gpi);
 		tas2557_dev_read(tas2557, TAS2557_GPIO1_PIN_REG, &gpio1);
 		tas2557_dev_read(tas2557, TAS2557_GPIO2_PIN_REG, &gpio2);
+		tas2557_dev_read(tas2557, TAS2557_GPIO5_PIN_REG, &gpio5);
+		tas2557_dev_read(tas2557, TAS2557_GPIO6_PIN_REG, &gpio6);
+		tas2557_dev_read(tas2557, TAS2557_GPIO7_PIN_REG, &gpio7);
+		tas2557_dev_read(tas2557, TAS2557_GPIO8_PIN_REG, &gpio8);
 		tas2557_dev_read(tas2557, TAS2557_PLL_CLKIN_REG, &pll_clkin);
 		dev_info(tas2557->dev, "ASI: offset1=0x%02x offset2=0x%02x\n", offset1, offset2);
-		dev_info(tas2557->dev, "GPIO: gpi=0x%02x gpio1=0x%02x gpio2=0x%02x pll_clkin=0x%02x\n",
-			 gpi, gpio1, gpio2, pll_clkin);
+		dev_info(tas2557->dev, "GPIO ASI1: gpi=0x%02x gpio1=0x%02x gpio2=0x%02x\n",
+			 gpi, gpio1, gpio2);
+		dev_info(tas2557->dev, "GPIO ASI2: gpio5=0x%02x gpio6=0x%02x gpio7=0x%02x gpio8=0x%02x\n",
+			 gpio5, gpio6, gpio7, gpio8);
 	}
 
 	return 0;
