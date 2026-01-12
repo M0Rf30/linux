@@ -90,9 +90,21 @@ static const unsigned int tas2557_shutdown_data[] = {
 	0xFFFFFFFF, 0xFFFFFFFF
 };
 
+static bool tas2557_volatile(struct device *dev, unsigned int reg)
+{
+	return true;
+}
+
+static bool tas2557_writeable(struct device *dev, unsigned int reg)
+{
+	return true;
+}
+
 static const struct regmap_config tas2557_regmap_config = {
 	.reg_bits = 8,
 	.val_bits = 8,
+	.writeable_reg = tas2557_writeable,
+	.volatile_reg = tas2557_volatile,
 	.cache_type = REGCACHE_NONE,
 	.max_register = 128,
 };
@@ -1078,6 +1090,7 @@ static void tas2557_fw_ready(const struct firmware *fw_entry, void *context)
 {
 	struct tas2557_priv *tas2557 = context;
 	struct tas2557_firmware *fw;
+	unsigned int i;
 	int ret;
 
 	if (!fw_entry || !fw_entry->data || fw_entry->size == 0) {
@@ -1103,6 +1116,18 @@ static void tas2557_fw_ready(const struct firmware *fw_entry, void *context)
 	tas2557->fw = fw;
 	tas2557->fw_loaded = true;
 
+	/* Log firmware contents */
+	dev_info(tas2557->dev, "firmware: %u programs, %u configs\n",
+		 fw->num_programs, fw->num_configs);
+	for (i = 0; i < fw->num_programs; i++)
+		dev_info(tas2557->dev, "  program %u: %s\n",
+			 i, fw->programs[i].description ?: "(unnamed)");
+	for (i = 0; i < fw->num_configs; i++)
+		dev_info(tas2557->dev, "  config %u: %s (prog=%u, rate=%u, pll_src=%u)\n",
+			 i, fw->configs[i].description ?: "(unnamed)",
+			 fw->configs[i].program, fw->configs[i].sample_rate,
+			 fw->configs[i].pll_src);
+
 	/* Load first program */
 	ret = tas2557_set_program(tas2557, 0, -1);
 	if (ret < 0) {
@@ -1118,17 +1143,30 @@ static void tas2557_fw_ready(const struct firmware *fw_entry, void *context)
  */
 static void tas2557_hw_reset(struct tas2557_priv *tas2557)
 {
-	if (!tas2557->reset_gpio)
+	if (!tas2557->reset_gpio) {
+		/* Still reset book/page tracking */
+		mutex_lock(&tas2557->dev_lock);
+		tas2557->current_book = 0xff;
+		tas2557->current_page = 0xff;
+		mutex_unlock(&tas2557->dev_lock);
 		return;
+	}
 
+	/* Hold mutex to prevent I2C access during reset */
+	mutex_lock(&tas2557->dev_lock);
+
+	/* Assert reset (TAS2557 reset is active-low, DTS uses GPIO_ACTIVE_HIGH) */
 	gpiod_set_value_cansleep(tas2557->reset_gpio, 0);
 	msleep(5);
+	/* Release reset */
 	gpiod_set_value_cansleep(tas2557->reset_gpio, 1);
-	msleep(2);
+	msleep(10);
 
 	/* Reset book/page tracking after hardware reset */
 	tas2557->current_book = 0xff;
 	tas2557->current_page = 0xff;
+
+	mutex_unlock(&tas2557->dev_lock);
 
 	if (tas2557->err_code)
 		dev_info(tas2557->dev, "before reset, err_code=0x%x\n",
@@ -1379,7 +1417,11 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 {
 	int ret = 0;
 
+	dev_info(tas2557->dev, "tas2557_enable: enable=%d, powered=%d\n",
+		 enable, tas2557->powered);
+
 	if (enable && !tas2557->powered) {
+		dev_info(tas2557->dev, "powering on amplifier\n");
 		/* Stop temperature monitoring during power-up */
 		tas2557_stop_temp_monitor(tas2557);
 
@@ -1388,6 +1430,7 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 			dev_err(tas2557->dev, "startup failed: %d\n", ret);
 			return ret;
 		}
+		dev_info(tas2557->dev, "startup sequence complete\n");
 
 		/* Apply DAC gain setting */
 		ret = tas2557_dev_update_bits(tas2557, TAS2557_SPK_CTRL_REG,
@@ -1395,6 +1438,8 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 					      tas2557->dac_gain << TAS2557_DAC_GAIN_SHIFT);
 		if (ret < 0)
 			dev_warn(tas2557->dev, "failed to set gain: %d\n", ret);
+		else
+			dev_info(tas2557->dev, "DAC gain set to %u\n", tas2557->dac_gain);
 
 		/* Configure sense slots if enabled */
 		if (tas2557->isense_enabled || tas2557->vsense_enabled) {
@@ -1413,6 +1458,13 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 			dev_err(tas2557->dev, "unmute failed: %d\n", ret);
 			return ret;
 		}
+		/* Verify soft mute was cleared (Book 100 register) */
+		{
+			unsigned int soft_mute;
+			tas2557_dev_read(tas2557, TAS2557_SOFT_MUTE_REG, &soft_mute);
+			dev_info(tas2557->dev, "SOFT_MUTE_REG (Book 100) = 0x%02x\n", soft_mute);
+		}
+		dev_info(tas2557->dev, "unmute sequence complete\n");
 
 		tas2557->powered = true;
 		tas2557->muted = false;
@@ -1421,7 +1473,24 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 		/* Start temperature monitoring */
 		tas2557_start_temp_monitor(tas2557);
 
-		dev_dbg(tas2557->dev, "powered on\n");
+		dev_info(tas2557->dev, "amplifier powered on successfully\n");
+
+		/* Debug: read back key registers to verify state */
+		{
+			unsigned int pwr1, pwr2, mute, pwr_flag, flags1, flags2;
+			tas2557_dev_read(tas2557, TAS2557_POWER_CTRL1_REG, &pwr1);
+			tas2557_dev_read(tas2557, TAS2557_POWER_CTRL2_REG, &pwr2);
+			tas2557_dev_read(tas2557, TAS2557_MUTE_REG, &mute);
+			tas2557_dev_read(tas2557, TAS2557_POWER_UP_FLAG_REG, &pwr_flag);
+			tas2557_dev_read(tas2557, TAS2557_FLAGS_1, &flags1);
+			tas2557_dev_read(tas2557, TAS2557_FLAGS_2, &flags2);
+			dev_info(tas2557->dev, "regs: PWR1=0x%02x PWR2=0x%02x MUTE=0x%02x FLAG=0x%02x\n",
+				 pwr1, pwr2, mute, pwr_flag);
+			dev_info(tas2557->dev, "status: FLAGS1=0x%02x FLAGS2=0x%02x\n",
+				 flags1, flags2);
+			if (flags1 & 0x04)
+				dev_warn(tas2557->dev, "WARNING: Clock error detected!\n");
+		}
 
 	} else if (!enable && tas2557->powered) {
 		/* Stop temperature monitoring */
@@ -1483,11 +1552,7 @@ static int tas2557_set_bit_rate(struct tas2557_priv *tas2557,
 
 	ret = tas2557_dev_update_bits(tas2557, TAS2557_ASI1_DAC_FORMAT_REG,
 				      TAS2557_WORDLENGTH_MASK, n << 3);
-	if (ret < 0)
-		return ret;
-
-	tas2557->i2s_bits = bit_rate;
-	return 0;
+	return ret;
 }
 
 /*
@@ -1499,15 +1564,100 @@ static int tas2557_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_component *component = dai->component;
 	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(component);
+	unsigned int asi_fmt;
 	int ret;
+
+	dev_info(tas2557->dev, "hw_params: rate=%u, format=%u, width=%d\n",
+		 params_rate(params), params_format(params),
+		 snd_pcm_format_width(params_format(params)));
 
 	ret = tas2557_set_sample_rate(tas2557, params_rate(params));
 	if (ret < 0)
 		return ret;
 
-	ret = tas2557_set_bit_rate(tas2557, snd_pcm_format_width(params_format(params)));
+	/*
+	 * Use the I2S slot width from DT (ti,i2s-bits), not the stream format width.
+	 * The Q6AFE sends I2S frames with the configured slot width, and the actual
+	 * audio data is left-aligned within each slot.
+	 */
+	ret = tas2557_set_bit_rate(tas2557, tas2557->i2s_bits);
 	if (ret < 0)
 		return ret;
+
+	/* Configure ASI1 DAC offset based on channel selection */
+	/* For I2S with 32-bit slots: left=offset 0, right=offset 32 bits (4 bytes) */
+	{
+		unsigned int offset;
+
+		if (tas2557->channel == 0)
+			offset = 0;  /* Left channel */
+		else
+			offset = tas2557->i2s_bits / 8;  /* Right channel */
+
+		ret = tas2557_dev_write(tas2557, TAS2557_ASI1_OFFSET1_REG, offset);
+		if (ret < 0)
+			dev_warn(tas2557->dev, "failed to set ASI offset: %d\n", ret);
+		else
+			dev_info(tas2557->dev, "ASI1 DAC offset set to %u (%s channel, %u-bit)\n",
+				 offset, tas2557->channel ? "right" : "left", tas2557->i2s_bits);
+	}
+
+	/*
+	 * Set PLL clock source to BCLK (0x01) since we don't have MCLK.
+	 * The firmware defaults to MCLK (0x00) which doesn't work on this platform.
+	 */
+	ret = tas2557_dev_write(tas2557, TAS2557_PLL_CLKIN_REG, 0x01);
+	if (ret < 0)
+		dev_warn(tas2557->dev, "failed to set PLL clock source: %d\n", ret);
+	else
+		dev_info(tas2557->dev, "PLL clock source set to BCLK\n");
+
+	/*
+	 * Configure PLL for BCLK input.
+	 * BCLK = sample_rate * i2s_bits * 2 channels
+	 * For 48kHz, 32-bit: BCLK = 48000 * 32 * 2 = 3,072,000 Hz
+	 * Target PLL output: ~98.304 MHz
+	 * PLL_OUT = BCLK * J.D / P = 3.072 MHz * 32 / 1 = 98.304 MHz
+	 */
+	ret = tas2557_dev_write(tas2557, TAS2557_PLL_P_VAL_REG, 1);
+	if (ret < 0)
+		dev_warn(tas2557->dev, "failed to set PLL P: %d\n", ret);
+	ret = tas2557_dev_write(tas2557, TAS2557_PLL_J_VAL_REG, 32);
+	if (ret < 0)
+		dev_warn(tas2557->dev, "failed to set PLL J: %d\n", ret);
+	ret = tas2557_dev_write(tas2557, TAS2557_PLL_D_VAL_MSB_REG, 0);
+	if (ret < 0)
+		dev_warn(tas2557->dev, "failed to set PLL D MSB: %d\n", ret);
+	ret = tas2557_dev_write(tas2557, TAS2557_PLL_D_VAL_LSB_REG, 0);
+	if (ret < 0)
+		dev_warn(tas2557->dev, "failed to set PLL D LSB: %d\n", ret);
+	/* Verify PLL settings were written */
+	{
+		unsigned int pll_p, pll_j, pll_d_msb, pll_d_lsb;
+		tas2557_dev_read(tas2557, TAS2557_PLL_P_VAL_REG, &pll_p);
+		tas2557_dev_read(tas2557, TAS2557_PLL_J_VAL_REG, &pll_j);
+		tas2557_dev_read(tas2557, TAS2557_PLL_D_VAL_MSB_REG, &pll_d_msb);
+		tas2557_dev_read(tas2557, TAS2557_PLL_D_VAL_LSB_REG, &pll_d_lsb);
+		dev_info(tas2557->dev, "PLL configured: P=%u, J=%u, D=%u.%u\n",
+			 pll_p, pll_j, pll_d_msb, pll_d_lsb);
+	}
+
+	/* Debug: read ASI configuration registers */
+	tas2557_dev_read(tas2557, TAS2557_ASI1_DAC_FORMAT_REG, &asi_fmt);
+	dev_info(tas2557->dev, "ASI1_DAC_FORMAT=0x%02x\n", asi_fmt);
+
+	{
+		unsigned int offset1, offset2, gpi, gpio1, gpio2, pll_clkin;
+		tas2557_dev_read(tas2557, TAS2557_ASI1_OFFSET1_REG, &offset1);
+		tas2557_dev_read(tas2557, TAS2557_ASI1_OFFSET2_REG, &offset2);
+		tas2557_dev_read(tas2557, TAS2557_GPI_PIN_REG, &gpi);
+		tas2557_dev_read(tas2557, TAS2557_GPIO1_PIN_REG, &gpio1);
+		tas2557_dev_read(tas2557, TAS2557_GPIO2_PIN_REG, &gpio2);
+		tas2557_dev_read(tas2557, TAS2557_PLL_CLKIN_REG, &pll_clkin);
+		dev_info(tas2557->dev, "ASI: offset1=0x%02x offset2=0x%02x\n", offset1, offset2);
+		dev_info(tas2557->dev, "GPIO: gpi=0x%02x gpio1=0x%02x gpio2=0x%02x pll_clkin=0x%02x\n",
+			 gpi, gpio1, gpio2, pll_clkin);
+	}
 
 	return 0;
 }
@@ -1518,6 +1668,12 @@ static int tas2557_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(component);
 	unsigned int asi_fmt = 0;
 	int ret;
+
+	dev_info(tas2557->dev, "set_dai_fmt called: fmt=0x%x\n", fmt);
+	dev_info(tas2557->dev, "  format_mask=0x%x, inv=0x%x, clock=0x%x\n",
+		 fmt & SND_SOC_DAIFMT_FORMAT_MASK,
+		 fmt & SND_SOC_DAIFMT_INV_MASK,
+		 fmt & SND_SOC_DAIFMT_CLOCK_MASK);
 
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
@@ -1612,6 +1768,7 @@ static int tas2557_mute_stream(struct snd_soc_dai *dai, int mute, int direction)
 	struct snd_soc_component *component = dai->component;
 	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(component);
 
+	dev_info(tas2557->dev, "mute_stream: mute=%d, direction=%d\n", mute, direction);
 	return tas2557_enable(tas2557, !mute);
 }
 
@@ -1856,10 +2013,14 @@ static int tas2557_classd_event(struct snd_soc_dapm_widget *w,
 	struct snd_soc_component *component = snd_soc_dapm_to_component(w->dapm);
 	struct tas2557_priv *tas2557 = snd_soc_component_get_drvdata(component);
 
+	dev_info(tas2557->dev, "classd_event: event=%d\n", event);
+
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
+		dev_info(tas2557->dev, "DAPM: ClassD POST_PMU\n");
 		return tas2557_enable(tas2557, true);
 	case SND_SOC_DAPM_PRE_PMD:
+		dev_info(tas2557->dev, "DAPM: ClassD PRE_PMD\n");
 		return tas2557_enable(tas2557, false);
 	default:
 		return 0;
@@ -1895,6 +2056,8 @@ static const struct snd_soc_dapm_widget tas2557_dapm_widgets[] = {
 
 static const struct snd_soc_dapm_route tas2557_dapm_routes[] = {
 	/* Playback path */
+	{ "ASI1", NULL, "Playback" },
+	{ "ASI2", NULL, "Playback" },
 	{ "DAC", NULL, "ASI1" },
 	{ "DAC", NULL, "ASI2" },
 	{ "ClassD", NULL, "DAC" },
@@ -1905,6 +2068,7 @@ static const struct snd_soc_dapm_route tas2557_dapm_routes[] = {
 	{ "VSENSE", NULL, "ClassD" },
 	{ "SENSE", NULL, "ISENSE" },
 	{ "SENSE", NULL, "VSENSE" },
+	{ "Capture", NULL, "SENSE" },
 };
 
 /*
@@ -2111,6 +2275,12 @@ static int tas2557_i2c_probe(struct i2c_client *client)
 	/* Read I2S bit width from DT if available */
 	if (of_property_read_u32(dev->of_node, "ti,i2s-bits", &tas2557->i2s_bits))
 		tas2557->i2s_bits = 16;
+
+	/* Read channel selection from DT (0 = left, 1 = right) */
+	if (of_property_read_u32(dev->of_node, "ti,channel", &tas2557->channel))
+		tas2557->channel = 0;  /* default to left channel */
+	dev_info(dev, "configured for %s channel, %u-bit I2S\n",
+		 tas2557->channel ? "right" : "left", tas2557->i2s_bits);
 
 	/* Setup IRQ if available from I2C client */
 	if (client->irq) {

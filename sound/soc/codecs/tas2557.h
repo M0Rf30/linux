@@ -328,6 +328,7 @@ struct tas2557_priv {
 	/* Device info */
 	int pg_id;
 	unsigned int i2s_bits;
+	unsigned int channel;	/* 0 = left, 1 = right */
 
 	/* Power state */
 	bool powered;
