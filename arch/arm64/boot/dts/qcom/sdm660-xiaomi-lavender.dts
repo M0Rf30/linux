@@ -15,19 +15,7 @@
 	chassis-type = "handset";
 
 	reserved-memory {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		ranges;
-
-		ramoops@a0000000 {
-			compatible = "ramoops";
-			reg = <0x0 0xa0000000 0x0 0x400000>;
-			console-size = <0x20000>;
-			record-size = <0x20000>;
-			ftrace-size = <0x0>;
-			pmsg-size = <0x20000>;
-		};
-
+		/* Override framebuffer memory size for lavender's 2340px display */
 		framebuffer_mem: memory@9d400000 {
 			reg = <0x0 0x9d400000 0x0 0x23ff000>;
 			no-map;
@@ -82,16 +70,18 @@
 		/* SDHCI 3.3V signal doesn't seem to be supported. */
 		vreg_l2b_2p95: l2 {
 			regulator-min-microvolt = <1648000>;
-			regulator-max-microvolt = <2696000>;
+			regulator-max-microvolt = <3100000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-allow-set-load;
 		};
 
+		/* Powers touchscreen, required for display init */
 		vreg_l3b_3p3: l3 {
 			regulator-min-microvolt = <1700000>;
 			regulator-max-microvolt = <3300000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-allow-set-load;
+			regulator-always-on;
 		};
 
 		vreg_l4b_2p95: l4 {
@@ -239,6 +229,7 @@
 			regulator-max-microvolt = <1950000>;
 			regulator-enable-ramp-delay = <250>;
 			regulator-allow-set-load;
+			regulator-system-load = <14000>;
 		};
 
 		vreg_l11a_1p8: l11 {
@@ -294,4 +285,8 @@
 			regulator-allow-set-load;
 		};
 	};
+};
+
+&sdhc_2 {
+	status = "okay";
 };
