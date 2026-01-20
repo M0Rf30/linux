@@ -18,11 +18,11 @@
 #include "camss-video.h"
 #include "camss.h"
 
-#define CAMSS_FRAME_MIN_WIDTH		1
-#define CAMSS_FRAME_MAX_WIDTH		8191
-#define CAMSS_FRAME_MIN_HEIGHT		1
-#define CAMSS_FRAME_MAX_HEIGHT_RDI	8191
-#define CAMSS_FRAME_MAX_HEIGHT_PIX	4096
+#define CAMSS_FRAME_MIN_WIDTH 1
+#define CAMSS_FRAME_MAX_WIDTH 8191
+#define CAMSS_FRAME_MIN_HEIGHT 1
+#define CAMSS_FRAME_MAX_HEIGHT_RDI 8191
+#define CAMSS_FRAME_MAX_HEIGHT_PIX 4096
 
 /* -----------------------------------------------------------------------------
  * Helper functions
@@ -53,12 +53,12 @@ static int video_mbus_to_pix_mp(const struct v4l2_mbus_framefmt *mbus,
 	pix->num_planes = f->planes;
 	for (i = 0; i < pix->num_planes; i++) {
 		bytesperline = pix->width / f->hsub[i].numerator *
-			f->hsub[i].denominator * f->bpp[i] / 8;
+			       f->hsub[i].denominator * f->bpp[i] / 8;
 		bytesperline = ALIGN(bytesperline, alignment);
 		pix->plane_fmt[i].bytesperline = bytesperline;
-		pix->plane_fmt[i].sizeimage = pix->height /
-				f->vsub[i].numerator * f->vsub[i].denominator *
-				bytesperline;
+		pix->plane_fmt[i].sizeimage =
+			pix->height / f->vsub[i].numerator *
+			f->vsub[i].denominator * bytesperline;
 	}
 
 	return 0;
@@ -100,7 +100,8 @@ static int video_get_subdev_format(struct camss_video *video,
 	if (ret)
 		return ret;
 
-	ret = camss_format_find_format(fmt.format.code, format->fmt.pix_mp.pixelformat,
+	ret = camss_format_find_format(fmt.format.code,
+				       format->fmt.pix_mp.pixelformat,
 				       video->formats, video->nformats);
 	if (ret < 0)
 		return ret;
@@ -115,13 +116,13 @@ static int video_get_subdev_format(struct camss_video *video,
  * Video queue operations
  */
 
-static int video_queue_setup(struct vb2_queue *q,
-	unsigned int *num_buffers, unsigned int *num_planes,
-	unsigned int sizes[], struct device *alloc_devs[])
+static int video_queue_setup(struct vb2_queue *q, unsigned int *num_buffers,
+			     unsigned int *num_planes, unsigned int sizes[],
+			     struct device *alloc_devs[])
 {
 	struct camss_video *video = vb2_get_drv_priv(q);
 	const struct v4l2_pix_format_mplane *format =
-						&video->active_fmt.fmt.pix_mp;
+		&video->active_fmt.fmt.pix_mp;
 	unsigned int i;
 
 	if (*num_planes) {
@@ -147,10 +148,10 @@ static int video_buf_init(struct vb2_buffer *vb)
 {
 	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
 	struct camss_video *video = vb2_get_drv_priv(vb->vb2_queue);
-	struct camss_buffer *buffer = container_of(vbuf, struct camss_buffer,
-						   vb);
+	struct camss_buffer *buffer =
+		container_of(vbuf, struct camss_buffer, vb);
 	const struct v4l2_pix_format_mplane *format =
-						&video->active_fmt.fmt.pix_mp;
+		&video->active_fmt.fmt.pix_mp;
 	struct sg_table *sgt;
 	unsigned int i;
 
@@ -163,12 +164,12 @@ static int video_buf_init(struct vb2_buffer *vb)
 	}
 
 	if (format->pixelformat == V4L2_PIX_FMT_NV12 ||
-			format->pixelformat == V4L2_PIX_FMT_NV21 ||
-			format->pixelformat == V4L2_PIX_FMT_NV16 ||
-			format->pixelformat == V4L2_PIX_FMT_NV61)
-		buffer->addr[1] = buffer->addr[0] +
-				format->plane_fmt[0].bytesperline *
-				format->height;
+	    format->pixelformat == V4L2_PIX_FMT_NV21 ||
+	    format->pixelformat == V4L2_PIX_FMT_NV16 ||
+	    format->pixelformat == V4L2_PIX_FMT_NV61)
+		buffer->addr[1] =
+			buffer->addr[0] +
+			format->plane_fmt[0].bytesperline * format->height;
 
 	return 0;
 }
@@ -178,7 +179,7 @@ static int video_buf_prepare(struct vb2_buffer *vb)
 	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
 	struct camss_video *video = vb2_get_drv_priv(vb->vb2_queue);
 	const struct v4l2_pix_format_mplane *format =
-						&video->active_fmt.fmt.pix_mp;
+		&video->active_fmt.fmt.pix_mp;
 	unsigned int i;
 
 	for (i = 0; i < format->num_planes; i++) {
@@ -197,8 +198,8 @@ static void video_buf_queue(struct vb2_buffer *vb)
 {
 	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
 	struct camss_video *video = vb2_get_drv_priv(vb->vb2_queue);
-	struct camss_buffer *buffer = container_of(vbuf, struct camss_buffer,
-						   vb);
+	struct camss_buffer *buffer =
+		container_of(vbuf, struct camss_buffer, vb);
 
 	video->ops->queue_buffer(video, buffer);
 }
@@ -216,8 +217,7 @@ static int video_check_format(struct camss_video *video)
 		return ret;
 
 	if (pix->pixelformat != sd_pix->pixelformat ||
-	    pix->height != sd_pix->height ||
-	    pix->width != sd_pix->width ||
+	    pix->height != sd_pix->height || pix->width != sd_pix->width ||
 	    pix->num_planes != sd_pix->num_planes ||
 	    pix->field != format.fmt.pix_mp.field)
 		return -EPIPE;
@@ -251,7 +251,8 @@ static int video_start_streaming(struct vb2_queue *q, unsigned int count)
 
 	ret = video_device_pipeline_alloc_start(vdev);
 	if (ret < 0) {
-		dev_err(video->camss->dev, "Failed to start media pipeline: %d\n", ret);
+		dev_err(video->camss->dev,
+			"Failed to start media pipeline: %d\n", ret);
 		goto flush_buffers;
 	}
 
@@ -260,19 +261,65 @@ static int video_start_streaming(struct vb2_queue *q, unsigned int count)
 		goto error;
 
 	entity = &vdev->entity;
+	dev_info(video->camss->dev,
+		 "video_start_streaming: Starting manual s_stream loop\n");
 	while (1) {
-		pad = &entity->pads[0];
-		if (!(pad->flags & MEDIA_PAD_FL_SINK))
-			break;
+		unsigned int i;
+		struct media_pad *sink_pad = NULL;
 
-		pad = media_pad_remote_pad_first(pad);
-		if (!pad || !is_media_entity_v4l2_subdev(pad->entity))
+		dev_info(
+			video->camss->dev,
+			"video_start_streaming: Loop iteration - entity has %u pads\n",
+			entity->num_pads);
+
+		/* Find the first SINK pad in this entity */
+		for (i = 0; i < entity->num_pads; i++) {
+			dev_info(
+				video->camss->dev,
+				"video_start_streaming: Checking pad %u, flags=0x%x (SINK=0x%x)\n",
+				i, entity->pads[i].flags, MEDIA_PAD_FL_SINK);
+			if (entity->pads[i].flags & MEDIA_PAD_FL_SINK) {
+				sink_pad = &entity->pads[i];
+				dev_info(
+					video->camss->dev,
+					"video_start_streaming: Found SINK pad at index %u\n",
+					i);
+				break;
+			}
+		}
+
+		if (!sink_pad) {
+			dev_info(
+				video->camss->dev,
+				"video_start_streaming: No SINK pad found, stopping loop\n");
 			break;
+		}
+
+		pad = media_pad_remote_pad_first(sink_pad);
+		if (!pad) {
+			dev_info(
+				video->camss->dev,
+				"video_start_streaming: No remote pad found, stopping loop\n");
+			break;
+		}
+		if (!is_media_entity_v4l2_subdev(pad->entity)) {
+			dev_info(
+				video->camss->dev,
+				"video_start_streaming: Remote entity is not a v4l2_subdev, stopping loop\n");
+			break;
+		}
 
 		entity = pad->entity;
 		subdev = media_entity_to_v4l2_subdev(entity);
 
+		dev_info(video->camss->dev,
+			 "video_start_streaming: Calling s_stream(1) on %s\n",
+			 subdev->name);
 		ret = v4l2_subdev_call(subdev, video, s_stream, 1);
+		dev_info(
+			video->camss->dev,
+			"video_start_streaming: s_stream(1) on %s returned %d\n",
+			subdev->name, ret);
 		if (ret < 0 && ret != -ENOIOCTLCMD)
 			goto error;
 	}
@@ -295,27 +342,31 @@ static void video_stop_streaming(struct vb2_queue *q)
 	struct media_entity *entity;
 	struct media_pad *pad;
 	struct v4l2_subdev *subdev;
-	int ret;
 
 	entity = &vdev->entity;
 	while (1) {
-		pad = &entity->pads[0];
-		if (!(pad->flags & MEDIA_PAD_FL_SINK))
+		unsigned int i;
+		struct media_pad *sink_pad = NULL;
+
+		/* Find the first SINK pad in this entity */
+		for (i = 0; i < entity->num_pads; i++) {
+			if (entity->pads[i].flags & MEDIA_PAD_FL_SINK) {
+				sink_pad = &entity->pads[i];
+				break;
+			}
+		}
+
+		if (!sink_pad)
 			break;
 
-		pad = media_pad_remote_pad_first(pad);
+		pad = media_pad_remote_pad_first(sink_pad);
 		if (!pad || !is_media_entity_v4l2_subdev(pad->entity))
 			break;
 
 		entity = pad->entity;
 		subdev = media_entity_to_v4l2_subdev(entity);
 
-		ret = v4l2_subdev_call(subdev, video, s_stream, 0);
-
-		if (ret) {
-			dev_err(video->camss->dev, "Video pipeline stop failed: %d\n", ret);
-			return;
-		}
+		v4l2_subdev_call(subdev, video, s_stream, 0);
 	}
 
 	video_device_pipeline_stop(vdev);
@@ -332,13 +383,13 @@ static void video_unprepare_streaming(struct vb2_queue *q)
 }
 
 static const struct vb2_ops msm_video_vb2_q_ops = {
-	.queue_setup     = video_queue_setup,
-	.buf_init        = video_buf_init,
-	.buf_prepare     = video_buf_prepare,
-	.buf_queue       = video_buf_queue,
+	.queue_setup = video_queue_setup,
+	.buf_init = video_buf_init,
+	.buf_prepare = video_buf_prepare,
+	.buf_queue = video_buf_queue,
 	.prepare_streaming = video_prepare_streaming,
 	.start_streaming = video_start_streaming,
-	.stop_streaming  = video_stop_streaming,
+	.stop_streaming = video_stop_streaming,
 	.unprepare_streaming = video_unprepare_streaming,
 };
 
@@ -388,7 +439,7 @@ static int video_enum_fmt(struct file *file, void *fh, struct v4l2_fmtdesc *f)
 			if (mcode != 0 && video->formats[j].code != mcode)
 				continue;
 			if (video->formats[i].pixelformat ==
-					video->formats[j].pixelformat)
+			    video->formats[j].pixelformat)
 				break;
 		}
 
@@ -435,7 +486,8 @@ static int video_enum_framesizes(struct file *file, void *fh,
 	fsize->stepwise.max_width = CAMSS_FRAME_MAX_WIDTH;
 	fsize->stepwise.min_height = CAMSS_FRAME_MIN_HEIGHT;
 	fsize->stepwise.max_height = (video->line_based) ?
-		CAMSS_FRAME_MAX_HEIGHT_PIX : CAMSS_FRAME_MAX_HEIGHT_RDI;
+					     CAMSS_FRAME_MAX_HEIGHT_PIX :
+					     CAMSS_FRAME_MAX_HEIGHT_RDI;
 	fsize->stepwise.step_width = 1;
 	fsize->stepwise.step_height = 1;
 
@@ -467,11 +519,11 @@ static int __video_try_fmt(struct camss_video *video, struct v4l2_format *f)
 	if (video->line_based)
 		for (i = 0; i < pix_mp->num_planes && i < 3; i++) {
 			p = &pix_mp->plane_fmt[i];
-			bytesperline[i] = clamp_t(u32, p->bytesperline,
-						  1, 65528);
-			sizeimage[i] = clamp_t(u32, p->sizeimage,
-					       bytesperline[i],
-					       bytesperline[i] * CAMSS_FRAME_MAX_HEIGHT_PIX);
+			bytesperline[i] =
+				clamp_t(u32, p->bytesperline, 1, 65528);
+			sizeimage[i] = clamp_t(
+				u32, p->sizeimage, bytesperline[i],
+				bytesperline[i] * CAMSS_FRAME_MAX_HEIGHT_PIX);
 		}
 
 	for (j = 0; j < video->nformats; j++)
@@ -493,29 +545,30 @@ static int __video_try_fmt(struct camss_video *video, struct v4l2_format *f)
 	pix_mp->num_planes = fi->planes;
 	for (i = 0; i < pix_mp->num_planes; i++) {
 		bpl = pix_mp->width / fi->hsub[i].numerator *
-			fi->hsub[i].denominator * fi->bpp[i] / 8;
+		      fi->hsub[i].denominator * fi->bpp[i] / 8;
 		bpl = ALIGN(bpl, video->bpl_alignment);
 		pix_mp->plane_fmt[i].bytesperline = bpl;
 		pix_mp->plane_fmt[i].sizeimage = pix_mp->height /
-			fi->vsub[i].numerator * fi->vsub[i].denominator * bpl;
+						 fi->vsub[i].numerator *
+						 fi->vsub[i].denominator * bpl;
 	}
 
 	pix_mp->field = V4L2_FIELD_NONE;
 	pix_mp->colorspace = V4L2_COLORSPACE_SRGB;
 	pix_mp->flags = 0;
 	pix_mp->ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(pix_mp->colorspace);
-	pix_mp->quantization = V4L2_MAP_QUANTIZATION_DEFAULT(true,
-					pix_mp->colorspace, pix_mp->ycbcr_enc);
+	pix_mp->quantization = V4L2_MAP_QUANTIZATION_DEFAULT(
+		true, pix_mp->colorspace, pix_mp->ycbcr_enc);
 	pix_mp->xfer_func = V4L2_MAP_XFER_FUNC_DEFAULT(pix_mp->colorspace);
 
 	if (video->line_based)
 		for (i = 0; i < pix_mp->num_planes; i++) {
 			p = &pix_mp->plane_fmt[i];
-			p->bytesperline = clamp_t(u32, p->bytesperline,
-						  1, 65528);
-			p->sizeimage = clamp_t(u32, p->sizeimage,
-					       p->bytesperline,
-					       p->bytesperline * CAMSS_FRAME_MAX_HEIGHT_PIX);
+			p->bytesperline =
+				clamp_t(u32, p->bytesperline, 1, 65528);
+			p->sizeimage = clamp_t(
+				u32, p->sizeimage, p->bytesperline,
+				p->bytesperline * CAMSS_FRAME_MAX_HEIGHT_PIX);
 			lines = p->sizeimage / p->bytesperline;
 
 			if (p->bytesperline < bytesperline[i])
@@ -580,24 +633,24 @@ static int video_s_input(struct file *file, void *fh, unsigned int input)
 }
 
 static const struct v4l2_ioctl_ops msm_vid_ioctl_ops = {
-	.vidioc_querycap		= video_querycap,
-	.vidioc_enum_fmt_vid_cap	= video_enum_fmt,
-	.vidioc_enum_framesizes		= video_enum_framesizes,
-	.vidioc_g_fmt_vid_cap_mplane	= video_g_fmt,
-	.vidioc_s_fmt_vid_cap_mplane	= video_s_fmt,
-	.vidioc_try_fmt_vid_cap_mplane	= video_try_fmt,
-	.vidioc_reqbufs			= vb2_ioctl_reqbufs,
-	.vidioc_querybuf		= vb2_ioctl_querybuf,
-	.vidioc_qbuf			= vb2_ioctl_qbuf,
-	.vidioc_expbuf			= vb2_ioctl_expbuf,
-	.vidioc_dqbuf			= vb2_ioctl_dqbuf,
-	.vidioc_create_bufs		= vb2_ioctl_create_bufs,
-	.vidioc_prepare_buf		= vb2_ioctl_prepare_buf,
-	.vidioc_streamon		= vb2_ioctl_streamon,
-	.vidioc_streamoff		= vb2_ioctl_streamoff,
-	.vidioc_enum_input		= video_enum_input,
-	.vidioc_g_input			= video_g_input,
-	.vidioc_s_input			= video_s_input,
+	.vidioc_querycap = video_querycap,
+	.vidioc_enum_fmt_vid_cap = video_enum_fmt,
+	.vidioc_enum_framesizes = video_enum_framesizes,
+	.vidioc_g_fmt_vid_cap_mplane = video_g_fmt,
+	.vidioc_s_fmt_vid_cap_mplane = video_s_fmt,
+	.vidioc_try_fmt_vid_cap_mplane = video_try_fmt,
+	.vidioc_reqbufs = vb2_ioctl_reqbufs,
+	.vidioc_querybuf = vb2_ioctl_querybuf,
+	.vidioc_qbuf = vb2_ioctl_qbuf,
+	.vidioc_expbuf = vb2_ioctl_expbuf,
+	.vidioc_dqbuf = vb2_ioctl_dqbuf,
+	.vidioc_create_bufs = vb2_ioctl_create_bufs,
+	.vidioc_prepare_buf = vb2_ioctl_prepare_buf,
+	.vidioc_streamon = vb2_ioctl_streamon,
+	.vidioc_streamoff = vb2_ioctl_streamoff,
+	.vidioc_enum_input = video_enum_input,
+	.vidioc_g_input = video_g_input,
+	.vidioc_s_input = video_s_input,
 };
 
 /* -----------------------------------------------------------------------------
@@ -605,13 +658,13 @@ static const struct v4l2_ioctl_ops msm_vid_ioctl_ops = {
  */
 
 static const struct v4l2_file_operations msm_vid_fops = {
-	.owner          = THIS_MODULE,
+	.owner = THIS_MODULE,
 	.unlocked_ioctl = video_ioctl2,
-	.open           = v4l2_fh_open,
-	.release        = vb2_fop_release,
-	.poll           = vb2_fop_poll,
-	.mmap		= vb2_fop_mmap,
-	.read		= vb2_fop_read,
+	.open = v4l2_fh_open,
+	.release = vb2_fop_release,
+	.poll = vb2_fop_poll,
+	.mmap = vb2_fop_mmap,
+	.read = vb2_fop_read,
 };
 
 /* -----------------------------------------------------------------------------
@@ -717,8 +770,8 @@ int msm_video_register(struct camss_video *video, struct v4l2_device *v4l2_dev,
 	}
 
 	vdev->fops = &msm_vid_fops;
-	vdev->device_caps = V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_STREAMING
-			  | V4L2_CAP_READWRITE | V4L2_CAP_IO_MC;
+	vdev->device_caps = V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_STREAMING |
+			    V4L2_CAP_READWRITE | V4L2_CAP_IO_MC;
 	vdev->ioctl_ops = &msm_vid_ioctl_ops;
 	vdev->release = msm_video_release;
 	vdev->v4l2_dev = v4l2_dev;

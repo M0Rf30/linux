@@ -36,91 +36,68 @@ static const struct parent_dev_ops vfe_parent_dev_ops;
 
 static const struct camss_subdev_resources csiphy_res_8x16[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy0_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000 } },
-		.reg = { "csiphy0", "csiphy0_clk_mux" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_2ph_1_0,
-			.formats = &csiphy_formats_8x16
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy0_timer" },
+	  .clock_rate = { { 0 }, { 0 }, { 0 }, { 100000000, 200000000 } },
+	  .reg = { "csiphy0", "csiphy0_clk_mux" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_2ph_1_0,
+		      .formats = &csiphy_formats_8x16 } },
 
 	/* CSIPHY1 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy1_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000 } },
-		.reg = { "csiphy1", "csiphy1_clk_mux" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_2ph_1_0,
-			.formats = &csiphy_formats_8x16
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy1_timer" },
+	  .clock_rate = { { 0 }, { 0 }, { 0 }, { 100000000, 200000000 } },
+	  .reg = { "csiphy1", "csiphy1_clk_mux" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_2ph_1_0,
+		      .formats = &csiphy_formats_8x16 } }
 };
 
 static const struct camss_subdev_resources csid_res_8x16[] = {
 	/* CSID0 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb",
-			   "csi0", "csi0_phy", "csi0_pix", "csi0_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_4_1,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_1
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb", "csi0",
+		     "csi0_phy", "csi0_pix", "csi0_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_4_1,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_1 } },
 
 	/* CSID1 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb",
-			   "csi1", "csi1_phy", "csi1_pix", "csi1_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_4_1,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_1
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb", "csi1",
+		     "csi1_phy", "csi1_pix", "csi1_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_4_1,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_1 } },
 };
 
 static const struct camss_subdev_resources ispif_res_8x16 = {
 	/* ISPIF */
-	.clock = { "top_ahb", "ahb", "ispif_ahb",
-		   "csi0", "csi0_pix", "csi0_rdi",
-		   "csi1", "csi1_pix", "csi1_rdi" },
+	.clock = { "top_ahb", "ahb", "ispif_ahb", "csi0", "csi0_pix",
+		   "csi0_rdi", "csi1", "csi1_pix", "csi1_rdi" },
 	.clock_for_reset = { "vfe0", "csi_vfe0" },
 	.reg = { "ispif", "csi_clk_mux" },
 	.interrupt = { "ispif" },
@@ -128,109 +105,92 @@ static const struct camss_subdev_resources ispif_res_8x16 = {
 
 static const struct camss_subdev_resources vfe_res_8x16[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "vfe0", "csi_vfe0",
-			   "vfe_ahb", "vfe_axi", "ahb" },
-		.clock_rate = { { 0 },
-				{ 50000000, 80000000, 100000000, 160000000,
-				  177780000, 200000000, 266670000, 320000000,
-				  400000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.hw_ops = &vfe_ops_4_1,
-			.formats_rdi = &vfe_formats_rdi_8x16,
-			.formats_pix = &vfe_formats_pix_8x16
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "vfe0", "csi_vfe0", "vfe_ahb", "vfe_axi",
+		     "ahb" },
+	  .clock_rate = { { 0 },
+			  { 50000000, 80000000, 100000000, 160000000, 177780000,
+			    200000000, 266670000, 320000000, 400000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .hw_ops = &vfe_ops_4_1,
+		   .formats_rdi = &vfe_formats_rdi_8x16,
+		   .formats_pix = &vfe_formats_pix_8x16 } }
 };
 
 static const struct camss_subdev_resources csid_res_8x53[] = {
 	/* CSID0 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb",
-			   "csi0", "csi0_phy", "csi0_pix", "csi0_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  400000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb", "csi0",
+		     "csi0_phy", "csi0_pix", "csi0_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 400000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID1 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb",
-			   "csi1", "csi1_phy", "csi1_pix", "csi1_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  400000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb", "csi1",
+		     "csi1_phy", "csi1_pix", "csi1_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 400000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID2 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi2_ahb", "ahb",
-			   "csi2", "csi2_phy", "csi2_pix", "csi2_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  400000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi2_ahb", "ahb", "csi2",
+		     "csi2_phy", "csi2_pix", "csi2_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 400000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 };
 
 static const struct camss_subdev_resources ispif_res_8x53 = {
 	/* ISPIF */
-	.clock = { "top_ahb", "ahb", "ispif_ahb",
-		   "csi0", "csi0_pix", "csi0_rdi",
-		   "csi1", "csi1_pix", "csi1_rdi",
-		   "csi2", "csi2_pix", "csi2_rdi" },
+	.clock = { "top_ahb", "ahb", "ispif_ahb", "csi0", "csi0_pix",
+		   "csi0_rdi", "csi1", "csi1_pix", "csi1_rdi", "csi2",
+		   "csi2_pix", "csi2_rdi" },
 	.clock_for_reset = { "vfe0", "csi_vfe0", "vfe1", "csi_vfe1" },
 	.reg = { "ispif", "csi_clk_mux" },
 	.interrupt = { "ispif" },
@@ -238,56 +198,46 @@ static const struct camss_subdev_resources ispif_res_8x53 = {
 
 static const struct camss_subdev_resources vfe_res_8x53[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ahb", "ispif_ahb",
-			   "vfe0", "csi_vfe0", "vfe0_ahb", "vfe0_axi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 50000000, 100000000, 133330000,
-				  160000000, 200000000, 266670000,
-				  310000000, 400000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.pd_name = "vfe0",
-			.hw_ops = &vfe_ops_4_1,
-			.formats_rdi = &vfe_formats_rdi_8x16,
-			.formats_pix = &vfe_formats_pix_8x16
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ahb", "ispif_ahb", "vfe0", "csi_vfe0",
+		     "vfe0_ahb", "vfe0_axi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 50000000, 100000000, 133330000, 160000000, 200000000,
+			    266670000, 310000000, 400000000, 465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .pd_name = "vfe0",
+		   .hw_ops = &vfe_ops_4_1,
+		   .formats_rdi = &vfe_formats_rdi_8x16,
+		   .formats_pix = &vfe_formats_pix_8x16 } },
 
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ahb", "ispif_ahb",
-			   "vfe1", "csi_vfe1", "vfe1_ahb", "vfe1_axi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 50000000, 100000000, 133330000,
-				  160000000, 200000000, 266670000,
-				  310000000, 400000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.pd_name = "vfe1",
-			.hw_ops = &vfe_ops_4_1,
-			.formats_rdi = &vfe_formats_rdi_8x16,
-			.formats_pix = &vfe_formats_pix_8x16
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ahb", "ispif_ahb", "vfe1", "csi_vfe1",
+		     "vfe1_ahb", "vfe1_axi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 50000000, 100000000, 133330000, 160000000, 200000000,
+			    266670000, 310000000, 400000000, 465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .pd_name = "vfe1",
+		   .hw_ops = &vfe_ops_4_1,
+		   .formats_rdi = &vfe_formats_rdi_8x16,
+		   .formats_pix = &vfe_formats_pix_8x16 } }
 };
 
 static const struct resources_icc icc_res_8x53[] = {
@@ -310,154 +260,124 @@ static const struct resources_icc icc_res_8x53[] = {
 
 static const struct camss_subdev_resources csiphy_res_8x96[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy0_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 } },
-		.reg = { "csiphy0", "csiphy0_clk_mux" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_8x96
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy0_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 } },
+	  .reg = { "csiphy0", "csiphy0_clk_mux" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_8x96 } },
 
 	/* CSIPHY1 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy1_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 } },
-		.reg = { "csiphy1", "csiphy1_clk_mux" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_8x96
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy1_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 } },
+	  .reg = { "csiphy1", "csiphy1_clk_mux" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_8x96 } },
 
 	/* CSIPHY2 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy2_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 } },
-		.reg = { "csiphy2", "csiphy2_clk_mux" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_8x96
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy2_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 } },
+	  .reg = { "csiphy2", "csiphy2_clk_mux" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_8x96 } }
 };
 
 static const struct camss_subdev_resources csid_res_8x96[] = {
 	/* CSID0 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb",
-			   "csi0", "csi0_phy", "csi0_pix", "csi0_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb", "csi0",
+		     "csi0_phy", "csi0_pix", "csi0_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID1 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb",
-			   "csi1", "csi1_phy", "csi1_pix", "csi1_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb", "csi1",
+		     "csi1_phy", "csi1_pix", "csi1_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID2 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi2_ahb", "ahb",
-			   "csi2", "csi2_phy", "csi2_pix", "csi2_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi2_ahb", "ahb", "csi2",
+		     "csi2_phy", "csi2_pix", "csi2_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID3 */
-	{
-		.regulators = { "vdda" },
-		.clock = { "top_ahb", "ispif_ahb", "csi3_ahb", "ahb",
-			   "csi3", "csi3_phy", "csi3_pix", "csi3_rdi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 266666667 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid3" },
-		.interrupt = { "csid3" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	}
+	{ .regulators = { "vdda" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi3_ahb", "ahb", "csi3",
+		     "csi3_phy", "csi3_pix", "csi3_rdi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 266666667 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid3" },
+	  .interrupt = { "csid3" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } }
 };
 
 static const struct camss_subdev_resources ispif_res_8x96 = {
 	/* ISPIF */
-	.clock = { "top_ahb", "ahb", "ispif_ahb",
-		   "csi0", "csi0_pix", "csi0_rdi",
-		   "csi1", "csi1_pix", "csi1_rdi",
-		   "csi2", "csi2_pix", "csi2_rdi",
-		   "csi3", "csi3_pix", "csi3_rdi" },
+	.clock = { "top_ahb", "ahb", "ispif_ahb", "csi0", "csi0_pix",
+		   "csi0_rdi", "csi1", "csi1_pix", "csi1_rdi", "csi2",
+		   "csi2_pix", "csi2_rdi", "csi3", "csi3_pix", "csi3_rdi" },
 	.clock_for_reset = { "vfe0", "csi_vfe0", "vfe1", "csi_vfe1" },
 	.reg = { "ispif", "csi_clk_mux" },
 	.interrupt = { "ispif" },
@@ -465,128 +385,104 @@ static const struct camss_subdev_resources ispif_res_8x96 = {
 
 static const struct camss_subdev_resources vfe_res_8x96[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ahb", "vfe0", "csi_vfe0", "vfe_ahb",
-			   "vfe0_ahb", "vfe_axi", "vfe0_stream"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 75000000, 100000000, 300000000,
-				  320000000, 480000000, 600000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.hw_ops = &vfe_ops_4_7,
-			.formats_rdi = &vfe_formats_rdi_8x96,
-			.formats_pix = &vfe_formats_pix_8x96
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ahb", "vfe0", "csi_vfe0", "vfe_ahb",
+		     "vfe0_ahb", "vfe_axi", "vfe0_stream" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 75000000, 100000000, 300000000, 320000000,
+			    480000000, 600000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .hw_ops = &vfe_ops_4_7,
+		   .formats_rdi = &vfe_formats_rdi_8x96,
+		   .formats_pix = &vfe_formats_pix_8x96 } },
 
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ahb", "vfe1", "csi_vfe1", "vfe_ahb",
-			   "vfe1_ahb", "vfe_axi", "vfe1_stream"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 75000000, 100000000, 300000000,
-				  320000000, 480000000, 600000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.hw_ops = &vfe_ops_4_7,
-			.formats_rdi = &vfe_formats_rdi_8x96,
-			.formats_pix = &vfe_formats_pix_8x96
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ahb", "vfe1", "csi_vfe1", "vfe_ahb",
+		     "vfe1_ahb", "vfe_axi", "vfe1_stream" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 75000000, 100000000, 300000000, 320000000,
+			    480000000, 600000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .hw_ops = &vfe_ops_4_7,
+		   .formats_rdi = &vfe_formats_rdi_8x96,
+		   .formats_pix = &vfe_formats_pix_8x96 } }
 };
 
 static const struct camss_subdev_resources csiphy_res_2290[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = { "vdd-csiphy-1p2", "vdd-csiphy-1p8" },
-		.clock = { "top_ahb", "ahb", "csiphy0", "csiphy0_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 240000000, 341330000, 384000000 },
-				{ 100000000, 200000000, 268800000 }  },
-		.reg = { "csiphy0" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdd-csiphy-1p2", "vdd-csiphy-1p8" },
+	  .clock = { "top_ahb", "ahb", "csiphy0", "csiphy0_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 240000000, 341330000, 384000000 },
+			  { 100000000, 200000000, 268800000 } },
+	  .reg = { "csiphy0" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 
 	/* CSIPHY1 */
-	{
-		.regulators = { "vdd-csiphy-1p2", "vdd-csiphy-1p8" },
-		.clock = { "top_ahb", "ahb", "csiphy1", "csiphy1_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 240000000, 341330000, 384000000 },
-				{ 100000000, 200000000, 268800000 }  },
-		.reg = { "csiphy1" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	}
+	{ .regulators = { "vdd-csiphy-1p2", "vdd-csiphy-1p8" },
+	  .clock = { "top_ahb", "ahb", "csiphy1", "csiphy1_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 240000000, 341330000, 384000000 },
+			  { 100000000, 200000000, 268800000 } },
+	  .reg = { "csiphy1" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } }
 };
 
 static const struct camss_subdev_resources csid_res_2290[] = {
 	/* CSID0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ahb", "csi0", "vfe0_cphy_rx", "vfe0" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 192000000, 240000000, 384000000, 426400000 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_340,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ahb", "csi0", "vfe0_cphy_rx", "vfe0" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 192000000, 240000000, 384000000, 426400000 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_340,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 
 	/* CSID1 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ahb", "csi1", "vfe1_cphy_rx", "vfe1" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 192000000, 240000000, 384000000, 426400000 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_340,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ahb", "csi1", "vfe1_cphy_rx", "vfe1" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 192000000, 240000000, 384000000, 426400000 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_340,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } }
 };
 
 static const struct camss_subdev_resources vfe_res_2290[] = {
@@ -651,172 +547,138 @@ static const struct resources_icc icc_res_2290[] = {
 
 static const struct camss_subdev_resources csiphy_res_660[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy0_timer",
-			   "csi0_phy", "csiphy_ahb2crif" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 269333333 },
-				{ 0 } },
-		.reg = { "csiphy0", "csiphy0_clk_mux" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_8x96
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy0_timer", "csi0_phy",
+		     "csiphy_ahb2crif" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 269333333 },
+			  { 0 } },
+	  .reg = { "csiphy0", "csiphy0_clk_mux" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_8x96 } },
 
 	/* CSIPHY1 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy1_timer",
-			   "csi1_phy", "csiphy_ahb2crif" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 269333333 },
-				{ 0 } },
-		.reg = { "csiphy1", "csiphy1_clk_mux" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_8x96
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy1_timer", "csi1_phy",
+		     "csiphy_ahb2crif" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 269333333 },
+			  { 0 } },
+	  .reg = { "csiphy1", "csiphy1_clk_mux" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_8x96 } },
 
 	/* CSIPHY2 */
-	{
-		.regulators = {},
-		.clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy2_timer",
-			   "csi2_phy", "csiphy_ahb2crif" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 269333333 },
-				{ 0 } },
-		.reg = { "csiphy2", "csiphy2_clk_mux" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_8x96
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "top_ahb", "ispif_ahb", "ahb", "csiphy2_timer", "csi2_phy",
+		     "csiphy_ahb2crif" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 269333333 },
+			  { 0 } },
+	  .reg = { "csiphy2", "csiphy2_clk_mux" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_8x96 } }
 };
 
 static const struct camss_subdev_resources csid_res_660[] = {
 	/* CSID0 */
-	{
-		.regulators = { "vdda", "vdd_sec" },
-		.clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb",
-			   "csi0", "csi0_phy", "csi0_pix", "csi0_rdi",
-			   "cphy_csid0" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  404000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda", "vdd_sec" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi0_ahb", "ahb", "csi0",
+		     "csi0_phy", "csi0_pix", "csi0_rdi", "cphy_csid0" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 404000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID1 */
-	{
-		.regulators = { "vdda", "vdd_sec" },
-		.clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb",
-			   "csi1", "csi1_phy", "csi1_pix", "csi1_rdi",
-			   "cphy_csid1" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  404000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda", "vdd_sec" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi1_ahb", "ahb", "csi1",
+		     "csi1_phy", "csi1_pix", "csi1_rdi", "cphy_csid1" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 404000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID2 */
-	{
-		.regulators = { "vdda", "vdd_sec" },
-		.clock = { "top_ahb", "ispif_ahb", "csi2_ahb", "ahb",
-			   "csi2", "csi2_phy", "csi2_pix", "csi2_rdi",
-			   "cphy_csid2" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  404000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	},
+	{ .regulators = { "vdda", "vdd_sec" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi2_ahb", "ahb", "csi2",
+		     "csi2_phy", "csi2_pix", "csi2_rdi", "cphy_csid2" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 404000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } },
 
 	/* CSID3 */
-	{
-		.regulators = { "vdda", "vdd_sec" },
-		.clock = { "top_ahb", "ispif_ahb", "csi3_ahb", "ahb",
-			   "csi3", "csi3_phy", "csi3_pix", "csi3_rdi",
-			   "cphy_csid3" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 310000000,
-				  404000000, 465000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "csid3" },
-		.interrupt = { "csid3" },
-		.csid = {
-			.hw_ops = &csid_ops_4_7,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_4_7
-		}
-	}
+	{ .regulators = { "vdda", "vdd_sec" },
+	  .clock = { "top_ahb", "ispif_ahb", "csi3_ahb", "ahb", "csi3",
+		     "csi3_phy", "csi3_pix", "csi3_rdi", "cphy_csid3" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 310000000, 404000000,
+			    465000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "csid3" },
+	  .interrupt = { "csid3" },
+	  .csid = { .hw_ops = &csid_ops_4_7,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_4_7 } }
 };
 
 static const struct camss_subdev_resources ispif_res_660 = {
 	/* ISPIF */
-	.clock = { "top_ahb", "ahb", "ispif_ahb",
-		   "csi0", "csi0_pix", "csi0_rdi",
-		   "csi1", "csi1_pix", "csi1_rdi",
-		   "csi2", "csi2_pix", "csi2_rdi",
-		   "csi3", "csi3_pix", "csi3_rdi" },
+	.clock = { "top_ahb", "ahb", "ispif_ahb", "csi0", "csi0_pix",
+		   "csi0_rdi", "csi1", "csi1_pix", "csi1_rdi", "csi2",
+		   "csi2_pix", "csi2_rdi", "csi3", "csi3_pix", "csi3_rdi" },
 	.clock_for_reset = { "vfe0", "csi_vfe0", "vfe1", "csi_vfe1" },
 	.reg = { "ispif", "csi_clk_mux" },
 	.interrupt = { "ispif" },
@@ -824,759 +686,606 @@ static const struct camss_subdev_resources ispif_res_660 = {
 
 static const struct camss_subdev_resources vfe_res_660[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "throttle_axi", "top_ahb", "ahb", "vfe0",
-			   "csi_vfe0", "vfe_ahb", "vfe0_ahb", "vfe_axi",
-			   "vfe0_stream"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 120000000, 200000000, 256000000,
-				  300000000, 404000000, 480000000,
-				  540000000, 576000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.hw_ops = &vfe_ops_4_8,
-			.formats_rdi = &vfe_formats_rdi_8x96,
-			.formats_pix = &vfe_formats_pix_8x96
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "throttle_axi", "top_ahb", "ahb", "vfe0", "csi_vfe0",
+		     "vfe_ahb", "vfe0_ahb", "vfe_axi", "vfe0_stream" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 120000000, 200000000, 256000000, 300000000,
+			    404000000, 480000000, 540000000, 576000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .pd_name = "vfe0",
+		   .hw_ops = &vfe_ops_4_8,
+		   .formats_rdi = &vfe_formats_rdi_8x96,
+		   .formats_pix = &vfe_formats_pix_8x96 } },
 
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "throttle_axi", "top_ahb", "ahb", "vfe1",
-			   "csi_vfe1", "vfe_ahb", "vfe1_ahb", "vfe_axi",
-			   "vfe1_stream"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 120000000, 200000000, 256000000,
-				  300000000, 404000000, 480000000,
-				  540000000, 576000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.hw_ops = &vfe_ops_4_8,
-			.formats_rdi = &vfe_formats_rdi_8x96,
-			.formats_pix = &vfe_formats_pix_8x96
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "throttle_axi", "top_ahb", "ahb", "vfe1", "csi_vfe1",
+		     "vfe_ahb", "vfe1_ahb", "vfe_axi", "vfe1_stream" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 120000000, 200000000, 256000000, 300000000,
+			    404000000, 480000000, 540000000, 576000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .pd_name = "vfe1",
+		   .hw_ops = &vfe_ops_4_8,
+		   .formats_rdi = &vfe_formats_rdi_8x96,
+		   .formats_pix = &vfe_formats_pix_8x96 } }
 };
 
 static const struct camss_subdev_resources csiphy_res_670[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "soc_ahb", "cpas_ahb",
-			   "csiphy0", "csiphy0_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy0" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "soc_ahb", "cpas_ahb", "csiphy0", "csiphy0_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy0" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 
 	/* CSIPHY1 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "soc_ahb", "cpas_ahb",
-			   "csiphy1", "csiphy1_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy1" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "soc_ahb", "cpas_ahb", "csiphy1", "csiphy1_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy1" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 
 	/* CSIPHY2 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "soc_ahb", "cpas_ahb",
-			   "csiphy2", "csiphy2_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy2" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	}
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "soc_ahb", "cpas_ahb", "csiphy2", "csiphy2_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy2" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } }
 };
 
 static const struct camss_subdev_resources csid_res_670[] = {
 	/* CSID0 */
-	{
-		.regulators = {},
-		.clock = { "cpas_ahb", "soc_ahb", "vfe0",
-			   "vfe0_cphy_rx", "csi0" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 384000000 },
-				{ 19200000, 75000000, 384000000, 538666667 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_ahb", "soc_ahb", "vfe0", "vfe0_cphy_rx", "csi0" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 100000000, 320000000, 404000000, 480000000,
+			    600000000 },
+			  { 384000000 },
+			  { 19200000, 75000000, 384000000, 538666667 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 
 	/* CSID1 */
-	{
-		.regulators = {},
-		.clock = { "cpas_ahb", "soc_ahb", "vfe1",
-			   "vfe1_cphy_rx", "csi1" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 384000000 },
-				{ 19200000, 75000000, 384000000, 538666667 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_ahb", "soc_ahb", "vfe1", "vfe1_cphy_rx", "csi1" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 100000000, 320000000, 404000000, 480000000,
+			    600000000 },
+			  { 384000000 },
+			  { 19200000, 75000000, 384000000, 538666667 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 
 	/* CSID2 */
-	{
-		.regulators = {},
-		.clock = { "cpas_ahb", "soc_ahb", "vfe_lite",
-			   "vfe_lite_cphy_rx", "csi2" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 384000000 },
-				{ 19200000, 75000000, 384000000, 538666667 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "cpas_ahb", "soc_ahb", "vfe_lite", "vfe_lite_cphy_rx",
+		     "csi2" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 100000000, 320000000, 404000000, 480000000,
+			    600000000 },
+			  { 384000000 },
+			  { 19200000, 75000000, 384000000, 538666667 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } }
 };
 
 static const struct camss_subdev_resources vfe_res_670[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "cpas_ahb", "soc_ahb",
-			   "vfe0", "vfe0_axi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 0 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 4,
-			.has_pd = true,
-			.pd_name = "ife0",
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "cpas_ahb", "soc_ahb", "vfe0", "vfe0_axi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 320000000, 404000000, 480000000,
+			    600000000 },
+			  { 0 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 4,
+		   .has_pd = true,
+		   .pd_name = "ife0",
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "cpas_ahb", "soc_ahb",
-			   "vfe1", "vfe1_axi" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 0 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 4,
-			.has_pd = true,
-			.pd_name = "ife1",
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "cpas_ahb", "soc_ahb", "vfe1", "vfe1_axi" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 320000000, 404000000, 480000000,
+			    600000000 },
+			  { 0 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 4,
+		   .has_pd = true,
+		   .pd_name = "ife1",
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 
 	/* VFE-lite */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "cpas_ahb", "soc_ahb",
-			   "vfe_lite" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 320000000, 404000000, 480000000, 600000000 } },
-		.reg = { "vfe_lite" },
-		.interrupt = { "vfe_lite" },
-		.vfe = {
-			.is_lite = true,
-			.line_num = 4,
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "cpas_ahb", "soc_ahb", "vfe_lite" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 320000000, 404000000, 480000000,
+			    600000000 } },
+	  .reg = { "vfe_lite" },
+	  .interrupt = { "vfe_lite" },
+	  .vfe = { .is_lite = true,
+		   .line_num = 4,
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } }
 };
 
 static const struct camss_subdev_resources csiphy_res_845[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src",
-				"cpas_ahb", "cphy_rx_src", "csiphy0",
-				"csiphy0_timer_src", "csiphy0_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy0" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src", "cpas_ahb",
+		     "cphy_rx_src", "csiphy0", "csiphy0_timer_src",
+		     "csiphy0_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy0" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 
 	/* CSIPHY1 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src",
-				"cpas_ahb", "cphy_rx_src", "csiphy1",
-				"csiphy1_timer_src", "csiphy1_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy1" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src", "cpas_ahb",
+		     "cphy_rx_src", "csiphy1", "csiphy1_timer_src",
+		     "csiphy1_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy1" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 
 	/* CSIPHY2 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src",
-				"cpas_ahb", "cphy_rx_src", "csiphy2",
-				"csiphy2_timer_src", "csiphy2_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy2" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src", "cpas_ahb",
+		     "cphy_rx_src", "csiphy2", "csiphy2_timer_src",
+		     "csiphy2_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy2" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 
 	/* CSIPHY3 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src",
-				"cpas_ahb", "cphy_rx_src", "csiphy3",
-				"csiphy3_timer_src", "csiphy3_timer" },
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 19200000, 240000000, 269333333 } },
-		.reg = { "csiphy3" },
-		.interrupt = { "csiphy3" },
-		.csiphy = {
-			.id = 3,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "soc_ahb", "slow_ahb_src", "cpas_ahb",
+		     "cphy_rx_src", "csiphy3", "csiphy3_timer_src",
+		     "csiphy3_timer" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 19200000, 240000000, 269333333 } },
+	  .reg = { "csiphy3" },
+	  .interrupt = { "csiphy3" },
+	  .csiphy = { .id = 3,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } }
 };
 
 static const struct camss_subdev_resources csid_res_845[] = {
 	/* CSID0 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "cpas_ahb", "cphy_rx_src", "slow_ahb_src",
-				"soc_ahb", "vfe0", "vfe0_src",
-				"vfe0_cphy_rx", "csi0",
-				"csi0_src" },
-		.clock_rate = { { 0 },
-				{ 384000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 19200000, 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 320000000 },
-				{ 0 },
-				{ 19200000, 75000000, 384000000, 538666667 },
-				{ 384000000 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "cpas_ahb", "cphy_rx_src", "slow_ahb_src", "soc_ahb",
+		     "vfe0", "vfe0_src", "vfe0_cphy_rx", "csi0", "csi0_src" },
+	  .clock_rate = { { 0 },
+			  { 384000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 19200000, 100000000, 320000000, 404000000,
+			    480000000, 600000000 },
+			  { 320000000 },
+			  { 0 },
+			  { 19200000, 75000000, 384000000, 538666667 },
+			  { 384000000 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 
 	/* CSID1 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "cpas_ahb", "cphy_rx_src", "slow_ahb_src",
-				"soc_ahb", "vfe1", "vfe1_src",
-				"vfe1_cphy_rx", "csi1",
-				"csi1_src" },
-		.clock_rate = { { 0 },
-				{ 384000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 19200000, 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 320000000 },
-				{ 0 },
-				{ 19200000, 75000000, 384000000, 538666667 },
-				{ 384000000 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "cpas_ahb", "cphy_rx_src", "slow_ahb_src", "soc_ahb",
+		     "vfe1", "vfe1_src", "vfe1_cphy_rx", "csi1", "csi1_src" },
+	  .clock_rate = { { 0 },
+			  { 384000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 19200000, 100000000, 320000000, 404000000,
+			    480000000, 600000000 },
+			  { 320000000 },
+			  { 0 },
+			  { 19200000, 75000000, 384000000, 538666667 },
+			  { 384000000 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 
 	/* CSID2 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "cpas_ahb", "cphy_rx_src", "slow_ahb_src",
-				"soc_ahb", "vfe_lite", "vfe_lite_src",
-				"vfe_lite_cphy_rx", "csi2",
-				"csi2_src" },
-		.clock_rate = { { 0 },
-				{ 384000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 19200000, 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 320000000 },
-				{ 0 },
-				{ 19200000, 75000000, 384000000, 538666667 },
-				{ 384000000 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	}
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "cpas_ahb", "cphy_rx_src", "slow_ahb_src", "soc_ahb",
+		     "vfe_lite", "vfe_lite_src", "vfe_lite_cphy_rx", "csi2",
+		     "csi2_src" },
+	  .clock_rate = { { 0 },
+			  { 384000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 19200000, 100000000, 320000000, 404000000,
+			    480000000, 600000000 },
+			  { 320000000 },
+			  { 0 },
+			  { 19200000, 75000000, 384000000, 538666667 },
+			  { 384000000 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } }
 };
 
 static const struct camss_subdev_resources vfe_res_845[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "cpas_ahb", "slow_ahb_src",
-				"soc_ahb", "vfe0", "vfe0_axi",
-				"vfe0_src", "csi0",
-				"csi0_src"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 80000000 },
-				{ 0 },
-				{ 19200000, 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 0 },
-				{ 320000000 },
-				{ 19200000, 75000000, 384000000, 538666667 },
-				{ 384000000 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 4,
-			.pd_name = "ife0",
-			.has_pd = true,
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "cpas_ahb", "slow_ahb_src", "soc_ahb",
+		     "vfe0", "vfe0_axi", "vfe0_src", "csi0", "csi0_src" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 80000000 },
+			  { 0 },
+			  { 19200000, 100000000, 320000000, 404000000,
+			    480000000, 600000000 },
+			  { 0 },
+			  { 320000000 },
+			  { 19200000, 75000000, 384000000, 538666667 },
+			  { 384000000 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 4,
+		   .pd_name = "ife0",
+		   .has_pd = true,
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "cpas_ahb", "slow_ahb_src",
-				"soc_ahb", "vfe1", "vfe1_axi",
-				"vfe1_src", "csi1",
-				"csi1_src"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 80000000 },
-				{ 0 },
-				{ 19200000, 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 0 },
-				{ 320000000 },
-				{ 19200000, 75000000, 384000000, 538666667 },
-				{ 384000000 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 4,
-			.pd_name = "ife1",
-			.has_pd = true,
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "cpas_ahb", "slow_ahb_src", "soc_ahb",
+		     "vfe1", "vfe1_axi", "vfe1_src", "csi1", "csi1_src" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 80000000 },
+			  { 0 },
+			  { 19200000, 100000000, 320000000, 404000000,
+			    480000000, 600000000 },
+			  { 0 },
+			  { 320000000 },
+			  { 19200000, 75000000, 384000000, 538666667 },
+			  { 384000000 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 4,
+		   .pd_name = "ife1",
+		   .has_pd = true,
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 
 	/* VFE-lite */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi", "cpas_ahb", "slow_ahb_src",
-				"soc_ahb", "vfe_lite",
-				"vfe_lite_src", "csi2",
-				"csi2_src"},
-		.clock_rate = { { 0 },
-				{ 0 },
-				{ 80000000 },
-				{ 0 },
-				{ 19200000, 100000000, 320000000, 404000000, 480000000, 600000000 },
-				{ 320000000 },
-				{ 19200000, 75000000, 384000000, 538666667 },
-				{ 384000000 } },
-		.reg = { "vfe_lite" },
-		.interrupt = { "vfe_lite" },
-		.vfe = {
-			.is_lite = true,
-			.line_num = 4,
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "camnoc_axi", "cpas_ahb", "slow_ahb_src", "soc_ahb",
+		     "vfe_lite", "vfe_lite_src", "csi2", "csi2_src" },
+	  .clock_rate = { { 0 },
+			  { 0 },
+			  { 80000000 },
+			  { 0 },
+			  { 19200000, 100000000, 320000000, 404000000,
+			    480000000, 600000000 },
+			  { 320000000 },
+			  { 19200000, 75000000, 384000000, 538666667 },
+			  { 384000000 } },
+	  .reg = { "vfe_lite" },
+	  .interrupt = { "vfe_lite" },
+	  .vfe = { .is_lite = true,
+		   .line_num = 4,
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } }
 };
 
 static const struct camss_subdev_resources csiphy_res_8250[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy0", "csiphy0_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy0" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy0", "csiphy0_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy0" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY1 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy1", "csiphy1_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy1" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy1", "csiphy1_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy1" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY2 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy2", "csiphy2_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy2" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy2", "csiphy2_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy2" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY3 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy3", "csiphy3_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy3" },
-		.interrupt = { "csiphy3" },
-		.csiphy = {
-			.id = 3,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy3", "csiphy3_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy3" },
+	  .interrupt = { "csiphy3" },
+	  .csiphy = { .id = 3,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY4 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy4", "csiphy4_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy4" },
-		.interrupt = { "csiphy4" },
-		.csiphy = {
-			.id = 4,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy4", "csiphy4_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy4" },
+	  .interrupt = { "csiphy4" },
+	  .csiphy = { .id = 4,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY5 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy5", "csiphy5_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy5" },
-		.interrupt = { "csiphy5" },
-		.csiphy = {
-			.id = 5,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	}
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy5", "csiphy5_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy5" },
+	  .interrupt = { "csiphy5" },
+	  .csiphy = { .id = 5,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } }
 };
 
 static const struct camss_subdev_resources csid_res_8250[] = {
 	/* CSID0 */
-	{
-		.regulators = {},
-		.clock = { "vfe0_csid", "vfe0_cphy_rx", "vfe0", "vfe0_areg", "vfe0_ahb" },
-		.clock_rate = { { 400000000 },
-				{ 400000000 },
-				{ 350000000, 475000000, 576000000, 720000000 },
-				{ 100000000, 200000000, 300000000, 400000000 },
-				{ 0 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "vfe0_csid", "vfe0_cphy_rx", "vfe0", "vfe0_areg",
+		     "vfe0_ahb" },
+	  .clock_rate = { { 400000000 },
+			  { 400000000 },
+			  { 350000000, 475000000, 576000000, 720000000 },
+			  { 100000000, 200000000, 300000000, 400000000 },
+			  { 0 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID1 */
-	{
-		.regulators = {},
-		.clock = { "vfe1_csid", "vfe1_cphy_rx", "vfe1", "vfe1_areg", "vfe1_ahb" },
-		.clock_rate = { { 400000000 },
-				{ 400000000 },
-				{ 350000000, 475000000, 576000000, 720000000 },
-				{ 100000000, 200000000, 300000000, 400000000 },
-				{ 0 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "vfe1_csid", "vfe1_cphy_rx", "vfe1", "vfe1_areg",
+		     "vfe1_ahb" },
+	  .clock_rate = { { 400000000 },
+			  { 400000000 },
+			  { 350000000, 475000000, 576000000, 720000000 },
+			  { 100000000, 200000000, 300000000, 400000000 },
+			  { 0 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID2 */
-	{
-		.regulators = {},
-		.clock = { "vfe_lite_csid", "vfe_lite_cphy_rx", "vfe_lite",  "vfe_lite_ahb" },
-		.clock_rate = { { 400000000 },
-				{ 400000000 },
-				{ 400000000, 480000000 },
-				{ 0 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "vfe_lite_csid", "vfe_lite_cphy_rx", "vfe_lite",
+		     "vfe_lite_ahb" },
+	  .clock_rate = { { 400000000 },
+			  { 400000000 },
+			  { 400000000, 480000000 },
+			  { 0 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID3 */
-	{
-		.regulators = {},
-		.clock = { "vfe_lite_csid", "vfe_lite_cphy_rx", "vfe_lite",  "vfe_lite_ahb" },
-		.clock_rate = { { 400000000 },
-				{ 400000000 },
-				{ 400000000, 480000000 },
-				{ 0 } },
-		.reg = { "csid3" },
-		.interrupt = { "csid3" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "vfe_lite_csid", "vfe_lite_cphy_rx", "vfe_lite",
+		     "vfe_lite_ahb" },
+	  .clock_rate = { { 400000000 },
+			  { 400000000 },
+			  { 400000000, 480000000 },
+			  { 0 } },
+	  .reg = { "csid3" },
+	  .interrupt = { "csid3" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } }
 };
 
 static const struct camss_subdev_resources vfe_res_8250[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb",
-			   "camnoc_axi", "vfe0_ahb", "vfe0_areg", "vfe0",
-			   "vfe0_axi", "cam_hf_axi" },
-		.clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
-				{ 19200000, 80000000 },
-				{ 19200000 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 300000000, 400000000 },
-				{ 350000000, 475000000, 576000000, 720000000 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.pd_name = "ife0",
-			.hw_ops = &vfe_ops_480,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb", "camnoc_axi",
+		     "vfe0_ahb", "vfe0_areg", "vfe0", "vfe0_axi",
+		     "cam_hf_axi" },
+	  .clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
+			  { 19200000, 80000000 },
+			  { 19200000 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 300000000, 400000000 },
+			  { 350000000, 475000000, 576000000, 720000000 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .pd_name = "ife0",
+		   .hw_ops = &vfe_ops_480,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb",
-			   "camnoc_axi", "vfe1_ahb", "vfe1_areg", "vfe1",
-			   "vfe1_axi", "cam_hf_axi" },
-		.clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
-				{ 19200000, 80000000 },
-				{ 19200000 },
-				{ 0 },
-				{ 0 },
-				{ 100000000, 200000000, 300000000, 400000000 },
-				{ 350000000, 475000000, 576000000, 720000000 },
-				{ 0 },
-				{ 0 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 3,
-			.has_pd = true,
-			.pd_name = "ife1",
-			.hw_ops = &vfe_ops_480,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb", "camnoc_axi",
+		     "vfe1_ahb", "vfe1_areg", "vfe1", "vfe1_axi",
+		     "cam_hf_axi" },
+	  .clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
+			  { 19200000, 80000000 },
+			  { 19200000 },
+			  { 0 },
+			  { 0 },
+			  { 100000000, 200000000, 300000000, 400000000 },
+			  { 350000000, 475000000, 576000000, 720000000 },
+			  { 0 },
+			  { 0 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 3,
+		   .has_pd = true,
+		   .pd_name = "ife1",
+		   .hw_ops = &vfe_ops_480,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE2 (lite) */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb",
-			   "camnoc_axi", "vfe_lite_ahb", "vfe_lite_axi",
-			   "vfe_lite", "cam_hf_axi" },
-		.clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
-				{ 19200000, 80000000 },
-				{ 19200000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 400000000, 480000000 },
-				{ 0 } },
-		.reg = { "vfe_lite0" },
-		.interrupt = { "vfe_lite0" },
-		.vfe = {
-			.is_lite = true,
-			.line_num = 4,
-			.hw_ops = &vfe_ops_480,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb", "camnoc_axi",
+		     "vfe_lite_ahb", "vfe_lite_axi", "vfe_lite", "cam_hf_axi" },
+	  .clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
+			  { 19200000, 80000000 },
+			  { 19200000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 400000000, 480000000 },
+			  { 0 } },
+	  .reg = { "vfe_lite0" },
+	  .interrupt = { "vfe_lite0" },
+	  .vfe = { .is_lite = true,
+		   .line_num = 4,
+		   .hw_ops = &vfe_ops_480,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE3 (lite) */
-	{
-		.regulators = {},
-		.clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb",
-			   "camnoc_axi", "vfe_lite_ahb", "vfe_lite_axi",
-			   "vfe_lite", "cam_hf_axi" },
-		.clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
-				{ 19200000, 80000000 },
-				{ 19200000 },
-				{ 0 },
-				{ 0 },
-				{ 0 },
-				{ 400000000, 480000000 },
-				{ 0 } },
-		.reg = { "vfe_lite1" },
-		.interrupt = { "vfe_lite1" },
-		.vfe = {
-			.is_lite = true,
-			.line_num = 4,
-			.hw_ops = &vfe_ops_480,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "camnoc_axi_src", "slow_ahb_src", "cpas_ahb", "camnoc_axi",
+		     "vfe_lite_ahb", "vfe_lite_axi", "vfe_lite", "cam_hf_axi" },
+	  .clock_rate = { { 19200000, 300000000, 400000000, 480000000 },
+			  { 19200000, 80000000 },
+			  { 19200000 },
+			  { 0 },
+			  { 0 },
+			  { 0 },
+			  { 400000000, 480000000 },
+			  { 0 } },
+	  .reg = { "vfe_lite1" },
+	  .interrupt = { "vfe_lite1" },
+	  .vfe = { .is_lite = true,
+		   .line_num = 4,
+		   .hw_ops = &vfe_ops_480,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 };
 
 static const struct resources_icc icc_res_sm8250[] = {
@@ -1682,225 +1391,185 @@ static const struct camss_subdev_resources csiphy_res_7280[] = {
 
 static const struct camss_subdev_resources csid_res_7280[] = {
 	/* CSID0 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "vfe0_csid", "vfe0_cphy_rx", "vfe0" },
-		.clock_rate = { { 300000000, 400000000 },
-				{ 0 },
-				{ 380000000, 510000000, 637000000, 760000000 }
-		},
+	  .clock = { "vfe0_csid", "vfe0_cphy_rx", "vfe0" },
+	  .clock_rate = { { 300000000, 400000000 },
+			  { 0 },
+			  { 380000000, 510000000, 637000000, 760000000 } },
 
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.is_lite = false,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .is_lite = false,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID1 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "vfe1_csid", "vfe1_cphy_rx", "vfe1" },
-		.clock_rate = { { 300000000, 400000000 },
-				{ 0 },
-				{ 380000000, 510000000, 637000000, 760000000 }
-		},
+	  .clock = { "vfe1_csid", "vfe1_cphy_rx", "vfe1" },
+	  .clock_rate = { { 300000000, 400000000 },
+			  { 0 },
+			  { 380000000, 510000000, 637000000, 760000000 } },
 
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.is_lite = false,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .is_lite = false,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID2 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "vfe2_csid", "vfe2_cphy_rx", "vfe2" },
-		.clock_rate = { { 300000000, 400000000 },
-				{ 0 },
-				{ 380000000, 510000000, 637000000, 760000000 }
-		},
+	  .clock = { "vfe2_csid", "vfe2_cphy_rx", "vfe2" },
+	  .clock_rate = { { 300000000, 400000000 },
+			  { 0 },
+			  { 380000000, 510000000, 637000000, 760000000 } },
 
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.is_lite = false,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .is_lite = false,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID3 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "vfe_lite0_csid", "vfe_lite0_cphy_rx", "vfe_lite0" },
-		.clock_rate = { { 300000000, 400000000 },
-				{ 0 },
-				{ 320000000, 400000000, 480000000, 600000000 }
-		},
+	  .clock = { "vfe_lite0_csid", "vfe_lite0_cphy_rx", "vfe_lite0" },
+	  .clock_rate = { { 300000000, 400000000 },
+			  { 0 },
+			  { 320000000, 400000000, 480000000, 600000000 } },
 
-		.reg = { "csid_lite0" },
-		.interrupt = { "csid_lite0" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	  .reg = { "csid_lite0" },
+	  .interrupt = { "csid_lite0" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID4 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "vfe_lite1_csid", "vfe_lite1_cphy_rx", "vfe_lite1" },
-		.clock_rate = { { 300000000, 400000000 },
-				{ 0 },
-				{ 320000000, 400000000, 480000000, 600000000 }
-		},
+	  .clock = { "vfe_lite1_csid", "vfe_lite1_cphy_rx", "vfe_lite1" },
+	  .clock_rate = { { 300000000, 400000000 },
+			  { 0 },
+			  { 320000000, 400000000, 480000000, 600000000 } },
 
-		.reg = { "csid_lite1" },
-		.interrupt = { "csid_lite1" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen2,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	  .reg = { "csid_lite1" },
+	  .interrupt = { "csid_lite1" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen2,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 };
 
 static const struct camss_subdev_resources vfe_res_7280[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe0",
-			   "vfe0_axi", "gcc_axi_hf", "gcc_axi_sf" },
-		.clock_rate = { { 150000000, 240000000, 320000000, 400000000, 480000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 380000000, 510000000, 637000000, 760000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
+	  .clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe0", "vfe0_axi",
+		     "gcc_axi_hf", "gcc_axi_sf" },
+	  .clock_rate = { { 150000000, 240000000, 320000000, 400000000,
+			    480000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 380000000, 510000000, 637000000, 760000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
 
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.is_lite = false,
-			.has_pd = true,
-			.pd_name = "ife0",
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .is_lite = false,
+		   .has_pd = true,
+		   .pd_name = "ife0",
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE1 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe1",
-			   "vfe1_axi", "gcc_axi_hf", "gcc_axi_sf" },
-		.clock_rate = { { 150000000, 240000000, 320000000, 400000000, 480000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 380000000, 510000000, 637000000, 760000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
+	  .clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe1", "vfe1_axi",
+		     "gcc_axi_hf", "gcc_axi_sf" },
+	  .clock_rate = { { 150000000, 240000000, 320000000, 400000000,
+			    480000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 380000000, 510000000, 637000000, 760000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
 
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 3,
-			.is_lite = false,
-			.has_pd = true,
-			.pd_name = "ife1",
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 3,
+		   .is_lite = false,
+		   .has_pd = true,
+		   .pd_name = "ife1",
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE2 */
-	{
-		.regulators = {},
+	{ .regulators = {},
 
-		.clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe2",
-			   "vfe2_axi", "gcc_axi_hf", "gcc_axi_sf" },
-		.clock_rate = { { 150000000, 240000000, 320000000, 400000000, 480000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 380000000, 510000000, 637000000, 760000000 },
-				{ 0 },
-				{ 0 },
-				{ 0 } },
+	  .clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe2", "vfe2_axi",
+		     "gcc_axi_hf", "gcc_axi_sf" },
+	  .clock_rate = { { 150000000, 240000000, 320000000, 400000000,
+			    480000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 380000000, 510000000, 637000000, 760000000 },
+			  { 0 },
+			  { 0 },
+			  { 0 } },
 
-		.reg = { "vfe2" },
-		.interrupt = { "vfe2" },
-		.vfe = {
-			.line_num = 3,
-			.is_lite = false,
-			.hw_ops = &vfe_ops_170,
-			.has_pd = true,
-			.pd_name = "ife2",
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	  .reg = { "vfe2" },
+	  .interrupt = { "vfe2" },
+	  .vfe = { .line_num = 3,
+		   .is_lite = false,
+		   .hw_ops = &vfe_ops_170,
+		   .has_pd = true,
+		   .pd_name = "ife2",
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE3 (lite) */
-	{
-		.clock = { "camnoc_axi", "cpas_ahb", "icp_ahb",
-			   "vfe_lite0", "gcc_axi_hf", "gcc_axi_sf" },
-		.clock_rate = { { 150000000, 240000000, 320000000, 400000000, 480000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 320000000, 400000000, 480000000, 600000000 },
-				{ 0 },
-				{ 0 } },
+	{ .clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe_lite0",
+		     "gcc_axi_hf", "gcc_axi_sf" },
+	  .clock_rate = { { 150000000, 240000000, 320000000, 400000000,
+			    480000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 320000000, 400000000, 480000000, 600000000 },
+			  { 0 },
+			  { 0 } },
 
-		.regulators = {},
-		.reg = { "vfe_lite0" },
-		.interrupt = { "vfe_lite0" },
-		.vfe = {
-			.line_num = 4,
-			.is_lite = true,
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	  .regulators = {},
+	  .reg = { "vfe_lite0" },
+	  .interrupt = { "vfe_lite0" },
+	  .vfe = { .line_num = 4,
+		   .is_lite = true,
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE4 (lite) */
-	{
-		.clock = { "camnoc_axi", "cpas_ahb", "icp_ahb",
-			   "vfe_lite1", "gcc_axi_hf", "gcc_axi_sf" },
-		.clock_rate = { { 150000000, 240000000, 320000000, 400000000, 480000000 },
-				{ 80000000 },
-				{ 0 },
-				{ 320000000, 400000000, 480000000, 600000000 },
-				{ 0 },
-				{ 0 } },
+	{ .clock = { "camnoc_axi", "cpas_ahb", "icp_ahb", "vfe_lite1",
+		     "gcc_axi_hf", "gcc_axi_sf" },
+	  .clock_rate = { { 150000000, 240000000, 320000000, 400000000,
+			    480000000 },
+			  { 80000000 },
+			  { 0 },
+			  { 320000000, 400000000, 480000000, 600000000 },
+			  { 0 },
+			  { 0 } },
 
-		.regulators = {},
-		.reg = { "vfe_lite1" },
-		.interrupt = { "vfe_lite1" },
-		.vfe = {
-			.line_num = 4,
-			.is_lite = true,
-			.hw_ops = &vfe_ops_170,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	  .regulators = {},
+	  .reg = { "vfe_lite1" },
+	  .interrupt = { "vfe_lite1" },
+	  .vfe = { .line_num = 4,
+		   .is_lite = true,
+		   .hw_ops = &vfe_ops_170,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 };
 
 static const struct resources_icc icc_res_sc7280[] = {
@@ -1918,61 +1587,41 @@ static const struct resources_icc icc_res_sc7280[] = {
 
 static const struct camss_subdev_resources csiphy_res_sc8280xp[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = {},
-		.clock = { "csiphy0", "csiphy0_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy0" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csiphy0", "csiphy0_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy0" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY1 */
-	{
-		.regulators = {},
-		.clock = { "csiphy1", "csiphy1_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy1" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csiphy1", "csiphy1_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy1" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY2 */
-	{
-		.regulators = {},
-		.clock = { "csiphy2", "csiphy2_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy2" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csiphy2", "csiphy2_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy2" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY3 */
-	{
-		.regulators = {},
-		.clock = { "csiphy3", "csiphy3_timer" },
-		.clock_rate = { { 400000000 },
-				{ 300000000 } },
-		.reg = { "csiphy3" },
-		.interrupt = { "csiphy3" },
-		.csiphy = {
-			.id = 3,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csiphy3", "csiphy3_timer" },
+	  .clock_rate = { { 400000000 }, { 300000000 } },
+	  .reg = { "csiphy3" },
+	  .interrupt = { "csiphy3" },
+	  .csiphy = { .id = 3,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 };
 
 static const struct camss_subdev_resources csid_res_sc8280xp[] = {
@@ -2290,117 +1939,77 @@ static const struct resources_icc icc_res_sc8280xp[] = {
 
 static const struct camss_subdev_resources csiphy_res_8550[] = {
 	/* CSIPHY0 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy0", "csiphy0_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy0" },
-		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy0", "csiphy0_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy0" },
+	  .interrupt = { "csiphy0" },
+	  .csiphy = { .id = 0,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY1 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy1", "csiphy1_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy1" },
-		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy1", "csiphy1_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy1" },
+	  .interrupt = { "csiphy1" },
+	  .csiphy = { .id = 1,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY2 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy2", "csiphy2_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy2" },
-		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy2", "csiphy2_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy2" },
+	  .interrupt = { "csiphy2" },
+	  .csiphy = { .id = 2,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY3 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy3", "csiphy3_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy3" },
-		.interrupt = { "csiphy3" },
-		.csiphy = {
-			.id = 3,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy3", "csiphy3_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy3" },
+	  .interrupt = { "csiphy3" },
+	  .csiphy = { .id = 3,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY4 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy4", "csiphy4_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy4" },
-		.interrupt = { "csiphy4" },
-		.csiphy = {
-			.id = 4,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy4", "csiphy4_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy4" },
+	  .interrupt = { "csiphy4" },
+	  .csiphy = { .id = 4,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY5 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy5", "csiphy5_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy5" },
-		.interrupt = { "csiphy5" },
-		.csiphy = {
-			.id = 5,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy5", "csiphy5_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy5" },
+	  .interrupt = { "csiphy5" },
+	  .csiphy = { .id = 5,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY6 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy6", "csiphy6_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy6" },
-		.interrupt = { "csiphy6" },
-		.csiphy = {
-			.id = 6,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	},
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy6", "csiphy6_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy6" },
+	  .interrupt = { "csiphy6" },
+	  .csiphy = { .id = 6,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } },
 	/* CSIPHY7 */
-	{
-		.regulators = { "vdda-phy", "vdda-pll" },
-		.clock = { "csiphy7", "csiphy7_timer" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000 } },
-		.reg = { "csiphy7" },
-		.interrupt = { "csiphy7" },
-		.csiphy = {
-			.id = 7,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		}
-	}
+	{ .regulators = { "vdda-phy", "vdda-pll" },
+	  .clock = { "csiphy7", "csiphy7_timer" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000 } },
+	  .reg = { "csiphy7" },
+	  .interrupt = { "csiphy7" },
+	  .csiphy = { .id = 7,
+		      .hw_ops = &csiphy_ops_3ph_1_0,
+		      .formats = &csiphy_formats_sdm845 } }
 };
 
 static const struct resources_wrapper csid_wrapper_res_sm8550 = {
@@ -2409,199 +2018,156 @@ static const struct resources_wrapper csid_wrapper_res_sm8550 = {
 
 static const struct camss_subdev_resources csid_res_8550[] = {
 	/* CSID0 */
-	{
-		.regulators = {},
-		.clock = { "csid", "csiphy_rx" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000, 480000000 } },
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.is_lite = false,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.hw_ops = &csid_ops_gen3,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csid", "csiphy_rx" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000, 480000000 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .is_lite = false,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .hw_ops = &csid_ops_gen3,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID1 */
-	{
-		.regulators = {},
-		.clock = { "csid", "csiphy_rx" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000, 480000000 } },
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.is_lite = false,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.hw_ops = &csid_ops_gen3,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csid", "csiphy_rx" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000, 480000000 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .is_lite = false,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .hw_ops = &csid_ops_gen3,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID2 */
-	{
-		.regulators = {},
-		.clock = { "csid", "csiphy_rx" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000, 480000000 } },
-		.reg = { "csid2" },
-		.interrupt = { "csid2" },
-		.csid = {
-			.is_lite = false,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.hw_ops = &csid_ops_gen3,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csid", "csiphy_rx" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000, 480000000 } },
+	  .reg = { "csid2" },
+	  .interrupt = { "csid2" },
+	  .csid = { .is_lite = false,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .hw_ops = &csid_ops_gen3,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID3 */
-	{
-		.regulators = {},
-		.clock = { "vfe_lite_csid", "vfe_lite_cphy_rx" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000, 480000000 } },
-		.reg = { "csid_lite0" },
-		.interrupt = { "csid_lite0" },
-		.csid = {
-			.is_lite = true,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.hw_ops = &csid_ops_gen3,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "vfe_lite_csid", "vfe_lite_cphy_rx" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000, 480000000 } },
+	  .reg = { "csid_lite0" },
+	  .interrupt = { "csid_lite0" },
+	  .csid = { .is_lite = true,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .hw_ops = &csid_ops_gen3,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID4 */
-	{
-		.regulators = {},
-		.clock = { "vfe_lite_csid", "vfe_lite_cphy_rx" },
-		.clock_rate = { { 400000000, 480000000 },
-				{ 400000000, 480000000 } },
-		.reg = { "csid_lite1" },
-		.interrupt = { "csid_lite1" },
-		.csid = {
-			.is_lite = true,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.hw_ops = &csid_ops_gen3,
-			.formats = &csid_formats_gen2
-		}
-	}
+	{ .regulators = {},
+	  .clock = { "vfe_lite_csid", "vfe_lite_cphy_rx" },
+	  .clock_rate = { { 400000000, 480000000 }, { 400000000, 480000000 } },
+	  .reg = { "csid_lite1" },
+	  .interrupt = { "csid_lite1" },
+	  .csid = { .is_lite = true,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .hw_ops = &csid_ops_gen3,
+		    .formats = &csid_formats_gen2 } }
 };
 
 static const struct camss_subdev_resources vfe_res_8550[] = {
 	/* VFE0 */
-	{
-		.regulators = {},
-		.clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk", "vfe0_fast_ahb",
-			   "vfe0", "cpas_vfe0", "camnoc_axi" },
-		.clock_rate = { { 0 },
-				{ 80000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 },
-				{ 466000000, 594000000, 675000000, 785000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 } },
-		.reg = { "vfe0" },
-		.interrupt = { "vfe0" },
-		.vfe = {
-			.line_num = 3,
-			.is_lite = false,
-			.has_pd = true,
-			.pd_name = "ife0",
-			.hw_ops = &vfe_ops_gen3,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk",
+		     "vfe0_fast_ahb", "vfe0", "cpas_vfe0", "camnoc_axi" },
+	  .clock_rate = { { 0 },
+			  { 80000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 },
+			  { 466000000, 594000000, 675000000, 785000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 } },
+	  .reg = { "vfe0" },
+	  .interrupt = { "vfe0" },
+	  .vfe = { .line_num = 3,
+		   .is_lite = false,
+		   .has_pd = true,
+		   .pd_name = "ife0",
+		   .hw_ops = &vfe_ops_gen3,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE1 */
-	{
-		.regulators = {},
-		.clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk", "vfe1_fast_ahb",
-			   "vfe1", "cpas_vfe1", "camnoc_axi" },
-		.clock_rate = {	{ 0 },
-				{ 80000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 },
-				{ 466000000, 594000000, 675000000, 785000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 } },
-		.reg = { "vfe1" },
-		.interrupt = { "vfe1" },
-		.vfe = {
-			.line_num = 3,
-			.is_lite = false,
-			.has_pd = true,
-			.pd_name = "ife1",
-			.hw_ops = &vfe_ops_gen3,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk",
+		     "vfe1_fast_ahb", "vfe1", "cpas_vfe1", "camnoc_axi" },
+	  .clock_rate = { { 0 },
+			  { 80000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 },
+			  { 466000000, 594000000, 675000000, 785000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 } },
+	  .reg = { "vfe1" },
+	  .interrupt = { "vfe1" },
+	  .vfe = { .line_num = 3,
+		   .is_lite = false,
+		   .has_pd = true,
+		   .pd_name = "ife1",
+		   .hw_ops = &vfe_ops_gen3,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE2 */
-	{
-		.regulators = {},
-		.clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk", "vfe2_fast_ahb",
-			   "vfe2", "cpas_vfe2", "camnoc_axi" },
-		.clock_rate = {	{ 0 },
-				{ 80000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 },
-				{ 466000000, 594000000, 675000000, 785000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 } },
-		.reg = { "vfe2" },
-		.interrupt = { "vfe2" },
-		.vfe = {
-			.line_num = 3,
-			.is_lite = false,
-			.has_pd = true,
-			.pd_name = "ife2",
-			.hw_ops = &vfe_ops_gen3,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk",
+		     "vfe2_fast_ahb", "vfe2", "cpas_vfe2", "camnoc_axi" },
+	  .clock_rate = { { 0 },
+			  { 80000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 },
+			  { 466000000, 594000000, 675000000, 785000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 } },
+	  .reg = { "vfe2" },
+	  .interrupt = { "vfe2" },
+	  .vfe = { .line_num = 3,
+		   .is_lite = false,
+		   .has_pd = true,
+		   .pd_name = "ife2",
+		   .hw_ops = &vfe_ops_gen3,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE3 lite */
-	{
-		.regulators = {},
-		.clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk", "vfe_lite_ahb",
-			   "vfe_lite", "cpas_ife_lite", "camnoc_axi" },
-		.clock_rate = {	{ 0 },
-				{ 80000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 },
-				{ 400000000, 480000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 } },
-		.reg = { "vfe_lite0" },
-		.interrupt = { "vfe_lite0" },
-		.vfe = {
-			.line_num = 4,
-			.is_lite = true,
-			.hw_ops = &vfe_ops_gen3,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk",
+		     "vfe_lite_ahb", "vfe_lite", "cpas_ife_lite",
+		     "camnoc_axi" },
+	  .clock_rate = { { 0 },
+			  { 80000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 },
+			  { 400000000, 480000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 } },
+	  .reg = { "vfe_lite0" },
+	  .interrupt = { "vfe_lite0" },
+	  .vfe = { .line_num = 4,
+		   .is_lite = true,
+		   .hw_ops = &vfe_ops_gen3,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 	/* VFE4 lite */
-	{
-		.regulators = {},
-		.clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk", "vfe_lite_ahb",
-			   "vfe_lite", "cpas_ife_lite", "camnoc_axi" },
-		.clock_rate = {	{ 0 },
-				{ 80000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 },
-				{ 400000000, 480000000 },
-				{ 300000000, 400000000 },
-				{ 300000000, 400000000 } },
-		.reg = { "vfe_lite1" },
-		.interrupt = { "vfe_lite1" },
-		.vfe = {
-			.line_num = 4,
-			.is_lite = true,
-			.hw_ops = &vfe_ops_gen3,
-			.formats_rdi = &vfe_formats_rdi_845,
-			.formats_pix = &vfe_formats_pix_845
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "gcc_axi_hf", "cpas_ahb", "cpas_fast_ahb_clk",
+		     "vfe_lite_ahb", "vfe_lite", "cpas_ife_lite",
+		     "camnoc_axi" },
+	  .clock_rate = { { 0 },
+			  { 80000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 },
+			  { 400000000, 480000000 },
+			  { 300000000, 400000000 },
+			  { 300000000, 400000000 } },
+	  .reg = { "vfe_lite1" },
+	  .interrupt = { "vfe_lite1" },
+	  .vfe = { .line_num = 4,
+		   .is_lite = true,
+		   .hw_ops = &vfe_ops_gen3,
+		   .formats_rdi = &vfe_formats_rdi_845,
+		   .formats_pix = &vfe_formats_pix_845 } },
 };
 
 static const struct resources_icc icc_res_sm8550[] = {
@@ -2747,135 +2313,86 @@ static const struct camss_subdev_resources csiphy_res_8775p[] = {
 
 static const struct camss_subdev_resources csid_res_8775p[] = {
 	/* CSID0 */
-	{
-		.regulators = {},
-		.clock = { "csid", "csiphy_rx"},
-		.clock_rate = {
-			{ 400000000, 400000000},
-			{ 400000000, 400000000}
-		},
-		.reg = { "csid0" },
-		.interrupt = { "csid0" },
-		.csid = {
-			.is_lite = false,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csid", "csiphy_rx" },
+	  .clock_rate = { { 400000000, 400000000 }, { 400000000, 400000000 } },
+	  .reg = { "csid0" },
+	  .interrupt = { "csid0" },
+	  .csid = { .is_lite = false,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID1 */
-	{
-		.regulators = {},
-		.clock = { "csid", "csiphy_rx"},
-		.clock_rate = {
-			{ 400000000, 400000000},
-			{ 400000000, 400000000}
-		},
-		.reg = { "csid1" },
-		.interrupt = { "csid1" },
-		.csid = {
-			.is_lite = false,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "csid", "csiphy_rx" },
+	  .clock_rate = { { 400000000, 400000000 }, { 400000000, 400000000 } },
+	  .reg = { "csid1" },
+	  .interrupt = { "csid1" },
+	  .csid = { .is_lite = false,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 
 	/* CSID2 (lite) */
-	{
-		.regulators = {},
-		.clock = { "cpas_vfe_lite", "vfe_lite_ahb",
-			   "vfe_lite_csid", "vfe_lite_cphy_rx",
-			   "vfe_lite"},
-		.clock_rate = {
-			{ 0, 0, 400000000, 400000000, 0},
-			{ 0, 0, 400000000, 480000000, 0}
-		},
-		.reg = { "csid_lite0" },
-		.interrupt = { "csid_lite0" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_vfe_lite", "vfe_lite_ahb", "vfe_lite_csid",
+		     "vfe_lite_cphy_rx", "vfe_lite" },
+	  .clock_rate = { { 0, 0, 400000000, 400000000, 0 },
+			  { 0, 0, 400000000, 480000000, 0 } },
+	  .reg = { "csid_lite0" },
+	  .interrupt = { "csid_lite0" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID3 (lite) */
-	{
-		.regulators = {},
-		.clock = { "cpas_vfe_lite", "vfe_lite_ahb",
-			   "vfe_lite_csid", "vfe_lite_cphy_rx",
-			   "vfe_lite"},
-		.clock_rate = {
-			{ 0, 0, 400000000, 400000000, 0},
-			{ 0, 0, 400000000, 480000000, 0}
-		},
-		.reg = { "csid_lite1" },
-		.interrupt = { "csid_lite1" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_vfe_lite", "vfe_lite_ahb", "vfe_lite_csid",
+		     "vfe_lite_cphy_rx", "vfe_lite" },
+	  .clock_rate = { { 0, 0, 400000000, 400000000, 0 },
+			  { 0, 0, 400000000, 480000000, 0 } },
+	  .reg = { "csid_lite1" },
+	  .interrupt = { "csid_lite1" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID4 (lite) */
-	{
-		.regulators = {},
-		.clock = { "cpas_vfe_lite", "vfe_lite_ahb",
-			   "vfe_lite_csid", "vfe_lite_cphy_rx",
-			   "vfe_lite"},
-		.clock_rate = {
-			{ 0, 0, 400000000, 400000000, 0},
-			{ 0, 0, 400000000, 480000000, 0}
-		},
-		.reg = { "csid_lite2" },
-		.interrupt = { "csid_lite2" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_vfe_lite", "vfe_lite_ahb", "vfe_lite_csid",
+		     "vfe_lite_cphy_rx", "vfe_lite" },
+	  .clock_rate = { { 0, 0, 400000000, 400000000, 0 },
+			  { 0, 0, 400000000, 480000000, 0 } },
+	  .reg = { "csid_lite2" },
+	  .interrupt = { "csid_lite2" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID5 (lite) */
-	{
-		.regulators = {},
-		.clock = { "cpas_vfe_lite", "vfe_lite_ahb",
-			   "vfe_lite_csid", "vfe_lite_cphy_rx",
-			   "vfe_lite"},
-		.clock_rate = {
-			{ 0, 0, 400000000, 400000000, 0},
-			{ 0, 0, 400000000, 480000000, 0}
-		},
-		.reg = { "csid_lite3" },
-		.interrupt = { "csid_lite3" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_vfe_lite", "vfe_lite_ahb", "vfe_lite_csid",
+		     "vfe_lite_cphy_rx", "vfe_lite" },
+	  .clock_rate = { { 0, 0, 400000000, 400000000, 0 },
+			  { 0, 0, 400000000, 480000000, 0 } },
+	  .reg = { "csid_lite3" },
+	  .interrupt = { "csid_lite3" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 	/* CSID6 (lite) */
-	{
-		.regulators = {},
-		.clock = { "cpas_vfe_lite", "vfe_lite_ahb",
-			   "vfe_lite_csid", "vfe_lite_cphy_rx",
-			   "vfe_lite"},
-		.clock_rate = {
-			{ 0, 0, 400000000, 400000000, 0},
-			{ 0, 0, 400000000, 480000000, 0}
-		},
-		.reg = { "csid_lite4" },
-		.interrupt = { "csid_lite4" },
-		.csid = {
-			.is_lite = true,
-			.hw_ops = &csid_ops_gen3,
-			.parent_dev_ops = &vfe_parent_dev_ops,
-			.formats = &csid_formats_gen2
-		}
-	},
+	{ .regulators = {},
+	  .clock = { "cpas_vfe_lite", "vfe_lite_ahb", "vfe_lite_csid",
+		     "vfe_lite_cphy_rx", "vfe_lite" },
+	  .clock_rate = { { 0, 0, 400000000, 400000000, 0 },
+			  { 0, 0, 400000000, 480000000, 0 } },
+	  .reg = { "csid_lite4" },
+	  .interrupt = { "csid_lite4" },
+	  .csid = { .is_lite = true,
+		    .hw_ops = &csid_ops_gen3,
+		    .parent_dev_ops = &vfe_parent_dev_ops,
+		    .formats = &csid_formats_gen2 } },
 };
 
 static const struct camss_subdev_resources vfe_res_8775p[] = {
@@ -3081,63 +2598,51 @@ static const struct resources_icc icc_res_sa8775p[] = {
 static const struct camss_subdev_resources csiphy_res_x1e80100[] = {
 	/* CSIPHY0 */
 	{
-		.regulators = { "vdd-csiphy-0p8",
-				"vdd-csiphy-1p2" },
+		.regulators = { "vdd-csiphy-0p8", "vdd-csiphy-1p2" },
 		.clock = { "csiphy0", "csiphy0_timer" },
 		.clock_rate = { { 300000000, 400000000, 480000000 },
 				{ 266666667, 400000000 } },
 		.reg = { "csiphy0" },
 		.interrupt = { "csiphy0" },
-		.csiphy = {
-			.id = 0,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		},
+		.csiphy = { .id = 0,
+			    .hw_ops = &csiphy_ops_3ph_1_0,
+			    .formats = &csiphy_formats_sdm845 },
 	},
 	/* CSIPHY1 */
 	{
-		.regulators = { "vdd-csiphy-0p8",
-				"vdd-csiphy-1p2" },
+		.regulators = { "vdd-csiphy-0p8", "vdd-csiphy-1p2" },
 		.clock = { "csiphy1", "csiphy1_timer" },
 		.clock_rate = { { 300000000, 400000000, 480000000 },
 				{ 266666667, 400000000 } },
 		.reg = { "csiphy1" },
 		.interrupt = { "csiphy1" },
-		.csiphy = {
-			.id = 1,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		},
+		.csiphy = { .id = 1,
+			    .hw_ops = &csiphy_ops_3ph_1_0,
+			    .formats = &csiphy_formats_sdm845 },
 	},
 	/* CSIPHY2 */
 	{
-		.regulators = { "vdd-csiphy-0p8",
-				"vdd-csiphy-1p2" },
+		.regulators = { "vdd-csiphy-0p8", "vdd-csiphy-1p2" },
 		.clock = { "csiphy2", "csiphy2_timer" },
 		.clock_rate = { { 300000000, 400000000, 480000000 },
 				{ 266666667, 400000000 } },
 		.reg = { "csiphy2" },
 		.interrupt = { "csiphy2" },
-		.csiphy = {
-			.id = 2,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		},
+		.csiphy = { .id = 2,
+			    .hw_ops = &csiphy_ops_3ph_1_0,
+			    .formats = &csiphy_formats_sdm845 },
 	},
 	/* CSIPHY4 */
 	{
-		.regulators = { "vdd-csiphy-0p8",
-				"vdd-csiphy-1p2" },
+		.regulators = { "vdd-csiphy-0p8", "vdd-csiphy-1p2" },
 		.clock = { "csiphy4", "csiphy4_timer" },
 		.clock_rate = { { 300000000, 400000000, 480000000 },
 				{ 266666667, 400000000 } },
 		.reg = { "csiphy4" },
 		.interrupt = { "csiphy4" },
-		.csiphy = {
-			.id = 4,
-			.hw_ops = &csiphy_ops_3ph_1_0,
-			.formats = &csiphy_formats_sdm845
-		},
+		.csiphy = { .id = 4,
+			    .hw_ops = &csiphy_ops_3ph_1_0,
+			    .formats = &csiphy_formats_sdm845 },
 	},
 };
 
@@ -3549,8 +3054,8 @@ static int vfe_parent_dev_ops_put(struct camss *camss, int id)
 	return 0;
 }
 
-static void __iomem
-*vfe_parent_dev_ops_get_base_address(struct camss *camss, int id)
+static void __iomem *vfe_parent_dev_ops_get_base_address(struct camss *camss,
+							 int id)
 {
 	if (id < camss->res->vfe_num) {
 		struct vfe_device *vfe = &camss->vfe[id];
@@ -3605,8 +3110,7 @@ static int camss_of_parse_endpoint_node(struct device *dev,
 	lncfg->clk.pol = mipi_csi2->lane_polarities[0];
 	lncfg->num_data = mipi_csi2->num_data_lanes;
 
-	lncfg->data = devm_kcalloc(dev,
-				   lncfg->num_data, sizeof(*lncfg->data),
+	lncfg->data = devm_kcalloc(dev, lncfg->num_data, sizeof(*lncfg->data),
 				   GFP_KERNEL);
 	if (!lncfg->data)
 		return -ENOMEM;
@@ -3685,8 +3189,8 @@ static int camss_init_subdevices(struct camss *camss)
 					     res->csiphy_res[i].csiphy.id);
 		if (ret < 0) {
 			dev_err(camss->dev,
-				"Failed to init csiphy%d sub-device: %d\n",
-				i, ret);
+				"Failed to init csiphy%d sub-device: %d\n", i,
+				ret);
 			return ret;
 		}
 	}
@@ -3718,8 +3222,8 @@ static int camss_init_subdevices(struct camss *camss)
 					   &res->csid_res[i], i);
 		if (ret < 0) {
 			dev_err(camss->dev,
-				"Failed to init csid%d sub-device: %d\n",
-				i, ret);
+				"Failed to init csid%d sub-device: %d\n", i,
+				ret);
 			return ret;
 		}
 	}
@@ -3727,7 +3231,7 @@ static int camss_init_subdevices(struct camss *camss)
 	ret = msm_ispif_subdev_init(camss, res->ispif_res);
 	if (ret < 0) {
 		dev_err(camss->dev, "Failed to init ispif sub-device: %d\n",
-		ret);
+			ret);
 		return ret;
 	}
 
@@ -3739,16 +3243,11 @@ static int camss_init_subdevices(struct camss *camss)
  * @src_name: name for source of the link
  * @sink_name: name for sink of the link
  */
-inline void camss_link_err(struct camss *camss,
-			   const char *src_name,
-			   const char *sink_name,
-			   int ret)
+inline void camss_link_err(struct camss *camss, const char *src_name,
+			   const char *sink_name, int ret)
 {
-	dev_err(camss->dev,
-		"Failed to link %s->%s entities: %d\n",
-		src_name,
-		sink_name,
-		ret);
+	dev_err(camss->dev, "Failed to link %s->%s entities: %d\n", src_name,
+		sink_name, ret);
 }
 
 /*
@@ -3764,16 +3263,16 @@ static int camss_link_entities(struct camss *camss)
 
 	for (i = 0; i < camss->res->csiphy_num; i++) {
 		for (j = 0; j < camss->res->csid_num; j++) {
-			ret = media_create_pad_link(&camss->csiphy[i].subdev.entity,
-						    MSM_CSIPHY_PAD_SRC,
-						    &camss->csid[j].subdev.entity,
-						    MSM_CSID_PAD_SINK,
-						    0);
+			ret = media_create_pad_link(
+				&camss->csiphy[i].subdev.entity,
+				MSM_CSIPHY_PAD_SRC,
+				&camss->csid[j].subdev.entity,
+				MSM_CSID_PAD_SINK, 0);
 			if (ret < 0) {
-				camss_link_err(camss,
-					       camss->csiphy[i].subdev.entity.name,
-					       camss->csid[j].subdev.entity.name,
-					       ret);
+				camss_link_err(
+					camss,
+					camss->csiphy[i].subdev.entity.name,
+					camss->csid[j].subdev.entity.name, ret);
 				return ret;
 			}
 		}
@@ -3782,16 +3281,19 @@ static int camss_link_entities(struct camss *camss)
 	if (camss->ispif) {
 		for (i = 0; i < camss->res->csid_num; i++) {
 			for (j = 0; j < camss->ispif->line_num; j++) {
-				ret = media_create_pad_link(&camss->csid[i].subdev.entity,
-							    MSM_CSID_PAD_SRC,
-							    &camss->ispif->line[j].subdev.entity,
-							    MSM_ISPIF_PAD_SINK,
-							    0);
+				ret = media_create_pad_link(
+					&camss->csid[i].subdev.entity,
+					MSM_CSID_PAD_SRC,
+					&camss->ispif->line[j].subdev.entity,
+					MSM_ISPIF_PAD_SINK, 0);
 				if (ret < 0) {
-					camss_link_err(camss,
-						       camss->csid[i].subdev.entity.name,
-						       camss->ispif->line[j].subdev.entity.name,
-						       ret);
+					camss_link_err(
+						camss,
+						camss->csid[i]
+							.subdev.entity.name,
+						camss->ispif->line[j]
+							.subdev.entity.name,
+						ret);
 					return ret;
 				}
 			}
@@ -3799,38 +3301,45 @@ static int camss_link_entities(struct camss *camss)
 
 		for (i = 0; i < camss->ispif->line_num; i++)
 			for (k = 0; k < camss->res->vfe_num; k++)
-				for (j = 0; j < camss->vfe[k].res->line_num; j++) {
-					struct v4l2_subdev *ispif = &camss->ispif->line[i].subdev;
-					struct v4l2_subdev *vfe = &camss->vfe[k].line[j].subdev;
+				for (j = 0; j < camss->vfe[k].res->line_num;
+				     j++) {
+					struct v4l2_subdev *ispif =
+						&camss->ispif->line[i].subdev;
+					struct v4l2_subdev *vfe =
+						&camss->vfe[k].line[j].subdev;
 
-					ret = media_create_pad_link(&ispif->entity,
-								    MSM_ISPIF_PAD_SRC,
-								    &vfe->entity,
-								    MSM_VFE_PAD_SINK,
-								    0);
+					ret = media_create_pad_link(
+						&ispif->entity,
+						MSM_ISPIF_PAD_SRC, &vfe->entity,
+						MSM_VFE_PAD_SINK, 0);
 					if (ret < 0) {
-						camss_link_err(camss, ispif->entity.name,
-							       vfe->entity.name,
-							       ret);
+						camss_link_err(
+							camss,
+							ispif->entity.name,
+							vfe->entity.name, ret);
 						return ret;
 					}
 				}
 	} else {
 		for (i = 0; i < camss->res->csid_num; i++)
 			for (k = 0; k < camss->res->vfe_num; k++)
-				for (j = 0; j < camss->vfe[k].res->line_num; j++) {
-					struct v4l2_subdev *csid = &camss->csid[i].subdev;
-					struct v4l2_subdev *vfe = &camss->vfe[k].line[j].subdev;
+				for (j = 0; j < camss->vfe[k].res->line_num;
+				     j++) {
+					struct v4l2_subdev *csid =
+						&camss->csid[i].subdev;
+					struct v4l2_subdev *vfe =
+						&camss->vfe[k].line[j].subdev;
 
-					ret = media_create_pad_link(&csid->entity,
-								    MSM_CSID_PAD_FIRST_SRC + j,
-								    &vfe->entity,
-								    MSM_VFE_PAD_SINK,
-								    0);
+					ret = media_create_pad_link(
+						&csid->entity,
+						MSM_CSID_PAD_FIRST_SRC + j,
+						&vfe->entity, MSM_VFE_PAD_SINK,
+						0);
 					if (ret < 0) {
-						camss_link_err(camss, csid->entity.name,
-							       vfe->entity.name,
-							       ret);
+						camss_link_err(
+							camss,
+							csid->entity.name,
+							vfe->entity.name, ret);
 						return ret;
 					}
 				}
@@ -3839,7 +3348,8 @@ static int camss_link_entities(struct camss *camss)
 	return 0;
 }
 
-void camss_reg_update(struct camss *camss, int hw_id, int port_id, bool is_clear)
+void camss_reg_update(struct camss *camss, int hw_id, int port_id,
+		      bool is_clear)
 {
 	struct csid_device *csid;
 
@@ -3877,8 +3387,8 @@ static int camss_register_entities(struct camss *camss)
 						 &camss->v4l2_dev);
 		if (ret < 0) {
 			dev_err(camss->dev,
-				"Failed to register csiphy%d entity: %d\n",
-				i, ret);
+				"Failed to register csiphy%d entity: %d\n", i,
+				ret);
 			goto err_reg_csiphy;
 		}
 	}
@@ -3888,16 +3398,16 @@ static int camss_register_entities(struct camss *camss)
 					       &camss->v4l2_dev);
 		if (ret < 0) {
 			dev_err(camss->dev,
-				"Failed to register csid%d entity: %d\n",
-				i, ret);
+				"Failed to register csid%d entity: %d\n", i,
+				ret);
 			goto err_reg_csid;
 		}
 	}
 
-	ret = msm_ispif_register_entities(camss->ispif,
-					  &camss->v4l2_dev);
+	ret = msm_ispif_register_entities(camss->ispif, &camss->v4l2_dev);
 	if (ret < 0) {
-		dev_err(camss->dev, "Failed to register ispif entities: %d\n", ret);
+		dev_err(camss->dev, "Failed to register ispif entities: %d\n",
+			ret);
 		goto err_reg_ispif;
 	}
 
@@ -3906,8 +3416,8 @@ static int camss_register_entities(struct camss *camss)
 						&camss->v4l2_dev);
 		if (ret < 0) {
 			dev_err(camss->dev,
-				"Failed to register vfe%d entities: %d\n",
-				i, ret);
+				"Failed to register vfe%d entities: %d\n", i,
+				ret);
 			goto err_reg_vfe;
 		}
 	}
@@ -4000,9 +3510,9 @@ static int camss_subdev_notifier_complete(struct v4l2_async_notifier *async)
 			return -EINVAL;
 		}
 
-		ret = media_create_pad_link(sensor, i, input,
-					    MSM_CSIPHY_PAD_SINK,
-					    MEDIA_LNK_FL_IMMUTABLE | MEDIA_LNK_FL_ENABLED);
+		ret = media_create_pad_link(
+			sensor, i, input, MSM_CSIPHY_PAD_SINK,
+			MEDIA_LNK_FL_IMMUTABLE | MEDIA_LNK_FL_ENABLED);
 		if (ret < 0) {
 			camss_link_err(camss, sensor->name, input->name, ret);
 			return ret;
@@ -4029,9 +3539,8 @@ static int camss_configure_pd(struct camss *camss)
 	int i;
 	int ret;
 
-	camss->genpd_num = of_count_phandle_with_args(dev->of_node,
-						      "power-domains",
-						      "#power-domain-cells");
+	camss->genpd_num = of_count_phandle_with_args(
+		dev->of_node, "power-domains", "#power-domain-cells");
 	if (camss->genpd_num < 0) {
 		dev_err(dev, "Power domains are not defined for camss\n");
 		return camss->genpd_num;
@@ -4064,8 +3573,8 @@ static int camss_configure_pd(struct camss *camss)
 	 * fallback to indexes even if a pd_name is defined but not found.
 	 */
 	if (camss->res->pd_name) {
-		camss->genpd = dev_pm_domain_attach_by_name(camss->dev,
-							    camss->res->pd_name);
+		camss->genpd = dev_pm_domain_attach_by_name(
+			camss->dev, camss->res->pd_name);
 		if (IS_ERR(camss->genpd))
 			return PTR_ERR(camss->genpd);
 	}
@@ -4084,9 +3593,9 @@ static int camss_configure_pd(struct camss *camss)
 	if (!camss->genpd)
 		return -ENODEV;
 
-	camss->genpd_link = device_link_add(camss->dev, camss->genpd,
-					    DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME |
-					    DL_FLAG_RPM_ACTIVE);
+	camss->genpd_link = device_link_add(
+		camss->dev, camss->genpd,
+		DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME | DL_FLAG_RPM_ACTIVE);
 	if (!camss->genpd_link) {
 		ret = -EINVAL;
 		goto fail_pm;
@@ -4108,8 +3617,8 @@ static int camss_icc_get(struct camss *camss)
 	icc_res = camss->res->icc_res;
 
 	for (i = 0; i < camss->res->icc_path_num; i++) {
-		camss->icc_path[i] = devm_of_icc_get(camss->dev,
-						     icc_res[i].name);
+		camss->icc_path[i] =
+			devm_of_icc_get(camss->dev, icc_res[i].name);
 		if (IS_ERR(camss->icc_path[i]))
 			return PTR_ERR(camss->icc_path[i]);
 	}
@@ -4165,21 +3674,22 @@ static int camss_probe(struct platform_device *pdev)
 	if (!camss->csiphy)
 		return -ENOMEM;
 
-	camss->csid = devm_kcalloc(dev, camss->res->csid_num, sizeof(*camss->csid),
-				   GFP_KERNEL);
+	camss->csid = devm_kcalloc(dev, camss->res->csid_num,
+				   sizeof(*camss->csid), GFP_KERNEL);
 	if (!camss->csid)
 		return -ENOMEM;
 
 	if (camss->res->version == CAMSS_8x16 ||
 	    camss->res->version == CAMSS_8x53 ||
 	    camss->res->version == CAMSS_8x96) {
-		camss->ispif = devm_kcalloc(dev, 1, sizeof(*camss->ispif), GFP_KERNEL);
+		camss->ispif =
+			devm_kcalloc(dev, 1, sizeof(*camss->ispif), GFP_KERNEL);
 		if (!camss->ispif)
 			return -ENOMEM;
 	}
 
-	camss->vfe = devm_kcalloc(dev, camss->res->vfe_num,
-				  sizeof(*camss->vfe), GFP_KERNEL);
+	camss->vfe = devm_kcalloc(dev, camss->res->vfe_num, sizeof(*camss->vfe),
+				  GFP_KERNEL);
 	if (!camss->vfe)
 		return -ENOMEM;
 
@@ -4239,8 +3749,8 @@ static int camss_probe(struct platform_device *pdev)
 	camss->notifier.ops = &camss_subdev_notifier_ops;
 	ret = v4l2_async_nf_register(&camss->notifier);
 	if (ret) {
-		dev_err(dev,
-			"Failed to register async subdev nodes: %d\n", ret);
+		dev_err(dev, "Failed to register async subdev nodes: %d\n",
+			ret);
 		goto err_media_device_unregister;
 	}
 
@@ -4368,6 +3878,7 @@ static const struct camss_resources sa8775p_resources = {
 
 static const struct camss_resources sdm660_resources = {
 	.version = CAMSS_660,
+	.pd_name = "top",
 	.csiphy_res = csiphy_res_660,
 	.csid_res = csid_res_660,
 	.ispif_res = &ispif_res_660,
@@ -4481,7 +3992,7 @@ static const struct of_device_id camss_dt_match[] = {
 	{ .compatible = "qcom,sm8250-camss", .data = &sm8250_resources },
 	{ .compatible = "qcom,sm8550-camss", .data = &sm8550_resources },
 	{ .compatible = "qcom,x1e80100-camss", .data = &x1e80100_resources },
-	{ }
+	{}
 };
 
 MODULE_DEVICE_TABLE(of, camss_dt_match);
@@ -4509,8 +4020,7 @@ static int __maybe_unused camss_runtime_resume(struct device *dev)
 	int ret;
 
 	for (i = 0; i < camss->res->icc_path_num; i++) {
-		ret = icc_set_bw(camss->icc_path[i],
-				 icc_res[i].icc_bw_tbl.avg,
+		ret = icc_set_bw(camss->icc_path[i], icc_res[i].icc_bw_tbl.avg,
 				 icc_res[i].icc_bw_tbl.peak);
 		if (ret)
 			return ret;
@@ -4522,7 +4032,8 @@ static int __maybe_unused camss_runtime_resume(struct device *dev)
 static const struct dev_pm_ops camss_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
 				pm_runtime_force_resume)
-	SET_RUNTIME_PM_OPS(camss_runtime_suspend, camss_runtime_resume, NULL)
+		SET_RUNTIME_PM_OPS(camss_runtime_suspend, camss_runtime_resume,
+				   NULL)
 };
 
 static struct platform_driver qcom_camss_driver = {

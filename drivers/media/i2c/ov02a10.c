@@ -16,68 +16,68 @@
 #include <media/v4l2-fwnode.h>
 #include <media/v4l2-subdev.h>
 
-#define OV02A10_ID					0x2509
-#define OV02A10_ID_MASK					GENMASK(15, 0)
+#define OV02A10_ID 0x2509
+#define OV02A10_ID_MASK GENMASK(15, 0)
 
-#define OV02A10_REG_CHIP_ID				0x02
+#define OV02A10_REG_CHIP_ID 0x02
 
 /* Bit[1] vertical upside down */
 /* Bit[0] horizontal mirror */
-#define REG_MIRROR_FLIP_CONTROL				0x3f
+#define REG_MIRROR_FLIP_CONTROL 0x3f
 
 /* Orientation */
-#define REG_MIRROR_FLIP_ENABLE				0x03
+#define REG_MIRROR_FLIP_ENABLE 0x03
 
 /* Bit[2:0] MIPI transmission speed select */
-#define TX_SPEED_AREA_SEL				0xa1
-#define OV02A10_MIPI_TX_SPEED_DEFAULT			0x04
+#define TX_SPEED_AREA_SEL 0xa1
+#define OV02A10_MIPI_TX_SPEED_DEFAULT 0x04
 
-#define REG_PAGE_SWITCH					0xfd
-#define REG_GLOBAL_EFFECTIVE				0x01
-#define REG_ENABLE					BIT(0)
+#define REG_PAGE_SWITCH 0xfd
+#define REG_GLOBAL_EFFECTIVE 0x01
+#define REG_ENABLE BIT(0)
 
-#define REG_SC_CTRL_MODE				0xac
-#define SC_CTRL_MODE_STANDBY				0x00
-#define SC_CTRL_MODE_STREAMING				0x01
+#define REG_SC_CTRL_MODE 0xac
+#define SC_CTRL_MODE_STANDBY 0x00
+#define SC_CTRL_MODE_STREAMING 0x01
 
 /* Exposure control */
-#define OV02A10_EXP_SHIFT				8
-#define OV02A10_REG_EXPOSURE_H				0x03
-#define OV02A10_REG_EXPOSURE_L				0x04
-#define	OV02A10_EXPOSURE_MIN				4
-#define OV02A10_EXPOSURE_MAX_MARGIN			4
-#define	OV02A10_EXPOSURE_STEP				1
+#define OV02A10_EXP_SHIFT 8
+#define OV02A10_REG_EXPOSURE_H 0x03
+#define OV02A10_REG_EXPOSURE_L 0x04
+#define OV02A10_EXPOSURE_MIN 4
+#define OV02A10_EXPOSURE_MAX_MARGIN 4
+#define OV02A10_EXPOSURE_STEP 1
 
 /* Vblanking control */
-#define OV02A10_VTS_SHIFT				8
-#define OV02A10_REG_VTS_H				0x05
-#define OV02A10_REG_VTS_L				0x06
-#define OV02A10_VTS_MAX					0x209f
-#define OV02A10_BASE_LINES				1224
+#define OV02A10_VTS_SHIFT 8
+#define OV02A10_REG_VTS_H 0x05
+#define OV02A10_REG_VTS_L 0x06
+#define OV02A10_VTS_MAX 0x209f
+#define OV02A10_BASE_LINES 1224
 
 /* Analog gain control */
-#define OV02A10_REG_GAIN				0x24
-#define OV02A10_GAIN_MIN				0x10
-#define OV02A10_GAIN_MAX				0xf8
-#define OV02A10_GAIN_STEP				0x01
-#define OV02A10_GAIN_DEFAULT				0x40
+#define OV02A10_REG_GAIN 0x24
+#define OV02A10_GAIN_MIN 0x10
+#define OV02A10_GAIN_MAX 0xf8
+#define OV02A10_GAIN_STEP 0x01
+#define OV02A10_GAIN_DEFAULT 0x40
 
 /* Test pattern control */
-#define OV02A10_REG_TEST_PATTERN			0xb6
+#define OV02A10_REG_TEST_PATTERN 0xb6
 
-#define OV02A10_LINK_FREQ_390MHZ			(390 * HZ_PER_MHZ)
-#define OV02A10_ECLK_FREQ				(24 * HZ_PER_MHZ)
+#define OV02A10_LINK_FREQ_390MHZ (390 * HZ_PER_MHZ)
+#define OV02A10_ECLK_FREQ (24 * HZ_PER_MHZ)
 
 /* Number of lanes supported by this driver */
-#define OV02A10_DATA_LANES				1
+#define OV02A10_DATA_LANES 1
 
 /* Bits per sample of sensor output */
-#define OV02A10_BITS_PER_SAMPLE				10
+#define OV02A10_BITS_PER_SAMPLE 10
 
-static const char * const ov02a10_supply_names[] = {
-	"dovdd",	/* Digital I/O power */
-	"avdd",		/* Analog power */
-	"dvdd",		/* Digital core power */
+static const char *const ov02a10_supply_names[] = {
+	"dovdd", /* Digital I/O power */
+	"avdd", /* Analog power */
+	"dvdd", /* Digital core power */
 };
 
 struct ov02a10_reg {
@@ -143,102 +143,33 @@ static inline struct ov02a10 *to_ov02a10(struct v4l2_subdev *sd)
  * mipi_datarate per lane 780Mbps
  */
 static const struct ov02a10_reg ov02a10_1600x1200_regs[] = {
-	{0xfd, 0x01},
-	{0xac, 0x00},
-	{0xfd, 0x00},
-	{0x2f, 0x29},
-	{0x34, 0x00},
-	{0x35, 0x21},
-	{0x30, 0x15},
-	{0x33, 0x01},
-	{0xfd, 0x01},
-	{0x44, 0x00},
-	{0x2a, 0x4c},
-	{0x2b, 0x1e},
-	{0x2c, 0x60},
-	{0x25, 0x11},
-	{0x03, 0x01},
-	{0x04, 0xae},
-	{0x09, 0x00},
-	{0x0a, 0x02},
-	{0x06, 0xa6},
-	{0x31, 0x00},
-	{0x24, 0x40},
-	{0x01, 0x01},
-	{0xfb, 0x73},
-	{0xfd, 0x01},
-	{0x16, 0x04},
-	{0x1c, 0x09},
-	{0x21, 0x42},
-	{0x12, 0x04},
-	{0x13, 0x10},
-	{0x11, 0x40},
-	{0x33, 0x81},
-	{0xd0, 0x00},
-	{0xd1, 0x01},
-	{0xd2, 0x00},
-	{0x50, 0x10},
-	{0x51, 0x23},
-	{0x52, 0x20},
-	{0x53, 0x10},
-	{0x54, 0x02},
-	{0x55, 0x20},
-	{0x56, 0x02},
-	{0x58, 0x48},
-	{0x5d, 0x15},
-	{0x5e, 0x05},
-	{0x66, 0x66},
-	{0x68, 0x68},
-	{0x6b, 0x00},
-	{0x6c, 0x00},
-	{0x6f, 0x40},
-	{0x70, 0x40},
-	{0x71, 0x0a},
-	{0x72, 0xf0},
-	{0x73, 0x10},
-	{0x75, 0x80},
-	{0x76, 0x10},
-	{0x84, 0x00},
-	{0x85, 0x10},
-	{0x86, 0x10},
-	{0x87, 0x00},
-	{0x8a, 0x22},
-	{0x8b, 0x22},
-	{0x19, 0xf1},
-	{0x29, 0x01},
-	{0xfd, 0x01},
-	{0x9d, 0x16},
-	{0xa0, 0x29},
-	{0xa1, 0x04},
-	{0xad, 0x62},
-	{0xae, 0x00},
-	{0xaf, 0x85},
-	{0xb1, 0x01},
-	{0x8e, 0x06},
-	{0x8f, 0x40},
-	{0x90, 0x04},
-	{0x91, 0xb0},
-	{0x45, 0x01},
-	{0x46, 0x00},
-	{0x47, 0x6c},
-	{0x48, 0x03},
-	{0x49, 0x8b},
-	{0x4a, 0x00},
-	{0x4b, 0x07},
-	{0x4c, 0x04},
-	{0x4d, 0xb7},
-	{0xf0, 0x40},
-	{0xf1, 0x40},
-	{0xf2, 0x40},
-	{0xf3, 0x40},
-	{0x3f, 0x00},
-	{0xfd, 0x01},
-	{0x05, 0x00},
-	{0x06, 0xa6},
-	{0xfd, 0x01},
+	{ 0xfd, 0x01 }, { 0xac, 0x00 }, { 0xfd, 0x00 }, { 0x2f, 0x29 },
+	{ 0x34, 0x00 }, { 0x35, 0x21 }, { 0x30, 0x15 }, { 0x33, 0x01 },
+	{ 0xfd, 0x01 }, { 0x44, 0x00 }, { 0x2a, 0x4c }, { 0x2b, 0x1e },
+	{ 0x2c, 0x60 }, { 0x25, 0x11 }, { 0x03, 0x01 }, { 0x04, 0xae },
+	{ 0x09, 0x00 }, { 0x0a, 0x02 }, { 0x06, 0xa6 }, { 0x31, 0x00 },
+	{ 0x24, 0x40 }, { 0x01, 0x01 }, { 0xfb, 0x73 }, { 0xfd, 0x01 },
+	{ 0x16, 0x04 }, { 0x1c, 0x09 }, { 0x21, 0x42 }, { 0x12, 0x04 },
+	{ 0x13, 0x10 }, { 0x11, 0x40 }, { 0x33, 0x81 }, { 0xd0, 0x00 },
+	{ 0xd1, 0x01 }, { 0xd2, 0x00 }, { 0x50, 0x10 }, { 0x51, 0x23 },
+	{ 0x52, 0x20 }, { 0x53, 0x10 }, { 0x54, 0x02 }, { 0x55, 0x20 },
+	{ 0x56, 0x02 }, { 0x58, 0x48 }, { 0x5d, 0x15 }, { 0x5e, 0x05 },
+	{ 0x66, 0x66 }, { 0x68, 0x68 }, { 0x6b, 0x00 }, { 0x6c, 0x00 },
+	{ 0x6f, 0x40 }, { 0x70, 0x40 }, { 0x71, 0x0a }, { 0x72, 0xf0 },
+	{ 0x73, 0x10 }, { 0x75, 0x80 }, { 0x76, 0x10 }, { 0x84, 0x00 },
+	{ 0x85, 0x10 }, { 0x86, 0x10 }, { 0x87, 0x00 }, { 0x8a, 0x22 },
+	{ 0x8b, 0x22 }, { 0x19, 0xf1 }, { 0x29, 0x01 }, { 0xfd, 0x01 },
+	{ 0x9d, 0x16 }, { 0xa0, 0x29 }, { 0xa1, 0x04 }, { 0xad, 0x62 },
+	{ 0xae, 0x00 }, { 0xaf, 0x85 }, { 0xb1, 0x01 }, { 0x8e, 0x06 },
+	{ 0x8f, 0x40 }, { 0x90, 0x04 }, { 0x91, 0xb0 }, { 0x45, 0x01 },
+	{ 0x46, 0x00 }, { 0x47, 0x6c }, { 0x48, 0x03 }, { 0x49, 0x8b },
+	{ 0x4a, 0x00 }, { 0x4b, 0x07 }, { 0x4c, 0x04 }, { 0x4d, 0xb7 },
+	{ 0xf0, 0x40 }, { 0xf1, 0x40 }, { 0xf2, 0x40 }, { 0xf3, 0x40 },
+	{ 0x3f, 0x00 }, { 0xfd, 0x01 }, { 0x05, 0x00 }, { 0x06, 0xa6 },
+	{ 0xfd, 0x01 },
 };
 
-static const char * const ov02a10_test_pattern_menu[] = {
+static const char *const ov02a10_test_pattern_menu[] = {
 	"Disabled",
 	"Eight Vertical Colour Bars",
 };
@@ -337,8 +268,7 @@ static int ov02a10_get_fmt(struct v4l2_subdev *sd,
 	mutex_lock(&ov02a10->mutex);
 
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
-		fmt->format = *v4l2_subdev_state_get_format(sd_state,
-							    fmt->pad);
+		fmt->format = *v4l2_subdev_state_get_format(sd_state, fmt->pad);
 	} else {
 		fmt->format = ov02a10->fmt;
 		mbus_fmt->code = ov02a10->fmt.code;
@@ -371,8 +301,8 @@ static int ov02a10_enum_frame_sizes(struct v4l2_subdev *sd,
 	if (fse->index >= ARRAY_SIZE(supported_modes))
 		return -EINVAL;
 
-	fse->min_width  = supported_modes[fse->index].width;
-	fse->max_width  = supported_modes[fse->index].width;
+	fse->min_width = supported_modes[fse->index].width;
+	fse->max_width = supported_modes[fse->index].width;
 	fse->max_height = supported_modes[fse->index].height;
 	fse->min_height = supported_modes[fse->index].height;
 
@@ -393,7 +323,8 @@ static int ov02a10_check_sensor_id(struct ov02a10 *ov02a10)
 	chip_id = le16_to_cpu((__force __le16)ret);
 
 	if ((chip_id & OV02A10_ID_MASK) != OV02A10_ID) {
-		dev_err(ov02a10->dev, "unexpected sensor id(0x%04x)\n", chip_id);
+		dev_err(ov02a10->dev, "unexpected sensor id(0x%04x)\n",
+			chip_id);
 		return -EINVAL;
 	}
 
@@ -515,13 +446,11 @@ static int __ov02a10_stop_stream(struct ov02a10 *ov02a10)
 static int ov02a10_init_state(struct v4l2_subdev *sd,
 			      struct v4l2_subdev_state *sd_state)
 {
-	struct v4l2_subdev_format fmt = {
-		.which = V4L2_SUBDEV_FORMAT_TRY,
-		.format = {
-			.width = 1600,
-			.height = 1200,
-		}
-	};
+	struct v4l2_subdev_format fmt = { .which = V4L2_SUBDEV_FORMAT_TRY,
+					  .format = {
+						  .width = 1600,
+						  .height = 1200,
+					  } };
 
 	ov02a10_set_fmt(sd, sd_state, &fmt);
 
@@ -533,30 +462,57 @@ static int ov02a10_s_stream(struct v4l2_subdev *sd, int on)
 	struct ov02a10 *ov02a10 = to_ov02a10(sd);
 	int ret;
 
+	dev_info(ov02a10->dev,
+		 "ov02a10_s_stream: CALLED with on=%d, current streaming=%d\n",
+		 on, ov02a10->streaming);
+
 	mutex_lock(&ov02a10->mutex);
 
 	if (ov02a10->streaming == on) {
+		dev_info(ov02a10->dev,
+			 "ov02a10_s_stream: Already in state %d, returning\n",
+			 on);
 		ret = 0;
 		goto unlock_and_return;
 	}
 
 	if (on) {
+		dev_info(
+			ov02a10->dev,
+			"ov02a10_s_stream: Calling pm_runtime_resume_and_get\n");
 		ret = pm_runtime_resume_and_get(ov02a10->dev);
-		if (ret < 0)
+		if (ret < 0) {
+			dev_err(ov02a10->dev,
+				"ov02a10_s_stream: pm_runtime_resume_and_get FAILED: %d\n",
+				ret);
 			goto unlock_and_return;
+		}
+		dev_info(
+			ov02a10->dev,
+			"ov02a10_s_stream: pm_runtime_resume_and_get SUCCESS\n");
 
+		dev_info(ov02a10->dev,
+			 "ov02a10_s_stream: Calling __ov02a10_start_stream\n");
 		ret = __ov02a10_start_stream(ov02a10);
 		if (ret) {
+			dev_err(ov02a10->dev,
+				"ov02a10_s_stream: __ov02a10_start_stream FAILED: %d\n",
+				ret);
 			__ov02a10_stop_stream(ov02a10);
 			ov02a10->streaming = !on;
 			goto err_rpm_put;
 		}
+		dev_info(ov02a10->dev,
+			 "ov02a10_s_stream: __ov02a10_start_stream SUCCESS\n");
 	} else {
+		dev_info(ov02a10->dev, "ov02a10_s_stream: Stopping stream\n");
 		__ov02a10_stop_stream(ov02a10);
 		pm_runtime_put(ov02a10->dev);
 	}
 
 	ov02a10->streaming = on;
+	dev_info(ov02a10->dev, "ov02a10_s_stream: SUCCESS - streaming now %d\n",
+		 ov02a10->streaming);
 	mutex_unlock(&ov02a10->mutex);
 
 	return 0;
@@ -569,9 +525,8 @@ unlock_and_return:
 	return ret;
 }
 
-static const struct dev_pm_ops ov02a10_pm_ops = {
-	SET_RUNTIME_PM_OPS(ov02a10_power_off, ov02a10_power_on, NULL)
-};
+static const struct dev_pm_ops ov02a10_pm_ops = { SET_RUNTIME_PM_OPS(
+	ov02a10_power_off, ov02a10_power_on, NULL) };
 
 static int ov02a10_set_exposure(struct ov02a10 *ov02a10, int val)
 {
@@ -660,8 +615,8 @@ static int ov02a10_set_test_pattern(struct ov02a10 *ov02a10, int pattern)
 
 static int ov02a10_set_ctrl(struct v4l2_ctrl *ctrl)
 {
-	struct ov02a10 *ov02a10 = container_of(ctrl->handler,
-					       struct ov02a10, ctrl_handler);
+	struct ov02a10 *ov02a10 =
+		container_of(ctrl->handler, struct ov02a10, ctrl_handler);
 	s64 max_expo;
 	int ret;
 
@@ -715,8 +670,8 @@ static const struct v4l2_subdev_pad_ops ov02a10_pad_ops = {
 };
 
 static const struct v4l2_subdev_ops ov02a10_subdev_ops = {
-	.video	= &ov02a10_video_ops,
-	.pad	= &ov02a10_pad_ops,
+	.video = &ov02a10_video_ops,
+	.pad = &ov02a10_pad_ops,
 };
 
 static const struct v4l2_subdev_internal_ops ov02a10_internal_ops = {
@@ -769,16 +724,13 @@ static int ov02a10_initialize_controls(struct ov02a10 *ov02a10)
 			  vblank_def);
 
 	exposure_max = mode->vts_def - 4;
-	ov02a10->exposure = v4l2_ctrl_new_std(handler, &ov02a10_ctrl_ops,
-					      V4L2_CID_EXPOSURE,
-					      OV02A10_EXPOSURE_MIN,
-					      exposure_max,
-					      OV02A10_EXPOSURE_STEP,
-					      mode->exp_def);
+	ov02a10->exposure =
+		v4l2_ctrl_new_std(handler, &ov02a10_ctrl_ops, V4L2_CID_EXPOSURE,
+				  OV02A10_EXPOSURE_MIN, exposure_max,
+				  OV02A10_EXPOSURE_STEP, mode->exp_def);
 
-	v4l2_ctrl_new_std(handler, &ov02a10_ctrl_ops,
-			  V4L2_CID_ANALOGUE_GAIN, OV02A10_GAIN_MIN,
-			  OV02A10_GAIN_MAX, OV02A10_GAIN_STEP,
+	v4l2_ctrl_new_std(handler, &ov02a10_ctrl_ops, V4L2_CID_ANALOGUE_GAIN,
+			  OV02A10_GAIN_MIN, OV02A10_GAIN_MAX, OV02A10_GAIN_STEP,
 			  OV02A10_GAIN_DEFAULT);
 
 	v4l2_ctrl_new_std_menu_items(handler, &ov02a10_ctrl_ops,
@@ -835,7 +787,7 @@ static int ov02a10_check_hwcfg(struct device *dev, struct ov02a10 *ov02a10)
 	for (i = 0; i < ARRAY_SIZE(link_freq_menu_items); i++) {
 		for (j = 0; j < bus_cfg.nr_of_link_frequencies; j++) {
 			if (link_freq_menu_items[i] ==
-				bus_cfg.link_frequencies[j])
+			    bus_cfg.link_frequencies[j])
 				break;
 		}
 

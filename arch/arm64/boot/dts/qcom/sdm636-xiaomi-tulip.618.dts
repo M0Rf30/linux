@@ -125,21 +125,6 @@
 		regulator-always-on;
 		regulator-boot-on;
 	};
-
-	/* Camera regulators */
-	cam_avdd_gpio_regulator: cam-avdd-regulator {
-		compatible = "regulator-fixed";
-		regulator-name = "cam_avdd_gpio";
-		regulator-min-microvolt = <2800000>;
-		regulator-max-microvolt = <2800000>;
-		enable-active-high;
-		gpio = <&tlmm 46 0>;
-		vin-supply = <&vreg_bob>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&cam_regulator_enable>;
-	};
-
-
 };
 
 &adreno_gpu {
@@ -177,52 +162,6 @@
 
 &blsp_spi7 {
 	status = "okay";
-};
-
-/* Camera Control Interface */
-&cci {
-	status = "okay";
-};
-
-&cci_i2c0 {
-	/* OmniVision OV02A10 - 2MP Depth Sensor (Sunny/Ofilm module) */
-	ov02a10_depth: camera-sensor@3d {
-		compatible = "ovti,ov02a10";
-		reg = <0x3d>;
-
-		/* Power supplies - from downstream DTS */
-		dovdd-supply = <&vreg_l11a_1p8>;  /* PM660 L11 - 1.8V I/O */
-		avdd-supply = <&cam_avdd_gpio_regulator>;  /* 2.8V via GPIO 46 */
-		dvdd-supply = <&cam_avdd_gpio_regulator>;  /* Share with AVDD */
-
-		/* Clock - MCLK2 @ 24MHz from CAMSS */
-		clocks = <&mmcc CAMSS_MCLK2_CLK>;
-		clock-names = "eclk";
-
-		/* GPIOs from downstream kernel */
-		powerdown-gpios = <&tlmm 40 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&tlmm 52 GPIO_ACTIVE_LOW>;
-
-		/* Pinctrl states */
-		pinctrl-names = "default";
-		pinctrl-0 = <&cam_mclk2_active &cam_sensor_ov02a10_active>;
-
-		/* Sensor orientation */
-		rotation = <90>;
-
-		/* CSI-2 connection to CAMSS */
-		port {
-			ov02a10_ep: endpoint {
-				/* MIPI link frequency for OV02A10 */
-				link-frequencies = /bits/ 64 <390000000>;
-				ovti,mipi-clock-voltage = <3>;
-				
-				/* Connect to CAMSS CSIPHY1 - from downstream */
-				remote-endpoint = <&csiphy1_ep>;
-				data-lanes = <1>;  /* OV02A10 uses 1 data lane */
-			};
-		};
-	};
 };
 
 &blsp1_uart2 {
@@ -817,30 +756,6 @@
 		drive-strength = <2>;
 		bias-disable;
 	};
-
-	/* Camera GPIOs */
-	cam_regulator_enable: cam-regulator-enable-state {
-		pins = "gpio46";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-disable;
-		output-low;
-	};
-
-	cam_mclk2_active: cam-mclk2-active-state {
-		pins = "gpio34";
-		function = "cam_mclk";
-		drive-strength = <2>;
-		bias-disable;
-	};
-
-	cam_sensor_ov02a10_active: cam-sensor-ov02a10-active-state {
-		/* RESET, POWERDOWN */
-		pins = "gpio52", "gpio40";
-		function = "gpio";
-		drive-strength = <2>;
-		bias-disable;
-	};
 };
 
 &usb3 {
@@ -871,29 +786,3 @@
 
 	status = "okay";
 };
-
-/* Camera Subsystem */
-&camss {
-	status = "okay";
-	
-	power-domains = <&mmcc CAMSS_VFE0_GDSC>,
-			<&mmcc CAMSS_VFE1_GDSC>,
-			<&mmcc CAMSS_TOP_GDSC>;
-	power-domain-names = "vfe0", "vfe1", "top";
-
-	ports {
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		/* CSIPHY1 - OV02A10 Depth Sensor */
-		port@1 {
-			reg = <1>;
-			csiphy1_ep: endpoint {
-				clock-lanes = <7>;
-				data-lanes = <0>;  /* Single lane for OV02A10 */
-				remote-endpoint = <&ov02a10_ep>;
-			};
-		};
-	};
-};
-
