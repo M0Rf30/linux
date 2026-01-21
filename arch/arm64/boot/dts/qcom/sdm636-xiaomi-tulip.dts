@@ -186,21 +186,24 @@
 
 &cci_i2c0 {
 	/* OmniVision OV02A10 - 2MP Depth Sensor (Sunny/Ofilm module) */
-	ov02a10_depth: camera-sensor@3d {
+	/* Try alternate I2C address 0x3c (SCCB_ID[0]=1) */
+	ov02a10_depth: camera-sensor@3c {
 		compatible = "ovti,ov02a10";
-		reg = <0x3d>;
+		reg = <0x3c>;
 
 		/* Power supplies - from downstream DTS */
 		dovdd-supply = <&vreg_l11a_1p8>;  /* PM660 L11 - 1.8V I/O */
 		avdd-supply = <&cam_avdd_gpio_regulator>;  /* 2.8V via GPIO 46 */
-		dvdd-supply = <&cam_avdd_gpio_regulator>;  /* Share with AVDD */
+		dvdd-supply = <&vreg_l7a_1p2>;  /* PM660 L7 - 1.2V digital core */
 
 		/* Clock - MCLK2 @ 24MHz from CAMSS */
 		clocks = <&mmcc CAMSS_MCLK2_CLK>;
 		clock-names = "eclk";
+		assigned-clocks = <&mmcc MCLK2_CLK_SRC>;
+		assigned-clock-rates = <24000000>;
 
-		/* GPIOs from downstream kernel */
-		powerdown-gpios = <&tlmm 40 GPIO_ACTIVE_HIGH>;
+		/* GPIOs from downstream kernel - both ACTIVE_LOW to match downstream final state (both HIGH) */
+		powerdown-gpios = <&tlmm 40 GPIO_ACTIVE_LOW>;
 		reset-gpios = <&tlmm 52 GPIO_ACTIVE_LOW>;
 
 		/* Pinctrl states */
@@ -216,10 +219,10 @@
 				/* MIPI link frequency for OV02A10 */
 				link-frequencies = /bits/ 64 <390000000>;
 				ovti,mipi-clock-voltage = <3>;
-				
+
 				/* Connect to CAMSS CSIPHY1 - from downstream */
 				remote-endpoint = <&csiphy1_ep>;
-				data-lanes = <1>;  /* OV02A10 uses 1 data lane */
+				data-lanes = <0>;  /* Single lane D0 */
 			};
 		};
 	};
@@ -890,7 +893,7 @@
 			reg = <1>;
 			csiphy1_ep: endpoint {
 				clock-lanes = <7>;
-				data-lanes = <0>;  /* Single lane for OV02A10 */
+				data-lanes = <0>;  /* Single lane D0 */
 				remote-endpoint = <&ov02a10_ep>;
 			};
 		};
