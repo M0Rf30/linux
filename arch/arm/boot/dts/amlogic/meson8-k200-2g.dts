@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: GPL-2.0 OR MIT
+/*
+ * Copyright 2025 Gianluca
+ *
+ * Device tree for Amlogic Meson8 K200 TV Box (Universal K200, 2GB RAM variant)
+ */
+
+/dts-v1/;
+#include "meson8.dtsi"
+#include "meson8-k200.dtsi"
+
+/ {
+	model = "Amlogic Meson8 K200 (2GB)";
+	compatible = "amlogic,k200-2g", "amlogic,k200", "amlogic,meson8";
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x40000000 0x80000000>; /* 2GB */
+	};
+};
