@@ -53,20 +53,28 @@ static const unsigned int tas2557_irq_config[] = {
 	0xFFFFFFFF, 0xFFFFFFFF
 };
 
-/* Startup sequence */
+/* Startup sequence - matches Android driver for ASI2 interface */
 static const unsigned int tas2557_startup_data[] = {
 	TAS2557_GPI_PIN_REG, 0x15,	/* enable DIN, MCLK, CCI */
 	TAS2557_GPIO1_PIN_REG, 0x01,	/* enable BCLK (ASI1) */
 	TAS2557_GPIO2_PIN_REG, 0x01,	/* enable WCLK (ASI1) */
 	/* ASI2 GPIO configuration - hardware uses ASI2 interface */
-	TAS2557_GPIO5_PIN_REG, 0x01,	/* GPIO5 as ASI2 BCLK input */
 	TAS2557_GPIO6_PIN_REG, 0x01,	/* GPIO6 as ASI2 WCLK input */
-	TAS2557_GPIO7_PIN_REG, 0x15,	/* GPIO7 as ASI2 DOUT */
 	TAS2557_GPIO8_PIN_REG, 0x02,	/* GPIO8 as ASI2 DIN */
-	/* ASI2 clock configuration - format set dynamically in hw_params */
+	/*
+	 * ASI2 DAC format - MUST be set here in startup sequence!
+	 * Setting in hw_params doesn't work because device isn't powered yet.
+	 * Use 32-bit format (0x18) as Android driver does - Q6AFE sends 32-bit I2S frames.
+	 */
+	TAS2557_ASI2_DAC_FORMAT_REG, 0x18,	/* ASI2 as 32-bit I2S */
+	/* ASI2 clock dividers - two-step sequence: set ratio, then power up */
 	TAS2557_ASI2_BDIV_CLK_SEL_REG, 0x01,	/* BDIV clock select */
-	TAS2557_ASI2_BDIV_CLK_RATIO_REG, 0x81,	/* BDIV ratio with power up */
-	TAS2557_ASI2_WDIV_CLK_RATIO_REG, 0xc0,	/* WDIV ratio with power up */
+	TAS2557_ASI2_BDIV_CLK_RATIO_REG, 0x01,	/* ASI2 BDIV ratio */
+	TAS2557_ASI2_BDIV_CLK_RATIO_REG, 0x81,	/* ASI2 BDIV power up */
+	TAS2557_ASI2_WDIV_CLK_RATIO_REG, 0x40,	/* ASI2 WDIV ratio */
+	TAS2557_ASI2_WDIV_CLK_RATIO_REG, 0xc0,	/* ASI2 WDIV power up */
+	TAS2557_GPIO5_PIN_REG, 0x01,	/* GPIO5 as ASI2 BCLK input */
+	TAS2557_GPIO7_PIN_REG, 0x15,	/* GPIO7 as ASI2 DOUT */
 	TAS2557_POWER_CTRL2_REG, 0xA0,	/* Class-D, Boost power up */
 	TAS2557_POWER_CTRL2_REG, 0xA3,	/* Class-D, Boost, IV sense power up */
 	TAS2557_POWER_CTRL1_REG, 0xF8,	/* PLL, DSP, clock dividers power up */
@@ -309,7 +317,7 @@ out:
 }
 
 /*
- * Load register sequence data
+ * Load register sequence data with debug tracing
  */
 static int tas2557_load_data(struct tas2557_priv *tas2557,
 			     const unsigned int *data)
@@ -330,9 +338,31 @@ static int tas2557_load_data(struct tas2557_priv *tas2557,
 		} else if (reg == TAS2557_MDELAY) {
 			msleep(val);
 		} else {
-			ret = tas2557_dev_write(tas2557, reg, val);
-			if (ret < 0)
-				break;
+			/* Debug: trace ASI2_DAC_FORMAT writes */
+			if (reg == TAS2557_ASI2_DAC_FORMAT_REG) {
+				unsigned int readback;
+
+				dev_info(tas2557->dev,
+					 "DEBUG: writing ASI2_DAC_FORMAT = 0x%02x\n",
+					 val);
+				ret = tas2557_dev_write(tas2557, reg, val);
+				if (ret < 0) {
+					dev_err(tas2557->dev,
+						"DEBUG: ASI2_DAC_FORMAT write FAILED: %d\n",
+						ret);
+					break;
+				}
+				/* Read back to verify */
+				tas2557_dev_read(tas2557, reg, &readback);
+				dev_info(tas2557->dev,
+					 "DEBUG: ASI2_DAC_FORMAT readback = 0x%02x %s\n",
+					 readback,
+					 (readback == val) ? "OK" : "MISMATCH!");
+			} else {
+				ret = tas2557_dev_write(tas2557, reg, val);
+				if (ret < 0)
+					break;
+			}
 		}
 		i++;
 	}
@@ -1489,6 +1519,32 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 
 		dev_info(tas2557->dev, "amplifier powered on successfully\n");
 
+		/*
+		 * Try to make DSP use ASI2 instead of ASI1.
+		 * ASI_CTL1 (B0P0R42) might control ASI selection for the DSP.
+		 * Try different values to see what selects ASI2.
+		 */
+		{
+			unsigned int asi_ctl1_before, asi_ctl1_after;
+			int i;
+
+			tas2557_dev_read(tas2557, TAS2557_ASI_CTL1_REG, &asi_ctl1_before);
+			dev_info(tas2557->dev, "ASI_CTL1 before: 0x%02x\n", asi_ctl1_before);
+
+			/* Try setting bit 0 or bit 1 to select ASI2 */
+			for (i = 1; i <= 3; i++) {
+				tas2557_dev_write(tas2557, TAS2557_ASI_CTL1_REG, i);
+				tas2557_dev_read(tas2557, TAS2557_ASI_CTL1_REG, &asi_ctl1_after);
+				dev_info(tas2557->dev, "ASI_CTL1: wrote 0x%02x, read 0x%02x\n",
+					 i, asi_ctl1_after);
+			}
+
+			/* Set to value 3 (might select ASI2) */
+			tas2557_dev_write(tas2557, TAS2557_ASI_CTL1_REG, 0x03);
+			tas2557_dev_read(tas2557, TAS2557_ASI_CTL1_REG, &asi_ctl1_after);
+			dev_info(tas2557->dev, "ASI_CTL1 final: 0x%02x\n", asi_ctl1_after);
+		}
+
 		/* Debug: read back key registers to verify state */
 		{
 			unsigned int pwr1, pwr2, mute, pwr_flag, flags1, flags2;
@@ -1527,6 +1583,30 @@ static int tas2557_enable(struct tas2557_priv *tas2557, bool enable)
 				 asi1_fmt, asi2_fmt);
 		}
 
+		/* Debug: Read DSP/DAC source configuration registers */
+		{
+			unsigned int dsp_mode, asi_ctl1, dac_interpol;
+			unsigned int main_clkin, pll_clkin;
+			unsigned int asi1_mux, asi2_mux;
+
+			tas2557_dev_read(tas2557, TAS2557_DSP_MODE_SELECT_REG, &dsp_mode);
+			tas2557_dev_read(tas2557, TAS2557_ASI_CTL1_REG, &asi_ctl1);
+			tas2557_dev_read(tas2557, TAS2557_DAC_INTERPOL_REG, &dac_interpol);
+			tas2557_dev_read(tas2557, TAS2557_MAIN_CLKIN_REG, &main_clkin);
+			tas2557_dev_read(tas2557, TAS2557_PLL_CLKIN_REG, &pll_clkin);
+			tas2557_dev_read(tas2557, TAS2557_ASI1_DIN_DOUT_MUX_REG, &asi1_mux);
+			tas2557_dev_read(tas2557, TAS2557_ASI2_DIN_DOUT_MUX_REG, &asi2_mux);
+			dev_info(tas2557->dev,
+				 "DEBUG DSP: DSP_MODE=0x%02x ASI_CTL1=0x%02x DAC_INTERPOL=0x%02x\n",
+				 dsp_mode, asi_ctl1, dac_interpol);
+			dev_info(tas2557->dev,
+				 "DEBUG CLK: MAIN_CLKIN=0x%02x PLL_CLKIN=0x%02x\n",
+				 main_clkin, pll_clkin);
+			dev_info(tas2557->dev,
+				 "DEBUG MUX: ASI1_MUX=0x%02x ASI2_MUX=0x%02x\n",
+				 asi1_mux, asi2_mux);
+		}
+
 	} else if (!enable && tas2557->powered) {
 		/* Stop temperature monitoring */
 		tas2557_stop_temp_monitor(tas2557);
@@ -1560,12 +1640,21 @@ static int tas2557_set_sample_rate(struct tas2557_priv *tas2557,
 
 /*
  * Bit rate configuration
+ *
+ * Note: ASI2 format is set to 32-bit in tas2557_startup_data to match the
+ * Q6AFE MI2S frame format. This function runs during hw_params BEFORE
+ * power-up, so writes may not persist. The startup sequence is authoritative.
  */
 static int tas2557_set_bit_rate(struct tas2557_priv *tas2557,
 				unsigned int bit_rate)
 {
 	int n = -1;
 	int ret;
+	unsigned int readback;
+
+	dev_info(tas2557->dev,
+		 "DEBUG: set_bit_rate(%u) called, powered=%d\n",
+		 bit_rate, tas2557->powered);
 
 	switch (bit_rate) {
 	case 16:
@@ -1591,9 +1680,19 @@ static int tas2557_set_bit_rate(struct tas2557_priv *tas2557,
 	if (ret < 0)
 		return ret;
 
-	/* Set ASI2 format - hardware may use ASI2 interface */
+	/*
+	 * Note: ASI2 format is set to 32-bit in startup_data.
+	 * This write during hw_params may not persist if device isn't powered.
+	 * Log for debugging but don't worry if it shows mismatch.
+	 */
 	ret = tas2557_dev_update_bits(tas2557, TAS2557_ASI2_DAC_FORMAT_REG,
 				      TAS2557_WORDLENGTH_MASK, n << 3);
+
+	/* Debug: verify ASI2 write */
+	tas2557_dev_read(tas2557, TAS2557_ASI2_DAC_FORMAT_REG, &readback);
+	dev_info(tas2557->dev,
+		 "DEBUG: ASI2_DAC_FORMAT after hw_params: wrote 0x%02x, read 0x%02x\n",
+		 n << 3, readback);
 
 	dev_info(tas2557->dev, "ASI format set to %u-bit (n=%d)\n", bit_rate, n);
 	return ret;
@@ -1653,14 +1752,25 @@ static int tas2557_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/*
-	 * Set PLL clock source to BCLK (0x01) since we don't have MCLK.
-	 * The firmware defaults to MCLK (0x00) which doesn't work on this platform.
+	 * Set clock sources to use ASI2 interface (hardware uses ASI2 for audio).
+	 * Clock source values select GPIO pins:
+	 *   0 = GPIO1 (ASI1 BCLK), 1 = GPIO2 (ASI1 WCLK)
+	 *   4 = GPIO5 (ASI2 BCLK), 5 = GPIO6 (ASI2 WCLK)
+	 *   13 = GPI2 (MCLK), 15 = Internal OSC
+	 *
+	 * For ASI2, we need GPIO5 (ASI2 BCLK) = value 4
 	 */
-	ret = tas2557_dev_write(tas2557, TAS2557_PLL_CLKIN_REG, 0x01);
+	ret = tas2557_dev_write(tas2557, TAS2557_MAIN_CLKIN_REG, 0x04);
+	if (ret < 0)
+		dev_warn(tas2557->dev, "failed to set MAIN_CLKIN: %d\n", ret);
+	else
+		dev_info(tas2557->dev, "MAIN_CLKIN set to GPIO5/ASI2 BCLK (0x04)\n");
+
+	ret = tas2557_dev_write(tas2557, TAS2557_PLL_CLKIN_REG, 0x04);
 	if (ret < 0)
 		dev_warn(tas2557->dev, "failed to set PLL clock source: %d\n", ret);
 	else
-		dev_info(tas2557->dev, "PLL clock source set to BCLK\n");
+		dev_info(tas2557->dev, "PLL clock source set to GPIO5/ASI2 BCLK (0x04)\n");
 
 	/*
 	 * Configure PLL for BCLK input.
