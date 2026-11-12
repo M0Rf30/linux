@@ -3,6 +3,9 @@
 #ifndef __QCOM_SMGR_H__
 #define __QCOM_SMGR_H__
 
+#include <linux/completion.h>
+#include <linux/mutex.h>
+#include <linux/workqueue.h>
 #include <linux/iio/iio.h>
 #include <linux/iio/types.h>
 #include <linux/types.h>
@@ -39,6 +42,26 @@ struct qcom_smgr_data_type_item {
 	u16 cur_sample_rate;
 };
 
+struct qcom_smgr;
+struct qcom_smgr_sensor;
+
+/*
+ * State of a direct (sysfs) read. The sensor is started on the first read
+ * and stopped a few seconds after the last one, so a client that polls
+ * does not restart it for every sample.
+ */
+struct qcom_smgr_direct {
+	struct qcom_smgr *smgr;
+	struct qcom_smgr_sensor *sensor;
+	u8 data_type;
+
+	struct mutex lock;
+	struct completion done;
+	struct delayed_work stop;
+	bool active;
+	u32 values[3];
+};
+
 struct qcom_smgr_sensor {
 	u8 id;
 	enum qcom_smgr_sensor_type type;
@@ -51,6 +74,9 @@ struct qcom_smgr_sensor {
 	struct qcom_smgr_data_type_item *data_types;
 
 	struct iio_dev *iio_dev;
+
+	/* One-shot reads, one stream per data type */
+	struct qcom_smgr_direct direct[SNS_SMGR_DATA_TYPE_COUNT];
 };
 
 struct qcom_smgr_iio_priv {

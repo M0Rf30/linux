@@ -24,6 +24,11 @@
 #define SMGR_REPORT_RATE_HZ		(SMGR_TICKS_PER_SECOND * 2)
 #define SMGR_VALUE_DIV			65536
 
+/* Report IDs of direct reads: sensor IDs are spaced, the next two are free */
+#define SMGR_DIRECT_REPORT_ID(sensor, dt)	((sensor)->id + 1 + (dt))
+#define SMGR_DIRECT_TIMEOUT		(2 * HZ)
+#define SMGR_DIRECT_LINGER		(3 * HZ)
+
 struct qcom_smgr {
 	struct device *dev;
 
@@ -205,16 +210,16 @@ static int qcom_smgr_request_single_sensor_info(struct qcom_smgr *smgr,
 	return 0;
 }
 
-static int qcom_smgr_request_buffering(struct qcom_smgr *smgr,
-				       struct qcom_smgr_sensor *sensor,
-				       bool enable)
+static int qcom_smgr_request_report(struct qcom_smgr *smgr,
+				    struct qcom_smgr_sensor *sensor,
+				    u8 report_id, u8 data_type, bool enable)
 {
 	struct sns_smgr_buffering_req req = {
 		/*
 		 * Reuse sensor ID as a report ID to avoid having to keep track
 		 * of a separate set of IDs
 		 */
-		.report_id = sensor->id,
+		.report_id = report_id,
 		.notify_suspend_valid = false
 	};
 	struct sns_smgr_buffering_resp resp = {};
@@ -238,9 +243,9 @@ static int qcom_smgr_request_buffering(struct qcom_smgr *smgr,
 		 * report rate such that every report contains only 1 sample.
 		 * This gives us the lowest latency.
 		 */
-		if (sensor->data_types[0].native_sample_rates)
-			sample_rate = sensor->data_types[0].native_sample_rates
-					[sensor->data_types[0]
+		if (sensor->data_types[data_type].native_sample_rates)
+			sample_rate = sensor->data_types[data_type].native_sample_rates
+					[sensor->data_types[data_type]
 						 .native_sample_rate_count - 1];
 
 		/*
@@ -248,14 +253,14 @@ static int qcom_smgr_request_buffering(struct qcom_smgr *smgr,
 		 * supported by the sensor.
 		 */
 		if (sample_rate == 0 ||
-		    sample_rate > sensor->data_types[0].max_sample_rate)
-			sample_rate = sensor->data_types[0].max_sample_rate;
+		    sample_rate > sensor->data_types[data_type].max_sample_rate)
+			sample_rate = sensor->data_types[data_type].max_sample_rate;
 
 		req.report_rate = sample_rate * SMGR_REPORT_RATE_HZ;
 
 		req.item_len = 1;
 		req.items[0].sensor_id = sensor->id;
-		req.items[0].data_type = SNS_SMGR_DATA_TYPE_PRIMARY;
+		req.items[0].data_type = data_type;
 
 		req.items[0].sampling_rate = sample_rate;
 
@@ -299,9 +304,80 @@ static int qcom_smgr_request_buffering(struct qcom_smgr *smgr,
 	}
 
 	/* Keep track of requested sample rate */
-	sensor->data_types[0].cur_sample_rate = sample_rate;
+	if (enable)
+		sensor->data_types[data_type].cur_sample_rate = sample_rate;
 
 	return 0;
+}
+
+static int qcom_smgr_request_buffering(struct qcom_smgr *smgr,
+				       struct qcom_smgr_sensor *sensor,
+				       bool enable)
+{
+	return qcom_smgr_request_report(smgr, sensor, sensor->id,
+					SNS_SMGR_DATA_TYPE_PRIMARY, enable);
+}
+
+static void qcom_smgr_direct_stop(struct work_struct *work)
+{
+	struct qcom_smgr_direct *direct =
+		container_of(to_delayed_work(work), struct qcom_smgr_direct, stop);
+	struct qcom_smgr_sensor *sensor = direct->sensor;
+
+	mutex_lock(&direct->lock);
+	if (direct->active) {
+		qcom_smgr_request_report(direct->smgr, sensor,
+					 SMGR_DIRECT_REPORT_ID(sensor, direct->data_type),
+					 direct->data_type, false);
+		direct->active = false;
+	}
+	mutex_unlock(&direct->lock);
+}
+
+static int qcom_smgr_direct_read(struct qcom_smgr_sensor *sensor, u8 data_type,
+				 u8 index, int *val)
+{
+	struct qcom_smgr_direct *direct;
+	u8 report_id;
+	int ret = 0;
+
+	if (data_type >= sensor->data_type_count ||
+	    data_type >= SNS_SMGR_DATA_TYPE_COUNT)
+		return -ENODEV;
+
+	direct = &sensor->direct[data_type];
+	report_id = SMGR_DIRECT_REPORT_ID(sensor, data_type);
+
+	mutex_lock(&direct->lock);
+
+	if (!direct->active) {
+		reinit_completion(&direct->done);
+		direct->active = true;
+
+		ret = qcom_smgr_request_report(direct->smgr, sensor, report_id,
+					       data_type, true);
+		if (ret) {
+			direct->active = false;
+			goto out;
+		}
+
+		if (!wait_for_completion_timeout(&direct->done,
+						 SMGR_DIRECT_TIMEOUT)) {
+			qcom_smgr_request_report(direct->smgr, sensor, report_id,
+						 data_type, false);
+			direct->active = false;
+			ret = -ETIMEDOUT;
+			goto out;
+		}
+	}
+
+	*val = READ_ONCE(direct->values[index]);
+	mod_delayed_work(system_percpu_wq, &direct->stop, SMGR_DIRECT_LINGER);
+
+out:
+	mutex_unlock(&direct->lock);
+
+	return ret;
 }
 
 static void qcom_smgr_buffering_report_handler(struct qmi_handle *hdl,
@@ -314,10 +390,25 @@ static void qcom_smgr_buffering_report_handler(struct qmi_handle *hdl,
 	struct sns_smgr_buffering_report_ind *ind =
 		(struct sns_smgr_buffering_report_ind *)data;
 	struct qcom_smgr_sensor *sensor;
-	u8 i;
+	struct qcom_smgr_direct *direct;
+	u8 i, j;
 
 	for (i = 0; i < smgr->sensor_count; ++i) {
 		sensor = &smgr->sensors[i];
+
+		/* Direct reads use their own report IDs */
+		for (j = 0; j < SNS_SMGR_DATA_TYPE_COUNT; ++j) {
+			direct = &sensor->direct[j];
+
+			if (!direct->active ||
+			    ind->report_id != SMGR_DIRECT_REPORT_ID(sensor, j))
+				continue;
+
+			memcpy(direct->values, ind->samples[0].values,
+			       sizeof(direct->values));
+			complete(&direct->done);
+			return;
+		}
 
 		/* Find sensor matching report */
 		if (sensor->id != ind->report_id)
@@ -379,8 +470,15 @@ static int qcom_smgr_iio_read_raw(struct iio_dev *iio_dev,
 				  int *val2, long mask)
 {
 	struct qcom_smgr_iio_priv *priv = iio_priv(iio_dev);
+	int ret;
 
 	switch (mask) {
+	case IIO_CHAN_INFO_RAW:
+		/* chan->address holds the SMGR data type of the channel */
+		ret = qcom_smgr_direct_read(priv->sensor, chan->address, 0, val);
+		if (ret)
+			return ret;
+		return IIO_VAL_INT;
 	case IIO_CHAN_INFO_SAMP_FREQ:
 		*val = priv->sensor->data_types[0].cur_sample_rate;
 		return IIO_VAL_INT;
@@ -545,6 +643,18 @@ static int qcom_smgr_probe(struct qrtr_device *qdev)
 			return ret;
 		}
 
+		for (j = 0; j < SNS_SMGR_DATA_TYPE_COUNT; j++) {
+			struct qcom_smgr_direct *direct =
+				&smgr->sensors[i].direct[j];
+
+			direct->smgr = smgr;
+			direct->sensor = &smgr->sensors[i];
+			direct->data_type = j;
+			mutex_init(&direct->lock);
+			init_completion(&direct->done);
+			INIT_DELAYED_WORK(&direct->stop, qcom_smgr_direct_stop);
+		}
+
 		for (j = 0; j < smgr->sensors[i].data_type_count; j++) {
 			/* Default to maximum sample rate */
 			smgr->sensors[i].data_types->cur_sample_rate =
@@ -565,6 +675,11 @@ static int qcom_smgr_probe(struct qrtr_device *qdev)
 static void qcom_smgr_remove(struct qrtr_device *qdev)
 {
 	struct qcom_smgr *smgr = dev_get_drvdata(&qdev->dev);
+	int i, j;
+
+	for (i = 0; i < smgr->sensor_count; i++)
+		for (j = 0; j < SNS_SMGR_DATA_TYPE_COUNT; j++)
+			cancel_delayed_work_sync(&smgr->sensors[i].direct[j].stop);
 
 	qmi_handle_release(&smgr->sns_smgr_hdl);
 }

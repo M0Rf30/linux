@@ -22,9 +22,18 @@ static const struct iio_chan_spec qcom_smgr_prox_iio_channels[] = {
 			.storagebits = 32,
 			.endianness = IIO_LE,
 		},
-		.info_mask_separate = BIT(IIO_CHAN_INFO_OFFSET) |
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+				      BIT(IIO_CHAN_INFO_OFFSET) |
 				      BIT(IIO_CHAN_INFO_SCALE) |
 				      BIT(IIO_CHAN_INFO_SAMP_FREQ)
+	},
+	{
+		/* Ambient light, the secondary data type: direct reads only */
+		.type = IIO_LIGHT,
+		.address = SNS_SMGR_DATA_TYPE_SECONDARY,
+		.scan_index = -1,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+				      BIT(IIO_CHAN_INFO_SCALE)
 	},
 	{
 		.type = IIO_TIMESTAMP,
