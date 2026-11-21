@@ -119,6 +119,19 @@
 		};
 	};
 
+	cam_avdd: cam-avdd-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_avdd";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		gpio = <&tlmm 46 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&vreg_bob>;
+
+		pinctrl-0 = <&cam_avdd_en>;
+		pinctrl-names = "default";
+	};
+
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vph_pwr";
@@ -207,6 +220,63 @@
 		vddch0-supply = <&vreg_l19a_3p3>; // vdd-ldo-supply
 		vddio-supply = <&vreg_l13a_1p8>; // chip-pwd-supply ? // TODO: check
 		max-speed = <3200000>;
+	};
+};
+
+&camss {
+	vdda-supply = <&vreg_l1a_1p225>;
+	vdd_sec-supply = <&vreg_l1b_0p925>;
+
+	status = "okay";
+
+	ports {
+		port@1 {
+			reg = <1>;
+
+			/* D-PHY combo mode: DL2 data, DL3 clock */
+			camss_csiphy1_ep: endpoint {
+				clock-lanes = <3>;
+				data-lanes = <2>;
+				remote-endpoint = <&cam_front_aux_ep>;
+			};
+		};
+	};
+};
+
+&cci {
+	status = "okay";
+};
+
+&cci_i2c0 {
+	camera@3d {
+		compatible = "ovti,ov02a10";
+		reg = <0x3d>;
+
+		clocks = <&mmcc CAMSS_MCLK2_CLK>;
+		clock-names = "eclk";
+		assigned-clocks = <&mmcc MCLK2_CLK_SRC>;
+		assigned-clock-rates = <24000000>;
+
+		powerdown-gpios = <&tlmm 40 GPIO_ACTIVE_HIGH>;
+		/* Driven low to release the sensor, per the vendor sequence */
+		reset-gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>;
+
+		avdd-supply = <&cam_avdd>;
+		dovdd-supply = <&vreg_l11a_1p8>;
+
+		pinctrl-0 = <&cam_front_aux_default>;
+		pinctrl-names = "default";
+
+		orientation = <0>;
+		rotation = <270>;
+
+		port {
+			cam_front_aux_ep: endpoint {
+				data-lanes = <1>;
+				link-frequencies = /bits/ 64 <390000000>;
+				remote-endpoint = <&camss_csiphy1_ep>;
+			};
+		};
 	};
 };
 
@@ -772,6 +842,29 @@
 
 &tlmm {
 	gpio-reserved-ranges = <8 4>;
+
+	cam_avdd_en: cam-avdd-en-state {
+		pins = "gpio46";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	cam_front_aux_default: cam-front-aux-default-state {
+		mclk-pins {
+			pins = "gpio34";
+			function = "cam_mclk";
+			drive-strength = <2>;
+			bias-disable;
+		};
+
+		ctrl-pins {
+			pins = "gpio40", "gpio52";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
 
 	gpio_hall_sensor_default: gpio-hall-sensor-default-state {
 		pins = "gpio75";
