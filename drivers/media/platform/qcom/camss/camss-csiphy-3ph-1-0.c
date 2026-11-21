@@ -30,6 +30,7 @@
 #define CSIPHY_3PH_LNn_TEST_IMP_HS_TERM_IMP	0xa
 #define CSIPHY_3PH_LNn_MISC1(n)			(0x028 + 0x100 * (n))
 #define CSIPHY_3PH_LNn_MISC1_IS_CLKLANE		BIT(2)
+#define CSIPHY_3PH_LNn_MISC1_COMBO_MODE		(BIT(3) | BIT(1))
 #define CSIPHY_3PH_LNn_CFG6(n)			(0x02c + 0x100 * (n))
 #define CSIPHY_3PH_LNn_CFG6_SWI_FORCE_INIT_EXIT	BIT(0)
 #define CSIPHY_3PH_LNn_CFG7(n)			(0x030 + 0x100 * (n))
@@ -1022,6 +1023,23 @@ static u8 csiphy_settle_cnt_calc(s64 link_freq, u32 timer_clk_rate)
 	return settle_cnt;
 }
 
+/*
+ * D-PHY combo mode: a sensor on the upper half of the PHY uses data lane
+ * DL3 as its clock lane, described in DT as clock-lanes = <3>. Any other
+ * value selects the dedicated clock lane, as before.
+ */
+#define CSIPHY_COMBO_CLK_LANE	3
+
+static bool csiphy_combo_clk_lane(struct csiphy_lanes_cfg *c)
+{
+	return c->clk.pos == CSIPHY_COMBO_CLK_LANE;
+}
+
+static u8 csiphy_clk_lane_index(struct csiphy_lanes_cfg *c)
+{
+	return csiphy_combo_clk_lane(c) ? CSIPHY_COMBO_CLK_LANE * 2 : 7;
+}
+
 static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 				     struct csiphy_config *cfg,
 				     u8 settle_cnt)
@@ -1030,9 +1048,11 @@ static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 	int i, l = 0;
 	u8 val;
 
+	bool combo = csiphy_combo_clk_lane(c);
+
 	for (i = 0; i <= c->num_data; i++) {
 		if (i == c->num_data)
-			l = 7;
+			l = csiphy_clk_lane_index(c);
 		else
 			l = c->data[i].pos * 2;
 
@@ -1069,6 +1089,10 @@ static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 		val = CSIPHY_3PH_LNn_CSI_LANE_CTRL15_SWI_SOT_SYMBOL;
 		writel_relaxed(val, csiphy->base +
 				    CSIPHY_3PH_LNn_CSI_LANE_CTRL15(l));
+
+		if (combo)
+			writel_relaxed(CSIPHY_3PH_LNn_MISC1_COMBO_MODE,
+				       csiphy->base + CSIPHY_3PH_LNn_MISC1(l));
 	}
 
 	val = CSIPHY_3PH_LNn_CFG1_SWI_REC_DLY_PRG;
@@ -1081,6 +1105,8 @@ static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 	writel_relaxed(val, csiphy->base + CSIPHY_3PH_LNn_CFG4(l));
 
 	val = CSIPHY_3PH_LNn_MISC1_IS_CLKLANE;
+	if (combo)
+		val |= CSIPHY_3PH_LNn_MISC1_COMBO_MODE;
 	writel_relaxed(val, csiphy->base + CSIPHY_3PH_LNn_MISC1(l));
 }
 
@@ -1160,7 +1186,11 @@ static void csiphy_lanes_enable(struct csiphy_device *csiphy,
 
 	settle_cnt = csiphy_settle_cnt_calc(link_freq, csiphy->timer_clk_rate);
 
-	val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL5_CLK_ENABLE;
+	if (!csiphy_is_gen2(csiphy->camss->res->version) &&
+	    csiphy_combo_clk_lane(c))
+		val = BIT(csiphy_clk_lane_index(c));
+	else
+		val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL5_CLK_ENABLE;
 	for (i = 0; i < c->num_data; i++)
 		val |= BIT(c->data[i].pos * 2);
 
