@@ -24114,6 +24114,7 @@ L:	linux-media@vger.kernel.org
 S:	Maintained
 T:	git git://linuxtv.org/media.git
 F:	Documentation/devicetree/bindings/media/i2c/samsung,s5k2l7.yaml
+F:	drivers/media/i2c/s5k2l7.c
 
 SAMSUNG S5K3M5 CAMERA DRIVER
 M:	Vladimir Zapolskiy <vladimir.zapolskiy@linaro.org>
