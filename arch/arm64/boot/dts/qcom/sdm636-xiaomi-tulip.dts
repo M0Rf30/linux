@@ -132,6 +132,57 @@
 		pinctrl-names = "default";
 	};
 
+	/* Switch for an external LDO, output voltage unknown */
+	cam_front_dvdd: cam-front-dvdd-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_front_dvdd";
+		gpio = <&pm660l_gpios 3 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&vreg_s5a_1p35>;
+
+		pinctrl-0 = <&cam_front_dvdd_en>;
+		pinctrl-names = "default";
+	};
+
+	cam_rear_avdd: cam-rear-avdd-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_rear_avdd";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		gpio = <&tlmm 51 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&vreg_bob>;
+
+		pinctrl-0 = <&cam_rear_avdd_en>;
+		pinctrl-names = "default";
+	};
+
+	cam_rear_dvdd: cam-rear-dvdd-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_rear_dvdd";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		gpio = <&pm660l_gpios 4 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&vreg_s5a_1p35>;
+
+		pinctrl-0 = <&cam_rear_dvdd_en>;
+		pinctrl-names = "default";
+	};
+
+	cam_rear_vaf: cam-rear-vaf-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_rear_vaf";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		gpio = <&tlmm 50 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&vreg_bob>;
+
+		pinctrl-0 = <&cam_rear_vaf_en>;
+		pinctrl-names = "default";
+	};
+
 	vph_pwr: vph-pwr-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "vph_pwr";
@@ -230,6 +281,15 @@
 	status = "okay";
 
 	ports {
+		port@0 {
+			reg = <0>;
+
+			camss_csiphy0_ep: endpoint {
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&cam_rear_ep>;
+			};
+		};
+
 		port@1 {
 			reg = <1>;
 
@@ -238,6 +298,15 @@
 				clock-lanes = <3>;
 				data-lanes = <2>;
 				remote-endpoint = <&cam_front_aux_ep>;
+			};
+		};
+
+		port@2 {
+			reg = <2>;
+
+			camss_csiphy2_ep: endpoint {
+				data-lanes = <0 1 2 3>;
+				remote-endpoint = <&cam_front_ep>;
 			};
 		};
 	};
@@ -277,6 +346,89 @@
 				remote-endpoint = <&camss_csiphy1_ep>;
 			};
 		};
+	};
+};
+
+&cci_i2c1 {
+	cam_rear_vcm: camera-lens@c {
+		compatible = "asahi-kasei,ak7374";
+		reg = <0x0c>;
+		vdd-supply = <&cam_rear_vaf>;
+		vio-supply = <&vreg_l11a_1p8>;
+	};
+
+	camera@10 {
+		compatible = "samsung,s5k2l7";
+		reg = <0x10>;
+
+		clocks = <&mmcc CAMSS_MCLK0_CLK>;
+		assigned-clocks = <&mmcc MCLK0_CLK_SRC>;
+		assigned-clock-rates = <24000000>;
+
+		reset-gpios = <&tlmm 48 GPIO_ACTIVE_LOW>;
+
+		avdd-supply = <&cam_rear_avdd>;
+		dvdd-supply = <&cam_rear_dvdd>;
+		dovdd-supply = <&vreg_l11a_1p8>;
+
+		lens-focus = <&cam_rear_vcm>;
+
+		pinctrl-0 = <&cam_rear_default>;
+		pinctrl-names = "default";
+
+		orientation = <1>;
+		rotation = <90>;
+
+		port {
+			cam_rear_ep: endpoint {
+				data-lanes = <1 2 3 4>;
+				link-frequencies = /bits/ 64 <666000000>;
+				remote-endpoint = <&camss_csiphy0_ep>;
+			};
+		};
+	};
+
+	camera@2d {
+		compatible = "samsung,s5k3t1";
+		reg = <0x2d>;
+
+		clocks = <&mmcc CAMSS_MCLK1_CLK>;
+		assigned-clocks = <&mmcc MCLK1_CLK_SRC>;
+		assigned-clock-rates = <24000000>;
+
+		reset-gpios = <&tlmm 47 GPIO_ACTIVE_LOW>;
+
+		vana-supply = <&cam_rear_avdd>;
+		vdig-supply = <&cam_front_dvdd>;
+		vio-supply = <&vreg_l11a_1p8>;
+
+		pinctrl-0 = <&cam_front_default>;
+		pinctrl-names = "default";
+
+		orientation = <0>;
+		rotation = <270>;
+
+		port {
+			cam_front_ep: endpoint {
+				data-lanes = <1 2 3 4>;
+				link-frequencies = /bits/ 64 <300000000>;
+				remote-endpoint = <&camss_csiphy2_ep>;
+			};
+		};
+	};
+
+	eeprom@51 {
+		compatible = "atmel,24c64";
+		reg = <0x51>;
+		vcc-supply = <&cam_rear_avdd>;
+		read-only;
+	};
+
+	eeprom@54 {
+		compatible = "atmel,24c64";
+		reg = <0x54>;
+		vcc-supply = <&cam_rear_vaf>;
+		read-only;
 	};
 };
 
@@ -368,6 +520,20 @@
 };
 
 &pm660l_gpios {
+	cam_front_dvdd_en: cam-front-dvdd-en-state {
+		pins = "gpio3";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		output-low;
+		power-source = <0>;
+	};
+
+	cam_rear_dvdd_en: cam-rear-dvdd-en-state {
+		pins = "gpio4";
+		function = PMIC_GPIO_FUNC_NORMAL;
+		output-low;
+		power-source = <0>;
+	};
+
 	vol_up_default: vol-up-default-state {
 		pins = "gpio7";
 		function = PMIC_GPIO_FUNC_NORMAL;
@@ -864,6 +1030,52 @@
 			drive-strength = <2>;
 			bias-disable;
 		};
+	};
+
+	cam_front_default: cam-front-default-state {
+		mclk-pins {
+			pins = "gpio33";
+			function = "cam_mclk";
+			drive-strength = <2>;
+			bias-disable;
+		};
+
+		reset-pins {
+			pins = "gpio47";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	cam_rear_avdd_en: cam-rear-avdd-en-state {
+		pins = "gpio51";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	cam_rear_default: cam-rear-default-state {
+		mclk-pins {
+			pins = "gpio32";
+			function = "cam_mclk";
+			drive-strength = <2>;
+			bias-disable;
+		};
+
+		reset-pins {
+			pins = "gpio48";
+			function = "gpio";
+			drive-strength = <2>;
+			bias-disable;
+		};
+	};
+
+	cam_rear_vaf_en: cam-rear-vaf-en-state {
+		pins = "gpio50";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
 	};
 
 	gpio_hall_sensor_default: gpio-hall-sensor-default-state {
