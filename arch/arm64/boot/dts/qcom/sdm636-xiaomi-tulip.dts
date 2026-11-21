@@ -170,6 +170,22 @@
 		pinctrl-names = "default";
 	};
 
+	/*
+	 * CAM_VDIG, the second switch of the S5K5E8 digital supply, behind
+	 * the rear DVDD. Without it the sensor hangs the CCI once it leaves
+	 * reset.
+	 */
+	cam_rear_vdig: cam-rear-vdig-regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "cam_rear_vdig";
+		gpio = <&tlmm 45 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		vin-supply = <&cam_rear_dvdd>;
+
+		pinctrl-0 = <&cam_rear_vdig_en>;
+		pinctrl-names = "default";
+	};
+
 	cam_rear_vaf: cam-rear-vaf-regulator {
 		compatible = "regulator-fixed";
 		regulator-name = "cam_rear_vaf";
@@ -292,9 +308,19 @@
 
 		port@1 {
 			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 
-			/* D-PHY combo mode: DL2 data, DL3 clock */
-			camss_csiphy1_ep: endpoint {
+			/* D-PHY combo mode: DL0, DL1 and clock for the rear sensor */
+			camss_csiphy1_ep0: endpoint@0 {
+				reg = <0>;
+				data-lanes = <0 1>;
+				remote-endpoint = <&cam_rear_aux_ep>;
+			};
+
+			/* DL2 data, DL3 clock for the front sensor */
+			camss_csiphy1_ep1: endpoint@1 {
+				reg = <1>;
 				clock-lanes = <3>;
 				data-lanes = <2>;
 				remote-endpoint = <&cam_front_aux_ep>;
@@ -327,8 +353,8 @@
 		assigned-clock-rates = <24000000>;
 
 		powerdown-gpios = <&tlmm 40 GPIO_ACTIVE_HIGH>;
-		/* Driven low to release the sensor, per the vendor sequence */
-		reset-gpios = <&tlmm 52 GPIO_ACTIVE_HIGH>;
+		/* Active low, shared with the S5K5E8 */
+		reset-gpios = <&tlmm 52 GPIO_ACTIVE_LOW>;
 
 		avdd-supply = <&cam_avdd>;
 		dovdd-supply = <&vreg_l11a_1p8>;
@@ -343,7 +369,40 @@
 			cam_front_aux_ep: endpoint {
 				data-lanes = <1>;
 				link-frequencies = /bits/ 64 <390000000>;
-				remote-endpoint = <&camss_csiphy1_ep>;
+				remote-endpoint = <&camss_csiphy1_ep1>;
+			};
+		};
+	};
+
+	camera@18 {
+		compatible = "samsung,s5k5e8";
+		reg = <0x18>;
+
+		clocks = <&mmcc CAMSS_MCLK3_CLK>;
+		assigned-clocks = <&mmcc MCLK3_CLK_SRC>;
+		assigned-clock-rates = <24000000>;
+
+		/*
+		 * Shared with the OV02A10: both must describe the line the
+		 * same way so they get the same shared reset control.
+		 */
+		reset-gpios = <&tlmm 52 GPIO_ACTIVE_LOW>;
+
+		avdd-supply = <&cam_avdd>;
+		dvdd-supply = <&cam_rear_vdig>;
+		dovdd-supply = <&vreg_l11a_1p8>;
+
+		pinctrl-0 = <&cam_rear_aux_default>;
+		pinctrl-names = "default";
+
+		orientation = <1>;
+		rotation = <90>;
+
+		port {
+			cam_rear_aux_ep: endpoint {
+				data-lanes = <1 2>;
+				link-frequencies = /bits/ 64 <418000000 300000000>;
+				remote-endpoint = <&camss_csiphy1_ep0>;
 			};
 		};
 	};
@@ -1046,6 +1105,21 @@
 			drive-strength = <2>;
 			bias-disable;
 		};
+	};
+
+	/* The reset pin is claimed by the OV02A10 state, shared by both */
+	cam_rear_aux_default: cam-rear-aux-default-state {
+		pins = "gpio35";
+		function = "cam_mclk";
+		drive-strength = <2>;
+		bias-disable;
+	};
+
+	cam_rear_vdig_en: cam-rear-vdig-en-state {
+		pins = "gpio45";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-disable;
 	};
 
 	cam_rear_avdd_en: cam-rear-avdd-en-state {
