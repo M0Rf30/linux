@@ -1,0 +1,117 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/media/i2c/samsung,s5k2l7.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Samsung S5K2L7 Image Sensor
+
+maintainers:
+  - Gianluca Boiano <morf3089@gmail.com>
+
+description:
+  The Samsung S5K2L7 is a 12 MP (4032x3024) Bayer CMOS image sensor with
+  dual-pixel autofocus. It is controlled over I2C (CCI) and sends image data
+  over a 4-lane MIPI CSI-2 D-PHY interface.
+
+allOf:
+  - $ref: /schemas/media/video-interface-devices.yaml#
+
+properties:
+  compatible:
+    const: samsung,s5k2l7
+
+  reg:
+    maxItems: 1
+
+  clocks:
+    description:
+      Input clock (EXTCLK).
+    maxItems: 1
+
+  vana-supply:
+    description: Analog power supply (2.8 V).
+
+  vdig-supply:
+    description: Digital core power supply.
+
+  vio-supply:
+    description: Interface power supply (1.8 V).
+
+  reset-gpios:
+    description:
+      Reset GPIO, active low (XSHUTDOWN).
+    maxItems: 1
+
+  port:
+    $ref: /schemas/graph.yaml#/$defs/port-base
+    additionalProperties: false
+
+    properties:
+      endpoint:
+        $ref: /schemas/media/video-interfaces.yaml#
+        unevaluatedProperties: false
+
+        properties:
+          data-lanes:
+            items:
+              - const: 1
+              - const: 2
+              - const: 3
+              - const: 4
+
+          link-frequencies:
+            items:
+              - const: 666000000
+              - const: 351000000
+
+        required:
+          - data-lanes
+          - link-frequencies
+
+required:
+  - compatible
+  - reg
+  - clocks
+  - vana-supply
+  - vdig-supply
+  - vio-supply
+  - port
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/gpio/gpio.h>
+
+    i2c {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        camera@10 {
+            compatible = "samsung,s5k2l7";
+            reg = <0x10>;
+
+            clocks = <&camcc 0>;
+            assigned-clocks = <&camcc 0>;
+            assigned-clock-rates = <24000000>;
+
+            reset-gpios = <&tlmm 40 GPIO_ACTIVE_LOW>;
+
+            vana-supply = <&cam_vana>;
+            vdig-supply = <&cam_vdig>;
+            vio-supply = <&cam_vio>;
+
+            orientation = <1>;
+            rotation = <90>;
+
+            port {
+                endpoint {
+                    data-lanes = <1 2 3 4>;
+                    link-frequencies = /bits/ 64 <666000000 351000000>;
+                    remote-endpoint = <&csiphy_ep>;
+                };
+            };
+        };
+    };
+...
