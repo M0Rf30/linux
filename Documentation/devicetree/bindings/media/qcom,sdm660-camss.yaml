@@ -104,14 +104,20 @@ properties:
     $ref: /schemas/graph.yaml#/properties/ports
 
     description:
-      CSI input ports.
+      CSI input ports. Each port is either a standard single sensor input, or
+      a D-PHY in combo mode serving two sensors at once.
 
-    properties:
-      port@0:
+    patternProperties:
+      "^port@[0-3]$":
         $ref: /schemas/graph.yaml#/$defs/port-base
         unevaluatedProperties: false
+
         description:
-          Input port for receiving CSI data.
+          Input port for receiving CSI data. With a single endpoint the
+          port feeds one sensor, with 1, 2 or 4 D-PHY data lanes plus the
+          clock lane, or 1 to 4 C-PHY lanes. With two endpoints the D-PHY is
+          split in the fixed combo mode, endpoint 0 being the 2+1
+          data-lane/clock-lane leg and endpoint 1 the 1+1 leg.
 
         properties:
           endpoint:
@@ -131,77 +137,53 @@ properties:
             required:
               - data-lanes
 
-      port@1:
-        $ref: /schemas/graph.yaml#/$defs/port-base
-        unevaluatedProperties: false
-        description:
-          Input port for receiving CSI data.
-
-        properties:
-          endpoint:
+          endpoint@0:
             $ref: video-interfaces.yaml#
             unevaluatedProperties: false
+
+            description:
+              First leg of a combo mode port, using data lanes 0 and 1 with
+              the dedicated clock lane.
 
             properties:
               data-lanes:
                 minItems: 1
-                maxItems: 4
+                maxItems: 2
+                items:
+                  maximum: 1
 
               bus-type:
-                enum:
-                  - 1 # MEDIA_BUS_TYPE_CSI2_CPHY
-                  - 4 # MEDIA_BUS_TYPE_CSI2_DPHY
+                const: 4 # MEDIA_BUS_TYPE_CSI2_DPHY
 
             required:
               - data-lanes
 
-      port@2:
-        $ref: /schemas/graph.yaml#/$defs/port-base
-        unevaluatedProperties: false
-        description:
-          Input port for receiving CSI data.
-
-        properties:
-          endpoint:
+          endpoint@1:
             $ref: video-interfaces.yaml#
             unevaluatedProperties: false
 
-            properties:
-              data-lanes:
-                minItems: 1
-                maxItems: 4
-
-              bus-type:
-                enum:
-                  - 1 # MEDIA_BUS_TYPE_CSI2_CPHY
-                  - 4 # MEDIA_BUS_TYPE_CSI2_DPHY
-
-            required:
-              - data-lanes
-
-      port@3:
-        $ref: /schemas/graph.yaml#/$defs/port-base
-        unevaluatedProperties: false
-        description:
-          Input port for receiving CSI data.
-
-        properties:
-          endpoint:
-            $ref: video-interfaces.yaml#
-            unevaluatedProperties: false
+            description:
+              Second leg of a combo mode port, using data lane 2 with data
+              lane 3 as its clock lane.
 
             properties:
               data-lanes:
-                minItems: 1
-                maxItems: 4
+                items:
+                  - const: 2
+
+              clock-lanes:
+                const: 3
 
               bus-type:
-                enum:
-                  - 1 # MEDIA_BUS_TYPE_CSI2_CPHY
-                  - 4 # MEDIA_BUS_TYPE_CSI2_DPHY
+                const: 4 # MEDIA_BUS_TYPE_CSI2_DPHY
 
             required:
               - data-lanes
+              - clock-lanes
+
+        dependencies:
+          endpoint@1: [ endpoint@0 ]
+          endpoint@0: [ endpoint@1 ]
 
   reg:
     minItems: 14
@@ -407,5 +389,34 @@ examples:
       ports {
         #address-cells = <1>;
         #size-cells = <0>;
+
+        port@0 {
+          reg = <0>;
+
+          csiphy0_ep: endpoint {
+            data-lanes = <0 1 2 3>;
+            remote-endpoint = <&sensor0_ep>;
+          };
+        };
+
+        /* D-PHY combo mode: two sensors on CSIPHY1 */
+        port@1 {
+          reg = <1>;
+          #address-cells = <1>;
+          #size-cells = <0>;
+
+          csiphy1_ep0: endpoint@0 {
+            reg = <0>;
+            data-lanes = <0 1>;
+            remote-endpoint = <&sensor1_ep>;
+          };
+
+          csiphy1_ep1: endpoint@1 {
+            reg = <1>;
+            clock-lanes = <3>;
+            data-lanes = <2>;
+            remote-endpoint = <&sensor2_ep>;
+          };
+        };
       };
     };
