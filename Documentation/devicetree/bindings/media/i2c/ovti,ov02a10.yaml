@@ -103,7 +103,6 @@ required:
   - clock-names
   - dovdd-supply
   - avdd-supply
-  - dvdd-supply
   - powerdown-gpios
   - reset-gpios
   - port
