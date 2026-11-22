@@ -1620,6 +1620,72 @@ static int ccs_write_msr_regs(struct ccs_sensor *sensor)
 				   sensor->mdata.num_module_manufacturer_regs);
 }
 
+static int ccs_rule_matches(struct ccs_sensor *sensor,
+			    const struct ccs_rule *rule)
+{
+	for (unsigned int i = 0; i < rule->num_if_rules; i++) {
+		const struct ccs_if_rule *if_rule = &rule->if_rules[i];
+		u32 val;
+		int rval;
+
+		rval = ccs_read_addr_8only(sensor, CCI_REG8(if_rule->addr),
+					   &val);
+		if (rval)
+			return rval;
+
+		if ((val & if_rule->mask) != (if_rule->value & if_rule->mask))
+			return 0;
+	}
+
+	return 1;
+}
+
+static int ccs_apply_rule_list(struct ccs_sensor *sensor,
+			       const struct ccs_rule *rules, size_t num_rules)
+{
+	for (unsigned int i = 0; i < num_rules; i++) {
+		int rval = ccs_rule_matches(sensor, &rules[i]);
+
+		if (rval < 0)
+			return rval;
+		if (!rval)
+			continue;
+
+		rval = ccs_write_data_regs(sensor, rules[i].manufacturer_regs,
+					   rules[i].num_manufacturer_regs);
+		if (rval)
+			return rval;
+	}
+
+	return 0;
+}
+
+/*
+ * Apply the manufacturer-specific registers of the matching rule based
+ * blocks. The conditions refer to registers that are already set for this
+ * stream (e.g. binning_mode). The base set is written first, undoing what a
+ * previous stream's rules may have left in the sensor.
+ */
+static int ccs_apply_rules(struct ccs_sensor *sensor)
+{
+	int rval;
+
+	if (!sensor->sdata.num_sensor_rules && !sensor->mdata.num_module_rules)
+		return 0;
+
+	rval = ccs_write_msr_regs(sensor);
+	if (rval)
+		return rval;
+
+	rval = ccs_apply_rule_list(sensor, sensor->sdata.sensor_rules,
+				   sensor->sdata.num_sensor_rules);
+	if (rval)
+		return rval;
+
+	return ccs_apply_rule_list(sensor, sensor->mdata.module_rules,
+				   sensor->mdata.num_module_rules);
+}
+
 static int ccs_update_phy_ctrl(struct ccs_sensor *sensor)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&sensor->src->sd);
@@ -1991,6 +2057,12 @@ static int ccs_enable_streams(struct v4l2_subdev *subdev,
 		rval = ccs_setup_flash_strobe(sensor);
 		if (rval)
 			goto err_pm_put;
+	}
+
+	rval = ccs_apply_rules(sensor);
+	if (rval) {
+		dev_err(&client->dev, "applying rules failed (%d)\n", rval);
+		goto err_pm_put;
 	}
 
 	rval = ccs_call_quirk(sensor, pre_streamon);
