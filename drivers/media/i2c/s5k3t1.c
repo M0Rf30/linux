@@ -848,6 +848,26 @@ static const struct cci_reg_sequence s5k3t1_mode_regs[] = {
 	{ CCI_REG16(0xf482), 0x01a4 },
 };
 
+/*
+ * 5184x3880: the vendor library only has the 2x2 binned mode. This is the
+ * same table with binning disabled and the full array read out. The 600 Mbps
+ * x 4 lane output carries 5184 pixels in 21.6 us, so the line length is
+ * raised to 19200 VT clocks (24 us at 800 MHz) and the frame to 3960 lines,
+ * about 10.5 fps.
+ */
+static const struct cci_reg_sequence s5k3t1_mode_5184x3880_regs[] = {
+	{ CCI_REG16(0x6028), 0x4000 },
+	{ CCI_REG16(0x034c), 0x1440 },
+	{ CCI_REG16(0x034e), 0x0f28 },
+	{ CCI_REG16(0x0342), 0x4b00 },
+	{ CCI_REG16(0x0340), 0x0f78 },
+	{ CCI_REG16(0x0900), 0x0000 },
+	{ CCI_REG16(0x0380), 0x0001 },
+	{ CCI_REG16(0x0382), 0x0001 },
+	{ CCI_REG16(0x0384), 0x0001 },
+	{ CCI_REG16(0x0386), 0x0001 },
+};
+
 static const struct s5k3t1_mode s5k3t1_modes[] = {
 	{
 		/* Vendor output info: 2x2 binned image of the whole array */
@@ -855,6 +875,14 @@ static const struct s5k3t1_mode s5k3t1_modes[] = {
 		.height = 1940,
 		.llp = 13056,
 		.fll_def = 2040,
+	},
+	{
+		.width = 5184,
+		.height = 3880,
+		.llp = 19200,
+		.fll_def = 3960,
+		.regs = s5k3t1_mode_5184x3880_regs,
+		.num_regs = ARRAY_SIZE(s5k3t1_mode_5184x3880_regs),
 	},
 };
 
