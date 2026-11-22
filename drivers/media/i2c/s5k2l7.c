@@ -165,6 +165,24 @@ static const struct s5k2l7_reg s5k2l7_mode_4032x2272[] = {
 };
 
 /*
+ * 2752x2064 (4:3): centre crop of the full array, no binning.
+ * Same PLL as 4032x3024; delta against that table: window and output
+ * size and the readout-area dependent burst registers.
+ */
+static const struct s5k2l7_reg s5k2l7_mode_2752x2064[] = {
+	{ 0x0344, 0x04e0 }, { 0x0346, 0x01d8 }, { 0x0348, 0x1a9f }, { 0x034a, 0x09f7 },
+	{ 0x034c, 0x0ac0 }, { 0x034e, 0x0810 }, { 0x30aa, 0x0ac0 }, { 0x30ac, 0x0204 },
+	{ 0x6028, 0x2000 }, { 0x602a, 0x0ae4 }, { 0x6f12, 0x0fc0 }, { 0x602a, 0x29e6 },
+	{ 0x6f12, 0x0fc0 }, { 0x602a, 0x29f0 }, { 0x6f12, 0x0fc0 }, { 0x602a, 0x2966 },
+	{ 0x6f12, 0x0fc0 }, { 0x602a, 0x29a6 }, { 0x6f12, 0x0fc0 }, { 0x602a, 0x2970 },
+	{ 0x6f12, 0x0fc0 }, { 0x602a, 0x29b0 }, { 0x6f12, 0x0fc0 }, { 0x602a, 0x0ae6 },
+	{ 0x6f12, 0x0bd0 }, { 0x602a, 0x29e8 }, { 0x6f12, 0x0bd0 }, { 0x602a, 0x29f2 },
+	{ 0x6f12, 0x0bd0 }, { 0x602a, 0x2968 }, { 0x6f12, 0x0bd0 }, { 0x602a, 0x29a8 },
+	{ 0x6f12, 0x0bd0 }, { 0x602a, 0x2972 }, { 0x6f12, 0x0bd0 }, { 0x602a, 0x29b2 },
+	{ 0x6f12, 0x0bd0 }, { 0x602a, 0x0b62 }, { 0x6f12, 0x00ee }, { 0x6028, 0x4000 },
+};
+
+/*
  * Link frequency (DDR, so the lane rate is twice this) and pixel rate on the
  * CSI-2 bus: pixel rate = link * 2 * lanes / 10 bits.
  */
@@ -205,6 +223,16 @@ static const struct s5k2l7_mode s5k2l7_modes[] = {
 		.crop = { 0, 368, 4032, 2272 },
 		.regs = s5k2l7_mode_4032x2272,
 		.num_regs = ARRAY_SIZE(s5k2l7_mode_4032x2272),
+	},
+	{
+		.width = 2752,
+		.height = 2064,
+		.hts = 10160,
+		.vts_def = 3162,
+		.link_freq_idx = 0,
+		.crop = { 624, 472, 2752, 2064 },
+		.regs = s5k2l7_mode_2752x2064,
+		.num_regs = ARRAY_SIZE(s5k2l7_mode_2752x2064),
 	},
 };
 
