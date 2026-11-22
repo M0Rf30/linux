@@ -4513,6 +4513,10 @@ void camss_disable_clocks(int nclocks, struct camss_clock *clock)
  * camss_find_sensor_pad - Find the media pad via which the sensor is linked
  * @entity: Media entity to start searching from
  *
+ * The sensor pad is the source pad of the sub-device bound to CAMSS, i.e. the
+ * one that transmits on the CSI-2 bus. For a sensor made of several sub-devices
+ * this is not necessarily the pad of the pixel array.
+ *
  * Return a pointer to sensor media pad or NULL if not found
  */
 struct media_pad *camss_find_sensor_pad(struct media_entity *entity)
@@ -4530,7 +4534,7 @@ struct media_pad *camss_find_sensor_pad(struct media_entity *entity)
 
 		entity = pad->entity;
 
-		if (entity->function == MEDIA_ENT_F_CAM_SENSOR)
+		if (v4l2_get_subdev_hostdata(media_entity_to_v4l2_subdev(entity)))
 			return pad;
 	}
 }
