@@ -151,6 +151,20 @@ static const struct s5k2l7_reg s5k2l7_mode_4032x3024[] = {
 };
 
 /*
+ * 4032x2272 (16:9): full-width readout window cropped vertically.
+ * Same PLL as 4032x3024; delta against that table: window and output
+ * size, frame length and the readout-area dependent burst registers.
+ */
+static const struct s5k2l7_reg s5k2l7_mode_4032x2272[] = {
+	{ 0x0346, 0x0170 }, { 0x034a, 0x0a5f }, { 0x034e, 0x08e0 }, { 0x0340, 0x0c4d },
+	{ 0x30ac, 0x0238 }, { 0x6028, 0x2000 }, { 0x602a, 0x0ae6 }, { 0x6f12, 0x0bd0 },
+	{ 0x602a, 0x29e8 }, { 0x6f12, 0x0bd0 }, { 0x602a, 0x29f2 }, { 0x6f12, 0x0bd0 },
+	{ 0x602a, 0x2968 }, { 0x6f12, 0x0bd0 }, { 0x602a, 0x29a8 }, { 0x6f12, 0x0bd0 },
+	{ 0x602a, 0x2972 }, { 0x6f12, 0x0bd0 }, { 0x602a, 0x29b2 }, { 0x6f12, 0x0bd0 },
+	{ 0x6028, 0x4000 },
+};
+
+/*
  * Link frequency (DDR, so the lane rate is twice this) and pixel rate on the
  * CSI-2 bus: pixel rate = link * 2 * lanes / 10 bits.
  */
@@ -181,6 +195,16 @@ static const struct s5k2l7_mode s5k2l7_modes[] = {
 		.vts_def = 3162,
 		.link_freq_idx = 0,
 		.crop = { 0, 0, 4032, 3024 },
+	},
+	{
+		.width = 4032,
+		.height = 2272,
+		.hts = 10160,
+		.vts_def = 3149,
+		.link_freq_idx = 0,
+		.crop = { 0, 368, 4032, 2272 },
+		.regs = s5k2l7_mode_4032x2272,
+		.num_regs = ARRAY_SIZE(s5k2l7_mode_4032x2272),
 	},
 };
 
