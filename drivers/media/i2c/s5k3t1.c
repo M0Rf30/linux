@@ -91,15 +91,9 @@
 
 #define S5K3T1_REG_TEST_PATTERN		CCI_REG16(0x0600)
 
-/* Pixel array: the sensor outputs a 2x2 binned image of the whole array */
+/* Pixel array */
 #define S5K3T1_NATIVE_WIDTH		5184U
 #define S5K3T1_NATIVE_HEIGHT		3880U
-
-/* Vendor output info for the only mode */
-#define S5K3T1_WIDTH			2592
-#define S5K3T1_HEIGHT			1940
-#define S5K3T1_LLP			13056
-#define S5K3T1_FLL_DEFAULT		2040
 
 /* Delays applied by the vendor driver after register tables, in us */
 #define S5K3T1_TABLE_DELAY_US		(10 * USEC_PER_MSEC)
@@ -142,6 +136,16 @@ static const char * const s5k3t1_supply_names[] = {
 
 #define S5K3T1_NUM_SUPPLIES		ARRAY_SIZE(s5k3t1_supply_names)
 
+struct s5k3t1_mode {
+	u32 width;
+	u32 height;
+	u32 llp;
+	u32 fll_def;
+	/* Registers written after s5k3t1_mode_regs, NULL for the vendor mode */
+	const struct cci_reg_sequence *regs;
+	unsigned int num_regs;
+};
+
 struct s5k3t1 {
 	struct device *dev;
 	struct regmap *regmap;
@@ -160,6 +164,8 @@ struct s5k3t1 {
 	struct v4l2_ctrl *exposure;
 	struct v4l2_ctrl *hflip;
 	struct v4l2_ctrl *vflip;
+
+	const struct s5k3t1_mode *cur_mode;
 };
 
 /*
@@ -842,6 +848,16 @@ static const struct cci_reg_sequence s5k3t1_mode_regs[] = {
 	{ CCI_REG16(0xf482), 0x01a4 },
 };
 
+static const struct s5k3t1_mode s5k3t1_modes[] = {
+	{
+		/* Vendor output info: 2x2 binned image of the whole array */
+		.width = 2592,
+		.height = 1940,
+		.llp = 13056,
+		.fll_def = 2040,
+	},
+};
+
 static int s5k3t1_write_table(struct s5k3t1 *s5k3t1,
 			      const struct cci_reg_sequence *regs,
 			      unsigned int num_regs, unsigned int delay_us)
@@ -867,11 +883,12 @@ static u32 s5k3t1_get_format_code(struct s5k3t1 *s5k3t1)
 }
 
 static void s5k3t1_update_pad_format(struct s5k3t1 *s5k3t1,
+				     const struct s5k3t1_mode *mode,
 				     struct v4l2_mbus_framefmt *fmt)
 {
 	fmt->code = s5k3t1_get_format_code(s5k3t1);
-	fmt->width = S5K3T1_WIDTH;
-	fmt->height = S5K3T1_HEIGHT;
+	fmt->width = mode->width;
+	fmt->height = mode->height;
 	fmt->field = V4L2_FIELD_NONE;
 	fmt->colorspace = V4L2_COLORSPACE_RAW;
 	fmt->ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT;
@@ -890,7 +907,7 @@ static int s5k3t1_set_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_VBLANK: {
 		/* Honour the VBLANK limits when setting exposure */
-		s64 exposure_max = S5K3T1_HEIGHT + ctrl->val -
+		s64 exposure_max = s5k3t1->cur_mode->height + ctrl->val -
 				   S5K3T1_EXPOSURE_MARGIN;
 
 		__v4l2_ctrl_modify_range(s5k3t1->exposure,
@@ -923,7 +940,7 @@ static int s5k3t1_set_ctrl(struct v4l2_ctrl *ctrl)
 		break;
 	case V4L2_CID_VBLANK:
 		ret = cci_write(s5k3t1->regmap, S5K3T1_REG_FLL,
-				S5K3T1_HEIGHT + ctrl->val, NULL);
+				s5k3t1->cur_mode->height + ctrl->val, NULL);
 		break;
 	case V4L2_CID_HFLIP:
 	case V4L2_CID_VFLIP:
@@ -956,6 +973,7 @@ static int s5k3t1_init_controls(struct s5k3t1 *s5k3t1)
 {
 	struct v4l2_ctrl_handler *ctrl_hdlr = &s5k3t1->ctrl_handler;
 	struct v4l2_fwnode_device_properties props;
+	const struct s5k3t1_mode *mode = s5k3t1->cur_mode;
 	s64 hblank, vblank_def;
 	int ret;
 
@@ -975,23 +993,23 @@ static int s5k3t1_init_controls(struct s5k3t1 *s5k3t1)
 					       S5K3T1_PIXEL_RATE, 1,
 					       S5K3T1_PIXEL_RATE);
 
-	hblank = S5K3T1_LLP - S5K3T1_WIDTH;
+	hblank = mode->llp - mode->width;
 	s5k3t1->hblank = v4l2_ctrl_new_std(ctrl_hdlr, &s5k3t1_ctrl_ops,
 					   V4L2_CID_HBLANK, hblank, hblank, 1,
 					   hblank);
 	if (s5k3t1->hblank)
 		s5k3t1->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
-	vblank_def = S5K3T1_FLL_DEFAULT - S5K3T1_HEIGHT;
+	vblank_def = mode->fll_def - mode->height;
 	s5k3t1->vblank = v4l2_ctrl_new_std(ctrl_hdlr, &s5k3t1_ctrl_ops,
 					   V4L2_CID_VBLANK, vblank_def,
-					   S5K3T1_FLL_MAX - S5K3T1_HEIGHT, 1,
+					   S5K3T1_FLL_MAX - mode->height, 1,
 					   vblank_def);
 
 	s5k3t1->exposure = v4l2_ctrl_new_std(ctrl_hdlr, &s5k3t1_ctrl_ops,
 					     V4L2_CID_EXPOSURE,
 					     S5K3T1_EXPOSURE_MIN,
-					     S5K3T1_FLL_DEFAULT -
+					     mode->fll_def -
 					     S5K3T1_EXPOSURE_MARGIN,
 					     S5K3T1_EXPOSURE_STEP,
 					     S5K3T1_EXPOSURE_DEFAULT);
@@ -1070,6 +1088,14 @@ static int s5k3t1_enable_streams(struct v4l2_subdev *sd,
 	if (ret)
 		goto err_rpm_put;
 
+	if (s5k3t1->cur_mode->regs) {
+		ret = s5k3t1_write_table(s5k3t1, s5k3t1->cur_mode->regs,
+					 s5k3t1->cur_mode->num_regs,
+					 S5K3T1_TABLE_DELAY_US);
+		if (ret)
+			goto err_rpm_put;
+	}
+
 	/* Apply the user controls, including the orientation */
 	ret = __v4l2_ctrl_handler_setup(s5k3t1->sd.ctrl_handler);
 	if (ret)
@@ -1113,19 +1139,64 @@ static int s5k3t1_disable_streams(struct v4l2_subdev *sd,
 	return ret;
 }
 
+static int s5k3t1_set_mode(struct s5k3t1 *s5k3t1,
+			   const struct s5k3t1_mode *mode)
+{
+	s64 hblank = mode->llp - mode->width;
+	s64 vblank_def = mode->fll_def - mode->height;
+	int ret;
+
+	/* The VBLANK handler reads cur_mode */
+	s5k3t1->cur_mode = mode;
+
+	ret = __v4l2_ctrl_modify_range(s5k3t1->hblank, hblank, hblank, 1,
+				       hblank);
+	if (ret)
+		return ret;
+
+	ret = __v4l2_ctrl_modify_range(s5k3t1->vblank, vblank_def,
+				       S5K3T1_FLL_MAX - mode->height, 1,
+				       vblank_def);
+	if (ret)
+		return ret;
+
+	ret = __v4l2_ctrl_s_ctrl(s5k3t1->vblank, vblank_def);
+	if (ret)
+		return ret;
+
+	return __v4l2_ctrl_modify_range(s5k3t1->exposure,
+					s5k3t1->exposure->minimum,
+					mode->fll_def - S5K3T1_EXPOSURE_MARGIN,
+					s5k3t1->exposure->step,
+					min_t(s64, s5k3t1->exposure->val,
+					      mode->fll_def -
+					      S5K3T1_EXPOSURE_MARGIN));
+}
+
 static int s5k3t1_set_pad_format(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_state *state,
 				 struct v4l2_subdev_format *fmt)
 {
 	struct s5k3t1 *s5k3t1 = to_s5k3t1(sd);
+	const struct s5k3t1_mode *mode;
 
 	/* The format cannot be changed while streaming */
 	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE &&
 	    v4l2_subdev_is_streaming(sd))
 		return -EBUSY;
 
-	/* Only one mode is supported, the requested size is ignored */
-	s5k3t1_update_pad_format(s5k3t1, &fmt->format);
+	mode = v4l2_find_nearest_size(s5k3t1_modes, ARRAY_SIZE(s5k3t1_modes),
+				      width, height, fmt->format.width,
+				      fmt->format.height);
+
+	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE) {
+		int ret = s5k3t1_set_mode(s5k3t1, mode);
+
+		if (ret)
+			return ret;
+	}
+
+	s5k3t1_update_pad_format(s5k3t1, mode, &fmt->format);
 	*v4l2_subdev_state_get_format(state, fmt->pad) = fmt->format;
 
 	return 0;
@@ -1152,16 +1223,16 @@ static int s5k3t1_enum_frame_size(struct v4l2_subdev *sd,
 {
 	struct s5k3t1 *s5k3t1 = to_s5k3t1(sd);
 
-	if (fse->index > 0)
+	if (fse->index >= ARRAY_SIZE(s5k3t1_modes))
 		return -EINVAL;
 
 	if (fse->code != s5k3t1_get_format_code(s5k3t1))
 		return -EINVAL;
 
-	fse->min_width = S5K3T1_WIDTH;
-	fse->max_width = S5K3T1_WIDTH;
-	fse->min_height = S5K3T1_HEIGHT;
-	fse->max_height = S5K3T1_HEIGHT;
+	fse->min_width = s5k3t1_modes[fse->index].width;
+	fse->max_width = fse->min_width;
+	fse->min_height = s5k3t1_modes[fse->index].height;
+	fse->max_height = fse->min_height;
 
 	return 0;
 }
@@ -1175,7 +1246,7 @@ static int s5k3t1_get_selection(struct v4l2_subdev *sd,
 	case V4L2_SEL_TGT_CROP_DEFAULT:
 	case V4L2_SEL_TGT_CROP_BOUNDS:
 	case V4L2_SEL_TGT_NATIVE_SIZE:
-		/* The mode is a 2x2 binning of the whole pixel array */
+		/* Every mode covers the whole pixel array */
 		sel->r.left = 0;
 		sel->r.top = 0;
 		sel->r.width = S5K3T1_NATIVE_WIDTH;
@@ -1190,7 +1261,7 @@ static int s5k3t1_get_selection(struct v4l2_subdev *sd,
 static int s5k3t1_init_state(struct v4l2_subdev *sd,
 			     struct v4l2_subdev_state *state)
 {
-	s5k3t1_update_pad_format(to_s5k3t1(sd),
+	s5k3t1_update_pad_format(to_s5k3t1(sd), &s5k3t1_modes[0],
 				 v4l2_subdev_state_get_format(state, 0));
 
 	return 0;
@@ -1411,6 +1482,8 @@ static int s5k3t1_probe(struct i2c_client *client)
 	ret = s5k3t1_identify_sensor(s5k3t1);
 	if (ret)
 		goto err_power_off;
+
+	s5k3t1->cur_mode = &s5k3t1_modes[0];
 
 	ret = s5k3t1_init_controls(s5k3t1);
 	if (ret) {
