@@ -164,6 +164,10 @@ static const struct s5k5e8_reg s5k5e8_init_regs[] = {
 	{ 0x3c31, 0x0d },
 	{ 0x3c32, 0xac },
 	{ 0x3929, 0x07 },
+	{ 0x3931, 0x02 },
+	{ 0x392f, 0x01 },
+	{ 0x3930, 0x80 },
+	{ 0x3932, 0x80 },
 };
 
 static const struct s5k5e8_reg s5k5e8_mode_2592x1944_regs[] = {
