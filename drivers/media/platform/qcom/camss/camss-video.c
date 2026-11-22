@@ -249,6 +249,28 @@ static int video_prepare_streaming(struct vb2_queue *q)
 	return ret;
 }
 
+/*
+ * video_subdev_is_external - Check if a pipeline sub-device is not part of CAMSS
+ * @subdev: Sub-device in the pipeline
+ *
+ * camss_subdev_notifier_bound() sets the host private data of every external
+ * sub-device it binds, i.e. the one that is linked to a CSIPHY, to the CSIPHY.
+ * CAMSS sub-devices never have it set.
+ *
+ * Streaming is controlled from the video node, one CAMSS sub-device at a time.
+ * The external sub-device is the end of that chain: the pipeline upstream of it
+ * is not CAMSS' business, and the sub-device is responsible for starting and
+ * stopping whatever else it is made of. Sensors that consist of several
+ * sub-devices, such as MIPI CCS ones, are not expected to be controlled
+ * separately for each of them.
+ *
+ * Return true if @subdev is not a CAMSS sub-device.
+ */
+static bool video_subdev_is_external(struct v4l2_subdev *subdev)
+{
+	return v4l2_get_subdev_hostdata(subdev);
+}
+
 static int video_start_streaming(struct vb2_queue *q, unsigned int count)
 {
 	struct camss_video *video = vb2_get_drv_priv(q);
@@ -284,6 +306,9 @@ static int video_start_streaming(struct vb2_queue *q, unsigned int count)
 		ret = v4l2_subdev_call(subdev, video, s_stream, 1);
 		if (ret < 0 && ret != -ENOIOCTLCMD)
 			goto error;
+
+		if (video_subdev_is_external(subdev))
+			break;
 	}
 
 	return 0;
@@ -325,6 +350,9 @@ static void video_stop_streaming(struct vb2_queue *q)
 			dev_err(video->camss->dev, "Video pipeline stop failed: %d\n", ret);
 			return;
 		}
+
+		if (video_subdev_is_external(subdev))
+			break;
 	}
 
 	video_device_pipeline_stop(vdev);
