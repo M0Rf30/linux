@@ -13,6 +13,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
 #include <media/v4l2-cci.h>
+#include <media/v4l2-common.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-fwnode.h>
@@ -34,11 +35,9 @@
 #define S5K2L7_REG_DGAIN_GB		CCI_REG16(0x0214)
 #define S5K2L7_DGAIN_1X			0x0100
 
-/* HTS 0x27b0, VTS 0x0c5a. */
-#define S5K2L7_HTS			0x27b0
-#define S5K2L7_VTS_DEF			0x0c5a
 #define S5K2L7_VTS_MAX			0xffff
 
+/* Active array of the sensor. */
 #define S5K2L7_WIDTH			4032
 #define S5K2L7_HEIGHT			3024
 
@@ -50,9 +49,8 @@
 #define S5K2L7_GAIN_MAX			0x200
 #define S5K2L7_GAIN_DEF			0x20
 
-/* 4 lanes, 666 MHz DDR (1332 Mbps per lane). */
+/* 4 lanes. */
 #define S5K2L7_LANES			4
-#define S5K2L7_LINK_FREQ		666000000ULL
 #define S5K2L7_XCLK_FREQ		24000000
 
 /* Bayer order: GRBG. */
@@ -152,6 +150,40 @@ static const struct s5k2l7_reg s5k2l7_mode_4032x3024[] = {
 	{ 0x6028, 0x4000 }, { 0x6214, 0x79f0 }, { 0x6218, 0x79f0 },
 };
 
+/*
+ * Link frequency (DDR, so the lane rate is twice this) and pixel rate on the
+ * CSI-2 bus: pixel rate = link * 2 * lanes / 10 bits.
+ */
+static const s64 s5k2l7_link_freqs[] = {
+	666000000,	/* 1332 Mbps per lane */
+};
+
+struct s5k2l7_mode {
+	u32 width;
+	u32 height;
+	u32 hts;
+	u32 vts_def;
+	u8 link_freq_idx;
+	struct v4l2_rect crop;
+	/*
+	 * Registers applied on top of the full-resolution table; NULL for the
+	 * full-resolution mode itself.
+	 */
+	const struct s5k2l7_reg *regs;
+	unsigned int num_regs;
+};
+
+static const struct s5k2l7_mode s5k2l7_modes[] = {
+	{
+		.width = 4032,
+		.height = 3024,
+		.hts = 10160,
+		.vts_def = 3162,
+		.link_freq_idx = 0,
+		.crop = { 0, 0, 4032, 3024 },
+	},
+};
+
 static const char * const s5k2l7_supply_names[] = {
 	"dovdd",	/* 1.8 V */
 	"dvdd",		/* ~1.0-1.2 V */
@@ -170,14 +202,19 @@ struct s5k2l7 {
 	struct media_pad pad;
 	struct v4l2_ctrl_handler ctrls;
 	struct v4l2_ctrl *exposure;
+	struct v4l2_ctrl *vblank;
+	struct v4l2_ctrl *hblank;
+	struct v4l2_ctrl *link_freq;
+	struct v4l2_ctrl *pixel_rate;
+
+	const struct s5k2l7_mode *cur_mode;
+	bool streaming;
 };
 
 static inline struct s5k2l7 *to_s5k2l7(struct v4l2_subdev *sd)
 {
 	return container_of(sd, struct s5k2l7, sd);
 }
-
-static const s64 s5k2l7_link_freqs[] = { S5K2L7_LINK_FREQ };
 
 static int s5k2l7_write_table(struct s5k2l7 *s, const struct s5k2l7_reg *t,
 			      unsigned int n)
@@ -204,8 +241,12 @@ static int s5k2l7_apply_tables(struct s5k2l7 *s)
 				 ARRAY_SIZE(s5k2l7_init_regs));
 	if (ret)
 		return ret;
-	return s5k2l7_write_table(s, s5k2l7_mode_4032x3024,
-				  ARRAY_SIZE(s5k2l7_mode_4032x3024));
+	ret = s5k2l7_write_table(s, s5k2l7_mode_4032x3024,
+				 ARRAY_SIZE(s5k2l7_mode_4032x3024));
+	if (ret || !s->cur_mode->regs)
+		return ret;
+	return s5k2l7_write_table(s, s->cur_mode->regs,
+				  s->cur_mode->num_regs);
 }
 
 static int s5k2l7_power_on(struct device *dev)
@@ -249,7 +290,7 @@ static int s5k2l7_set_ctrl(struct v4l2_ctrl *ctrl)
 	int ret = 0;
 
 	if (ctrl->id == V4L2_CID_VBLANK) {
-		s64 max = ctrl->val + S5K2L7_HEIGHT - S5K2L7_EXP_MARGIN;
+		s64 max = ctrl->val + s->cur_mode->height - S5K2L7_EXP_MARGIN;
 
 		__v4l2_ctrl_modify_range(s->exposure, S5K2L7_EXP_MIN, max, 1,
 					 min_t(s64, s->exposure->val, max));
@@ -268,7 +309,7 @@ static int s5k2l7_set_ctrl(struct v4l2_ctrl *ctrl)
 		break;
 	case V4L2_CID_VBLANK:
 		cci_write(s->regmap, S5K2L7_REG_VTS,
-			  ctrl->val + S5K2L7_HEIGHT, &ret);
+			  ctrl->val + s->cur_mode->height, &ret);
 		break;
 	}
 	cci_write(s->regmap, S5K2L7_REG_GROUP_HOLD, 0, &ret);
@@ -281,38 +322,47 @@ static const struct v4l2_ctrl_ops s5k2l7_ctrl_ops = {
 	.s_ctrl = s5k2l7_set_ctrl,
 };
 
+static u64 s5k2l7_mode_pixel_rate(const struct s5k2l7_mode *mode)
+{
+	return s5k2l7_link_freqs[mode->link_freq_idx] * 2 * S5K2L7_LANES / 10;
+}
+
 static int s5k2l7_init_controls(struct s5k2l7 *s)
 {
+	const struct s5k2l7_mode *mode = s->cur_mode;
 	struct v4l2_fwnode_device_properties props;
-	u64 pixrate = S5K2L7_LINK_FREQ * 2 * S5K2L7_LANES / 10;
-	struct v4l2_ctrl *c;
+	u64 pixrate = s5k2l7_mode_pixel_rate(mode);
+	u32 hblank = mode->hts - mode->width;
 	int ret;
 
 	v4l2_ctrl_handler_init(&s->ctrls, 9);
 
-	c = v4l2_ctrl_new_int_menu(&s->ctrls, NULL, V4L2_CID_LINK_FREQ, 0, 0,
-				   s5k2l7_link_freqs);
-	if (c)
-		c->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+	s->link_freq = v4l2_ctrl_new_int_menu(&s->ctrls, NULL,
+					      V4L2_CID_LINK_FREQ,
+					      ARRAY_SIZE(s5k2l7_link_freqs) - 1,
+					      mode->link_freq_idx,
+					      s5k2l7_link_freqs);
+	if (s->link_freq)
+		s->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
-	v4l2_ctrl_new_std(&s->ctrls, NULL, V4L2_CID_PIXEL_RATE, pixrate,
-			  pixrate, 1, pixrate);
+	s->pixel_rate = v4l2_ctrl_new_std(&s->ctrls, NULL,
+					  V4L2_CID_PIXEL_RATE, pixrate,
+					  pixrate, 1, pixrate);
 
-	c = v4l2_ctrl_new_std(&s->ctrls, NULL, V4L2_CID_HBLANK,
-			      S5K2L7_HTS - S5K2L7_WIDTH,
-			      S5K2L7_HTS - S5K2L7_WIDTH, 1,
-			      S5K2L7_HTS - S5K2L7_WIDTH);
-	if (c)
-		c->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+	s->hblank = v4l2_ctrl_new_std(&s->ctrls, NULL, V4L2_CID_HBLANK,
+				      hblank, hblank, 1, hblank);
+	if (s->hblank)
+		s->hblank->flags |= V4L2_CTRL_FLAG_READ_ONLY;
 
-	v4l2_ctrl_new_std(&s->ctrls, &s5k2l7_ctrl_ops, V4L2_CID_VBLANK, 0,
-			  S5K2L7_VTS_MAX - S5K2L7_HEIGHT, 1,
-			  S5K2L7_VTS_DEF - S5K2L7_HEIGHT);
+	s->vblank = v4l2_ctrl_new_std(&s->ctrls, &s5k2l7_ctrl_ops,
+				      V4L2_CID_VBLANK, 0,
+				      S5K2L7_VTS_MAX - mode->height, 1,
+				      mode->vts_def - mode->height);
 
 	s->exposure = v4l2_ctrl_new_std(&s->ctrls, &s5k2l7_ctrl_ops,
 					V4L2_CID_EXPOSURE, S5K2L7_EXP_MIN,
-					S5K2L7_VTS_DEF - S5K2L7_EXP_MARGIN, 1,
-					(S5K2L7_VTS_DEF - S5K2L7_EXP_MARGIN) / 2);
+					mode->vts_def - S5K2L7_EXP_MARGIN, 1,
+					(mode->vts_def - S5K2L7_EXP_MARGIN) / 2);
 
 	v4l2_ctrl_new_std(&s->ctrls, &s5k2l7_ctrl_ops, V4L2_CID_ANALOGUE_GAIN,
 			  S5K2L7_GAIN_MIN, S5K2L7_GAIN_MAX, 1, S5K2L7_GAIN_DEF);
@@ -336,10 +386,18 @@ err:
 	return ret;
 }
 
-static void s5k2l7_fill_fmt(struct v4l2_mbus_framefmt *f)
+static const struct s5k2l7_mode *
+s5k2l7_find_mode(u32 width, u32 height)
 {
-	f->width = S5K2L7_WIDTH;
-	f->height = S5K2L7_HEIGHT;
+	return v4l2_find_nearest_size(s5k2l7_modes, ARRAY_SIZE(s5k2l7_modes),
+				      width, height, width, height);
+}
+
+static void s5k2l7_fill_fmt(const struct s5k2l7_mode *mode,
+			    struct v4l2_mbus_framefmt *f)
+{
+	f->width = mode->width;
+	f->height = mode->height;
 	f->code = S5K2L7_MBUS_CODE;
 	f->field = V4L2_FIELD_NONE;
 	f->colorspace = V4L2_COLORSPACE_RAW;
@@ -362,17 +420,68 @@ static int s5k2l7_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_state *st,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
-	if (fse->index || fse->code != S5K2L7_MBUS_CODE)
+	if (fse->index >= ARRAY_SIZE(s5k2l7_modes) ||
+	    fse->code != S5K2L7_MBUS_CODE)
 		return -EINVAL;
-	fse->min_width = fse->max_width = S5K2L7_WIDTH;
-	fse->min_height = fse->max_height = S5K2L7_HEIGHT;
+	fse->min_width = s5k2l7_modes[fse->index].width;
+	fse->max_width = fse->min_width;
+	fse->min_height = s5k2l7_modes[fse->index].height;
+	fse->max_height = fse->min_height;
 	return 0;
+}
+
+static int s5k2l7_set_mode_ctrls(struct s5k2l7 *s,
+				 const struct s5k2l7_mode *mode)
+{
+	u64 pixrate = s5k2l7_mode_pixel_rate(mode);
+	u32 hblank = mode->hts - mode->width;
+	int ret;
+
+	/* The VBLANK and exposure handlers read cur_mode. */
+	s->cur_mode = mode;
+
+	ret = __v4l2_ctrl_s_ctrl(s->link_freq, mode->link_freq_idx);
+	if (ret)
+		return ret;
+	ret = __v4l2_ctrl_modify_range(s->pixel_rate, pixrate, pixrate, 1,
+				       pixrate);
+	if (ret)
+		return ret;
+	ret = __v4l2_ctrl_modify_range(s->hblank, hblank, hblank, 1, hblank);
+	if (ret)
+		return ret;
+	ret = __v4l2_ctrl_modify_range(s->vblank, 0,
+				       S5K2L7_VTS_MAX - mode->height, 1,
+				       mode->vts_def - mode->height);
+	if (ret)
+		return ret;
+	ret = __v4l2_ctrl_s_ctrl(s->vblank, mode->vts_def - mode->height);
+	if (ret)
+		return ret;
+	return __v4l2_ctrl_modify_range(s->exposure, S5K2L7_EXP_MIN,
+					mode->vts_def - S5K2L7_EXP_MARGIN, 1,
+					(mode->vts_def - S5K2L7_EXP_MARGIN) / 2);
 }
 
 static int s5k2l7_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_state *st,
 			  struct v4l2_subdev_format *fmt)
 {
-	s5k2l7_fill_fmt(&fmt->format);
+	struct s5k2l7 *s = to_s5k2l7(sd);
+	const struct s5k2l7_mode *mode;
+
+	mode = s5k2l7_find_mode(fmt->format.width, fmt->format.height);
+
+	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE) {
+		int ret;
+
+		if (s->streaming)
+			return -EBUSY;
+		ret = s5k2l7_set_mode_ctrls(s, mode);
+		if (ret)
+			return ret;
+	}
+
+	s5k2l7_fill_fmt(mode, &fmt->format);
 	*v4l2_subdev_state_get_format(st, fmt->pad) = fmt->format;
 	return 0;
 }
@@ -380,7 +489,7 @@ static int s5k2l7_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_state *st,
 static int s5k2l7_init_state(struct v4l2_subdev *sd,
 			     struct v4l2_subdev_state *st)
 {
-	s5k2l7_fill_fmt(v4l2_subdev_state_get_format(st, 0));
+	s5k2l7_fill_fmt(&s5k2l7_modes[0], v4l2_subdev_state_get_format(st, 0));
 	return 0;
 }
 
@@ -388,8 +497,13 @@ static int s5k2l7_get_selection(struct v4l2_subdev *sd,
 				struct v4l2_subdev_state *st,
 				struct v4l2_subdev_selection *sel)
 {
+	const struct v4l2_mbus_framefmt *fmt;
+
 	switch (sel->target) {
 	case V4L2_SEL_TGT_CROP:
+		fmt = v4l2_subdev_state_get_format(st, sel->pad);
+		sel->r = s5k2l7_find_mode(fmt->width, fmt->height)->crop;
+		return 0;
 	case V4L2_SEL_TGT_CROP_DEFAULT:
 	case V4L2_SEL_TGT_CROP_BOUNDS:
 	case V4L2_SEL_TGT_NATIVE_SIZE:
@@ -426,6 +540,7 @@ static int s5k2l7_start_streaming(struct s5k2l7 *s)
 	if (ret)
 		goto err_pm;
 
+	s->streaming = true;
 	return 0;
 err_pm:
 	pm_runtime_put(&s->client->dev);
@@ -443,6 +558,7 @@ static int s5k2l7_set_stream(struct v4l2_subdev *sd, int enable)
 		ret = s5k2l7_start_streaming(s);
 	} else {
 		cci_write(s->regmap, S5K2L7_REG_MODE_SELECT, 0, NULL);
+		s->streaming = false;
 		pm_runtime_put(&s->client->dev);
 	}
 	v4l2_subdev_unlock_state(st);
@@ -533,6 +649,8 @@ static int s5k2l7_probe(struct i2c_client *client)
 	ret = devm_regulator_bulk_get(dev, S5K2L7_NUM_SUPPLIES, s->supplies);
 	if (ret)
 		return dev_err_probe(dev, ret, "supplies\n");
+
+	s->cur_mode = &s5k2l7_modes[0];
 
 	v4l2_i2c_subdev_init(&s->sd, client, &s5k2l7_subdev_ops);
 	s->sd.internal_ops = &s5k2l7_internal_ops;
