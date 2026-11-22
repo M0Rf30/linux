@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/reset.h>
 #include <linux/units.h>
 #include <media/media-entity.h>
 #include <media/v4l2-async.h>
@@ -107,7 +108,7 @@ struct ov02a10 {
 
 	struct clk *eclk;
 	struct gpio_desc *pd_gpio;
-	struct gpio_desc *rst_gpio;
+	struct reset_control *reset;
 	struct regulator_bulk_data supplies[ARRAY_SIZE(ov02a10_supply_names)];
 
 	bool streaming;
@@ -407,7 +408,6 @@ static int ov02a10_power_on(struct device *dev)
 	struct ov02a10 *ov02a10 = to_ov02a10(sd);
 	int ret;
 
-	gpiod_set_value_cansleep(ov02a10->rst_gpio, 1);
 	gpiod_set_value_cansleep(ov02a10->pd_gpio, 1);
 
 	ret = clk_prepare_enable(ov02a10->eclk);
@@ -427,15 +427,23 @@ static int ov02a10_power_on(struct device *dev)
 	gpiod_set_value_cansleep(ov02a10->pd_gpio, 0);
 	usleep_range(5000, 6000);
 
-	gpiod_set_value_cansleep(ov02a10->rst_gpio, 0);
+	/*
+	 * The reset line may be shared with another sensor that is already
+	 * running: it is only released here, never pulsed.
+	 */
+	ret = reset_control_deassert(ov02a10->reset);
+	if (ret)
+		goto disable_regulator;
 	usleep_range(5000, 6000);
 
 	ret = ov02a10_check_sensor_id(ov02a10);
 	if (ret)
-		goto disable_regulator;
+		goto assert_reset;
 
 	return 0;
 
+assert_reset:
+	reset_control_assert(ov02a10->reset);
 disable_regulator:
 	regulator_bulk_disable(ARRAY_SIZE(ov02a10_supply_names),
 			       ov02a10->supplies);
@@ -451,7 +459,7 @@ static int ov02a10_power_off(struct device *dev)
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct ov02a10 *ov02a10 = to_ov02a10(sd);
 
-	gpiod_set_value_cansleep(ov02a10->rst_gpio, 1);
+	reset_control_assert(ov02a10->reset);
 	clk_disable_unprepare(ov02a10->eclk);
 	gpiod_set_value_cansleep(ov02a10->pd_gpio, 1);
 	regulator_bulk_disable(ARRAY_SIZE(ov02a10_supply_names),
@@ -896,9 +904,10 @@ static int ov02a10_probe(struct i2c_client *client)
 		return dev_err_probe(dev, PTR_ERR(ov02a10->pd_gpio),
 				     "failed to get powerdown-gpios\n");
 
-	ov02a10->rst_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(ov02a10->rst_gpio))
-		return dev_err_probe(dev, PTR_ERR(ov02a10->rst_gpio),
+	/* The reset GPIO may be shared with another sensor */
+	ov02a10->reset = devm_reset_control_get_shared(dev, NULL);
+	if (IS_ERR(ov02a10->reset))
+		return dev_err_probe(dev, PTR_ERR(ov02a10->reset),
 				     "failed to get reset-gpios\n");
 
 	for (i = 0; i < ARRAY_SIZE(ov02a10_supply_names); i++)

@@ -7,11 +7,11 @@
 
 #include <linux/clk.h>
 #include <linux/delay.h>
-#include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/pm_runtime.h>
 #include <linux/regulator/consumer.h>
+#include <linux/reset.h>
 #include <media/v4l2-cci.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
@@ -91,7 +91,7 @@ struct s5k5e8 {
 	struct i2c_client *client;
 	struct regmap *regmap;
 	struct clk *xclk;
-	struct gpio_desc *reset_gpio;
+	struct reset_control *reset;
 	struct regulator_bulk_data supplies[S5K5E8_NUM_SUPPLIES];
 
 	struct v4l2_subdev sd;
@@ -568,10 +568,12 @@ static int s5k5e8_power_on(struct device *dev)
 	unsigned int i;
 	int ret;
 
-	/* Assert reset, enable rails (5 ms each), then MCLK. */
-	gpiod_set_value_cansleep(s->reset_gpio, 1);
-	usleep_range(1000, 2000);
-
+	/*
+	 * Enable rails (5 ms each), then MCLK, then release reset. The reset
+	 * line may be shared with another sensor that is already running, so
+	 * it is only released and asserted again, never pulsed: it is held
+	 * asserted while no sensor on the line is powered.
+	 */
 	for (i = 0; i < S5K5E8_NUM_SUPPLIES; i++) {
 		ret = regulator_enable(s->supplies[i].consumer);
 		if (ret)
@@ -584,11 +586,21 @@ static int s5k5e8_power_on(struct device *dev)
 		goto err_disable;
 	usleep_range(1000, 2000);
 
-	gpiod_set_value_cansleep(s->reset_gpio, 0);
-	usleep_range(10000, 12000);
+	ret = reset_control_deassert(s->reset);
+	if (ret)
+		goto err_clk;
+
+	/*
+	 * The sensor does not acknowledge its address right after reset is
+	 * released; it answers 20 ms later.
+	 */
+	usleep_range(20000, 25000);
 
 	return 0;
 
+err_clk:
+	clk_disable_unprepare(s->xclk);
+	i = S5K5E8_NUM_SUPPLIES;
 err_disable:
 	while (i--)
 		regulator_disable(s->supplies[i].consumer);
@@ -601,7 +613,7 @@ static int s5k5e8_power_off(struct device *dev)
 	struct s5k5e8 *s = to_s5k5e8(sd);
 	unsigned int i;
 
-	gpiod_set_value_cansleep(s->reset_gpio, 1);
+	reset_control_assert(s->reset);
 	clk_disable_unprepare(s->xclk);
 
 	for (i = S5K5E8_NUM_SUPPLIES; i--;)
@@ -1002,9 +1014,11 @@ static int s5k5e8_probe(struct i2c_client *client)
 	if (ret)
 		return dev_err_probe(dev, ret, "cannot set 24 MHz\n");
 
-	s->reset_gpio = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH);
-	if (IS_ERR(s->reset_gpio))
-		return PTR_ERR(s->reset_gpio);
+	/* The reset GPIO may be shared with another sensor */
+	s->reset = devm_reset_control_get_shared(dev, NULL);
+	if (IS_ERR(s->reset))
+		return dev_err_probe(dev, PTR_ERR(s->reset),
+				     "failed to get reset-gpios\n");
 
 	for (i = 0; i < S5K5E8_NUM_SUPPLIES; i++)
 		s->supplies[i].supply = s5k5e8_supply_names[i];

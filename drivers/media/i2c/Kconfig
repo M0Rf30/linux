@@ -395,6 +395,8 @@ config VIDEO_OV01A10
 
 config VIDEO_OV02A10
 	tristate "OmniVision OV02A10 sensor support"
+	select RESET_CONTROLLER
+	select RESET_GPIO
 	help
 	  This is a Video4Linux2 sensor driver for the OmniVision
 	  OV02A10 camera.
@@ -809,6 +811,8 @@ config VIDEO_S5K5BAF
 
 config VIDEO_S5K5E8
 	tristate "Samsung S5K5E8 sensor support"
+	select RESET_CONTROLLER
+	select RESET_GPIO
 	select V4L2_CCI_I2C
 	help
 	  This is a V4L2 sensor driver for the Samsung S5K5E8 5MP
