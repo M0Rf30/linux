@@ -30,6 +30,7 @@
 #define CSIPHY_3PH_LNn_TEST_IMP_HS_TERM_IMP	0xa
 #define CSIPHY_3PH_LNn_MISC1(n)			(0x028 + 0x100 * (n))
 #define CSIPHY_3PH_LNn_MISC1_IS_CLKLANE		BIT(2)
+#define CSIPHY_3PH_LNn_MISC1_COMBO_MODE		(BIT(3) | BIT(1))
 #define CSIPHY_3PH_LNn_CFG6(n)			(0x02c + 0x100 * (n))
 #define CSIPHY_3PH_LNn_CFG6_SWI_FORCE_INIT_EXIT	BIT(0)
 #define CSIPHY_3PH_LNn_CFG7(n)			(0x030 + 0x100 * (n))
@@ -1022,17 +1023,30 @@ static u8 csiphy_settle_cnt_calc(s64 link_freq, u32 timer_clk_rate)
 	return settle_cnt;
 }
 
+/*
+ * D-PHY combo mode: the second leg of the PHY, described by the second
+ * endpoint of the port, has data lane DL2 and uses DL3 as its clock lane
+ * instead of the dedicated clock lane.
+ */
+#define CSIPHY_COMBO_CLK_LANE	3
+
+static u8 csiphy_clk_lane_index(struct csiphy_config *cfg)
+{
+	return cfg->combo_mode ? CSIPHY_COMBO_CLK_LANE * 2 : 7;
+}
+
 static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 				     struct csiphy_config *cfg,
 				     u8 settle_cnt)
 {
 	struct csiphy_lanes_cfg *c = &cfg->csi2->lane_cfg;
+	bool combo = cfg->combo_mode;
 	int i, l = 0;
 	u8 val;
 
 	for (i = 0; i <= c->num_data; i++) {
 		if (i == c->num_data)
-			l = 7;
+			l = csiphy_clk_lane_index(cfg);
 		else
 			l = c->data[i].pos * 2;
 
@@ -1069,6 +1083,10 @@ static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 		val = CSIPHY_3PH_LNn_CSI_LANE_CTRL15_SWI_SOT_SYMBOL;
 		writel_relaxed(val, csiphy->base +
 				    CSIPHY_3PH_LNn_CSI_LANE_CTRL15(l));
+
+		if (combo)
+			writel_relaxed(CSIPHY_3PH_LNn_MISC1_COMBO_MODE,
+				       csiphy->base + CSIPHY_3PH_LNn_MISC1(l));
 	}
 
 	val = CSIPHY_3PH_LNn_CFG1_SWI_REC_DLY_PRG;
@@ -1081,6 +1099,8 @@ static void csiphy_gen1_config_lanes(struct csiphy_device *csiphy,
 	writel_relaxed(val, csiphy->base + CSIPHY_3PH_LNn_CFG4(l));
 
 	val = CSIPHY_3PH_LNn_MISC1_IS_CLKLANE;
+	if (combo)
+		val |= CSIPHY_3PH_LNn_MISC1_COMBO_MODE;
 	writel_relaxed(val, csiphy->base + CSIPHY_3PH_LNn_MISC1(l));
 }
 
@@ -1148,11 +1168,32 @@ static bool csiphy_is_gen2(u32 version)
 	return ret;
 }
 
+/* Lanes of one CSIPHY leg in the lane enable register */
+static u8 csiphy_leg_lane_enable(struct csiphy_device *csiphy,
+				 struct csiphy_config *cfg)
+{
+	struct csiphy_lanes_cfg *c = &cfg->csi2->lane_cfg;
+	u8 val;
+	int i;
+
+	if (!csiphy_is_gen2(csiphy->camss->res->version) && cfg->combo_mode)
+		val = BIT(csiphy_clk_lane_index(cfg));
+	else
+		val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL5_CLK_ENABLE;
+	for (i = 0; i < c->num_data; i++)
+		val |= BIT(c->data[i].pos * 2);
+
+	return val;
+}
+
+/*
+ * The lane enable register is shared by the legs of a CSIPHY in combo mode:
+ * starting a leg adds its lanes to the ones already enabled.
+ */
 static void csiphy_lanes_enable(struct csiphy_device *csiphy,
 				struct csiphy_config *cfg,
 				s64 link_freq, u8 lane_mask)
 {
-	struct csiphy_lanes_cfg *c = &cfg->csi2->lane_cfg;
 	struct csiphy_device_regs *regs = csiphy->regs;
 	u8 settle_cnt;
 	u8 val;
@@ -1160,11 +1201,9 @@ static void csiphy_lanes_enable(struct csiphy_device *csiphy,
 
 	settle_cnt = csiphy_settle_cnt_calc(link_freq, csiphy->timer_clk_rate);
 
-	val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL5_CLK_ENABLE;
-	for (i = 0; i < c->num_data; i++)
-		val |= BIT(c->data[i].pos * 2);
+	csiphy->lanes_active |= csiphy_leg_lane_enable(csiphy, cfg);
 
-	writel_relaxed(val, csiphy->base +
+	writel_relaxed(csiphy->lanes_active, csiphy->base +
 		       CSIPHY_3PH_CMN_CSI_COMMON_CTRLn(regs->offset, 5));
 
 	val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL6_COMMON_PWRDN_B;
@@ -1196,11 +1235,15 @@ static void csiphy_lanes_disable(struct csiphy_device *csiphy,
 {
 	struct csiphy_device_regs *regs = csiphy->regs;
 
-	writel_relaxed(0, csiphy->base +
-			  CSIPHY_3PH_CMN_CSI_COMMON_CTRLn(regs->offset, 5));
+	csiphy->lanes_active &= ~csiphy_leg_lane_enable(csiphy, cfg);
 
-	writel_relaxed(0, csiphy->base +
-			  CSIPHY_3PH_CMN_CSI_COMMON_CTRLn(regs->offset, 6));
+	writel_relaxed(csiphy->lanes_active, csiphy->base +
+		       CSIPHY_3PH_CMN_CSI_COMMON_CTRLn(regs->offset, 5));
+
+	/* Power the PHY down only once the other leg has stopped as well */
+	if (!csiphy->lanes_active)
+		writel_relaxed(0, csiphy->base +
+			       CSIPHY_3PH_CMN_CSI_COMMON_CTRLn(regs->offset, 6));
 }
 
 static int csiphy_init(struct csiphy_device *csiphy)

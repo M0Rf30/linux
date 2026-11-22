@@ -4761,16 +4761,22 @@ static const struct parent_dev_ops vfe_parent_dev_ops = {
 
 /*
  * camss_parse_endpoint_node - Parse port endpoint node
- * @dev: CAMSS device
+ * @camss: CAMSS device
  * @ep: Device endpoint to be parsed
  * @csd: Parsed data from port endpoint node
  *
+ * A port with a single endpoint feeds one sensor. A port with two endpoints
+ * is a CSIPHY in D-PHY combo mode: endpoint 0 is the leg with up to two data
+ * lanes and the dedicated clock lane, endpoint 1 is the leg with data lane 2
+ * and data lane 3 as its clock lane.
+ *
  * Return 0 on success or a negative error code on failure
  */
-static int camss_parse_endpoint_node(struct device *dev,
+static int camss_parse_endpoint_node(struct camss *camss,
 				     struct fwnode_handle *ep,
 				     struct camss_async_subdev *csd)
 {
+	struct device *dev = camss->dev;
 	struct csiphy_lanes_cfg *lncfg = &csd->interface.csi2.lane_cfg;
 	struct v4l2_mbus_config_mipi_csi2 *mipi_csi2;
 	struct v4l2_fwnode_endpoint vep = { { 0 } };
@@ -4790,12 +4796,33 @@ static int camss_parse_endpoint_node(struct device *dev,
 		return -EINVAL;
 	}
 
+	if (vep.base.port >= camss->res->csiphy_num || vep.base.id > 1) {
+		dev_err(dev, "Invalid CSI port %u endpoint %u\n",
+			vep.base.port, vep.base.id);
+		return -EINVAL;
+	}
+
 	csd->interface.csiphy_id = vep.base.port;
+	csd->interface.leg = vep.base.id;
 
 	mipi_csi2 = &vep.bus.mipi_csi2;
 	lncfg->clk.pos = mipi_csi2->clock_lane;
 	lncfg->clk.pol = mipi_csi2->lane_polarities[0];
 	lncfg->num_data = mipi_csi2->num_data_lanes;
+
+	if (csd->interface.leg) {
+		if (mipi_csi2->clock_lane != 3 || lncfg->num_data != 1 ||
+		    mipi_csi2->data_lanes[0] != 2) {
+			dev_err(dev,
+				"CSI port %u combo endpoint must use data-lanes = <2>, clock-lanes = <3>\n",
+				vep.base.port);
+			return -EINVAL;
+		}
+
+		ret = msm_csiphy_combo_init(&camss->csiphy[vep.base.port]);
+		if (ret < 0)
+			return ret;
+	}
 
 	lncfg->data = devm_kcalloc(dev,
 				   lncfg->num_data, sizeof(*lncfg->data),
@@ -4833,7 +4860,7 @@ static int camss_parse_ports(struct camss *camss)
 			goto err_cleanup;
 		}
 
-		ret = camss_parse_endpoint_node(dev, ep, csd);
+		ret = camss_parse_endpoint_node(camss, ep, csd);
 		if (ret < 0)
 			goto err_cleanup;
 	}
@@ -4956,18 +4983,26 @@ static int camss_link_entities(struct camss *camss)
 	int ret;
 
 	for (i = 0; i < camss->res->csiphy_num; i++) {
-		for (j = 0; j < camss->res->csid_num; j++) {
-			ret = media_create_pad_link(&camss->csiphy[i].subdev.entity,
-						    MSM_CSIPHY_PAD_SRC,
-						    &camss->csid[j].subdev.entity,
-						    MSM_CSID_PAD_SINK,
-						    0);
-			if (ret < 0) {
-				camss_link_err(camss,
-					       camss->csiphy[i].subdev.entity.name,
-					       camss->csid[j].subdev.entity.name,
-					       ret);
-				return ret;
+		struct csiphy_device *legs[] = { &camss->csiphy[i],
+						 camss->csiphy[i].combo };
+
+		for (k = 0; k < ARRAY_SIZE(legs); k++) {
+			if (!legs[k])
+				continue;
+
+			for (j = 0; j < camss->res->csid_num; j++) {
+				ret = media_create_pad_link(&legs[k]->subdev.entity,
+							    MSM_CSIPHY_PAD_SRC,
+							    &camss->csid[j].subdev.entity,
+							    MSM_CSID_PAD_SINK,
+							    0);
+				if (ret < 0) {
+					camss_link_err(camss,
+						       legs[k]->subdev.entity.name,
+						       camss->csid[j].subdev.entity.name,
+						       ret);
+					return ret;
+				}
 			}
 		}
 	}
@@ -5198,8 +5233,31 @@ static int camss_subdev_notifier_bound(struct v4l2_async_notifier *async,
 	struct camss *camss = container_of(async, struct camss, notifier);
 	struct camss_async_subdev *csd =
 		container_of(asd, struct camss_async_subdev, asd);
-	u8 id = csd->interface.csiphy_id;
-	struct csiphy_device *csiphy = &camss->csiphy[id];
+	struct csiphy_device *csiphy = &camss->csiphy[csd->interface.csiphy_id];
+	struct csiphy_lanes_cfg *lncfg = &csd->interface.csi2.lane_cfg;
+
+	if (csd->interface.leg) {
+		csiphy = csiphy->combo;
+	} else if (csiphy->combo) {
+		int i;
+
+		/* Combo mode leaves DL0 and DL1 to the first leg */
+		if (lncfg->num_data > 2) {
+			dev_err(camss->dev,
+				"CSIPHY%u combo mode allows two data lanes on its first endpoint\n",
+				csiphy->id);
+			return -EINVAL;
+		}
+
+		for (i = 0; i < lncfg->num_data; i++) {
+			if (lncfg->data[i].pos > 1) {
+				dev_err(camss->dev,
+					"CSIPHY%u combo mode allows data lanes 0 and 1 on its first endpoint\n",
+					csiphy->id);
+				return -EINVAL;
+			}
+		}
+	}
 
 	csiphy->cfg.csi2 = &csd->interface.csi2;
 	subdev->host_priv = csiphy;

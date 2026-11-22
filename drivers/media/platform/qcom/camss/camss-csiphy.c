@@ -131,23 +131,42 @@ static u8 csiphy_get_bpp(const struct csiphy_format_info *formats,
 }
 
 /*
+ * csiphy_get_link_freq - Get the link frequency of the sensor on a leg
+ * @leg: CSIPHY leg
+ *
+ * Return link frequency or a negative error code
+ */
+static s64 csiphy_get_link_freq(struct csiphy_device *leg)
+{
+	u8 bpp = csiphy_get_bpp(leg->res->formats->formats,
+				leg->res->formats->nformats,
+				leg->fmt[MSM_CSIPHY_PAD_SINK].code);
+	u8 num_lanes = leg->cfg.csi2->lane_cfg.num_data;
+
+	return camss_get_link_freq(&leg->subdev.entity, bpp, num_lanes);
+}
+
+/*
  * csiphy_set_clock_rates - Calculate and set clock rates on CSIPHY module
- * @csiphy: CSIPHY device
+ * @csiphy: CSIPHY hardware owner
+ *
+ * The PHY clocks serve all legs, so they are sized for the fastest sensor
+ * attached, whichever leg powers the PHY up first.
  */
 static int csiphy_set_clock_rates(struct csiphy_device *csiphy)
 {
+	struct csiphy_device *legs[] = { csiphy, csiphy->combo };
 	struct device *dev = csiphy->camss->dev;
-	s64 link_freq;
+	s64 link_freq = 0;
 	int i, j;
 	int ret;
 
-	u8 bpp = csiphy_get_bpp(csiphy->res->formats->formats, csiphy->res->formats->nformats,
-				csiphy->fmt[MSM_CSIPHY_PAD_SINK].code);
-	u8 num_lanes = csiphy->cfg.csi2->lane_cfg.num_data;
+	for (i = 0; i < ARRAY_SIZE(legs); i++) {
+		if (!legs[i] || !legs[i]->cfg.csi2)
+			continue;
 
-	link_freq = camss_get_link_freq(&csiphy->subdev.entity, bpp, num_lanes);
-	if (link_freq < 0)
-		link_freq  = 0;
+		link_freq = max(link_freq, csiphy_get_link_freq(legs[i]));
+	}
 
 	for (i = 0; i < csiphy->nclocks; i++) {
 		struct camss_clock *clock = &csiphy->clock[i];
@@ -195,101 +214,126 @@ static int csiphy_set_clock_rates(struct csiphy_device *csiphy)
 }
 
 /*
- * csiphy_set_power - Power on/off CSIPHY module
+ * csiphy_hw_power_on - Power on the CSIPHY hardware
+ * @csiphy: CSIPHY hardware owner
+ *
+ * Return 0 on success or a negative error code otherwise
+ */
+static int csiphy_hw_power_on(struct csiphy_device *csiphy)
+{
+	struct device *dev = csiphy->camss->dev;
+	int ret;
+
+	ret = pm_runtime_resume_and_get(dev);
+	if (ret < 0)
+		return ret;
+
+	ret = regulator_bulk_enable(csiphy->num_supplies, csiphy->supplies);
+	if (ret < 0) {
+		pm_runtime_put_sync(dev);
+		return ret;
+	}
+
+	ret = csiphy_set_clock_rates(csiphy);
+	if (ret < 0) {
+		regulator_bulk_disable(csiphy->num_supplies, csiphy->supplies);
+		pm_runtime_put_sync(dev);
+		return ret;
+	}
+
+	ret = camss_enable_clocks(csiphy->nclocks, csiphy->clock, dev);
+	if (ret < 0) {
+		regulator_bulk_disable(csiphy->num_supplies, csiphy->supplies);
+		pm_runtime_put_sync(dev);
+		return ret;
+	}
+
+	enable_irq(csiphy->irq);
+
+	csiphy->res->hw_ops->reset(csiphy);
+
+	csiphy->res->hw_ops->hw_version_read(csiphy, dev);
+
+	return 0;
+}
+
+static void csiphy_hw_power_off(struct csiphy_device *csiphy)
+{
+	disable_irq(csiphy->irq);
+
+	camss_disable_clocks(csiphy->nclocks, csiphy->clock);
+
+	regulator_bulk_disable(csiphy->num_supplies, csiphy->supplies);
+
+	pm_runtime_put_sync(csiphy->camss->dev);
+}
+
+/*
+ * csiphy_set_power - Power on/off CSIPHY leg
  * @sd: CSIPHY V4L2 subdevice
  * @on: Requested power state
+ *
+ * The PHY hardware is powered while any of its legs is, so powering one leg
+ * on or off never disturbs a sensor streaming on the other.
  *
  * Return 0 on success or a negative error code otherwise
  */
 static int csiphy_set_power(struct v4l2_subdev *sd, int on)
 {
-	struct csiphy_device *csiphy = v4l2_get_subdevdata(sd);
-	struct device *dev = csiphy->camss->dev;
+	struct csiphy_device *leg = v4l2_get_subdevdata(sd);
+	struct csiphy_device *csiphy = leg->phy;
+	int ret = 0;
+
+	mutex_lock(&csiphy->lock);
 
 	if (on) {
-		int ret;
-
-		ret = pm_runtime_resume_and_get(dev);
-		if (ret < 0)
-			return ret;
-
-		ret = regulator_bulk_enable(csiphy->num_supplies,
-					    csiphy->supplies);
-		if (ret < 0) {
-			pm_runtime_put_sync(dev);
-			return ret;
-		}
-
-		ret = csiphy_set_clock_rates(csiphy);
-		if (ret < 0) {
-			regulator_bulk_disable(csiphy->num_supplies,
-					       csiphy->supplies);
-			pm_runtime_put_sync(dev);
-			return ret;
-		}
-
-		ret = camss_enable_clocks(csiphy->nclocks, csiphy->clock, dev);
-		if (ret < 0) {
-			regulator_bulk_disable(csiphy->num_supplies,
-					       csiphy->supplies);
-			pm_runtime_put_sync(dev);
-			return ret;
-		}
-
-		enable_irq(csiphy->irq);
-
-		csiphy->res->hw_ops->reset(csiphy);
-
-		csiphy->res->hw_ops->hw_version_read(csiphy, dev);
-	} else {
-		disable_irq(csiphy->irq);
-
-		camss_disable_clocks(csiphy->nclocks, csiphy->clock);
-
-		regulator_bulk_disable(csiphy->num_supplies, csiphy->supplies);
-
-		pm_runtime_put_sync(dev);
+		if (!csiphy->power_users)
+			ret = csiphy_hw_power_on(csiphy);
+		if (!ret)
+			csiphy->power_users++;
+	} else if (!--csiphy->power_users) {
+		csiphy_hw_power_off(csiphy);
 	}
 
-	return 0;
+	mutex_unlock(&csiphy->lock);
+
+	return ret;
 }
 
 /*
- * csiphy_stream_on - Enable streaming on CSIPHY module
- * @csiphy: CSIPHY device
+ * csiphy_stream_on - Enable streaming on a CSIPHY leg
+ * @leg: CSIPHY leg
  *
- * Helper function to enable streaming on CSIPHY module.
- * Main configuration of CSIPHY module is also done here.
+ * Helper function to enable streaming on a CSIPHY leg.
+ * Main configuration of the leg lanes is also done here.
  *
  * Return 0 on success or a negative error code otherwise
  */
-static int csiphy_stream_on(struct csiphy_device *csiphy)
+static int csiphy_stream_on(struct csiphy_device *leg)
 {
-	struct csiphy_config *cfg = &csiphy->cfg;
+	struct csiphy_device *csiphy = leg->phy;
+	struct csiphy_config *cfg = &leg->cfg;
+	u8 lane_mask = leg->res->hw_ops->get_lane_mask(&cfg->csi2->lane_cfg);
 	s64 link_freq;
-	u8 lane_mask = csiphy->res->hw_ops->get_lane_mask(&cfg->csi2->lane_cfg);
-	u8 bpp = csiphy_get_bpp(csiphy->res->formats->formats, csiphy->res->formats->nformats,
-				csiphy->fmt[MSM_CSIPHY_PAD_SINK].code);
-	u8 num_lanes = csiphy->cfg.csi2->lane_cfg.num_data;
 	u8 val;
 
-	link_freq = camss_get_link_freq(&csiphy->subdev.entity, bpp, num_lanes);
+	link_freq = csiphy_get_link_freq(leg);
 
 	if (link_freq < 0) {
-		dev_err(csiphy->camss->dev,
+		dev_err(leg->camss->dev,
 			"Cannot get CSI2 transmitter's link frequency\n");
 		return -EINVAL;
 	}
 
+	mutex_lock(&csiphy->lock);
+
 	if (csiphy->base_clk_mux) {
+		/* The CSID of the second leg is selected by the upper nibble */
+		unsigned int shift = cfg->combo_mode * 4;
+
 		val = readl_relaxed(csiphy->base_clk_mux);
-		if (cfg->combo_mode && (lane_mask & 0x18) == 0x18) {
-			val &= ~0xf0;
-			val |= cfg->csid_id << 4;
-		} else {
-			val &= ~0xf;
-			val |= cfg->csid_id;
-		}
+		val &= ~(0xf << shift);
+		val |= cfg->csid_id << shift;
 		writel_relaxed(val, csiphy->base_clk_mux);
 
 		/* Enforce reg write ordering between clk mux & lane enabling */
@@ -298,18 +342,24 @@ static int csiphy_stream_on(struct csiphy_device *csiphy)
 
 	csiphy->res->hw_ops->lanes_enable(csiphy, cfg, link_freq, lane_mask);
 
+	mutex_unlock(&csiphy->lock);
+
 	return 0;
 }
 
 /*
- * csiphy_stream_off - Disable streaming on CSIPHY module
- * @csiphy: CSIPHY device
+ * csiphy_stream_off - Disable streaming on a CSIPHY leg
+ * @leg: CSIPHY leg
  *
- * Helper function to disable streaming on CSIPHY module
+ * Only the lanes of this leg are disabled, the other leg keeps streaming.
  */
-static void csiphy_stream_off(struct csiphy_device *csiphy)
+static void csiphy_stream_off(struct csiphy_device *leg)
 {
-	csiphy->res->hw_ops->lanes_disable(csiphy, &csiphy->cfg);
+	struct csiphy_device *csiphy = leg->phy;
+
+	mutex_lock(&csiphy->lock);
+	csiphy->res->hw_ops->lanes_disable(csiphy, &leg->cfg);
+	mutex_unlock(&csiphy->lock);
 }
 
 
@@ -591,8 +641,10 @@ int msm_csiphy_subdev_init(struct camss *camss,
 
 	csiphy->camss = camss;
 	csiphy->id = id;
+	csiphy->phy = csiphy;
 	csiphy->cfg.combo_mode = 0;
 	csiphy->res = &res->csiphy;
+	mutex_init(&csiphy->lock);
 
 	ret = csiphy->res->hw_ops->init(csiphy);
 	if (ret)
@@ -711,6 +763,42 @@ int msm_csiphy_subdev_init(struct camss *camss,
 }
 
 /*
+ * msm_csiphy_combo_init - Add the second leg of a CSIPHY in combo mode
+ * @csiphy: CSIPHY device
+ *
+ * The second leg shares the hardware of @csiphy but is exposed as a subdev of
+ * its own, so each sensor gets an independent link to a CSID.
+ *
+ * Return 0 on success or a negative error code otherwise
+ */
+int msm_csiphy_combo_init(struct csiphy_device *csiphy)
+{
+	struct csiphy_device *leg;
+
+	if (csiphy->camss->res->version != CAMSS_660) {
+		dev_err(csiphy->camss->dev,
+			"CSIPHY combo mode is not supported\n");
+		return -EINVAL;
+	}
+
+	if (csiphy->combo)
+		return 0;
+
+	leg = devm_kzalloc(csiphy->camss->dev, sizeof(*leg), GFP_KERNEL);
+	if (!leg)
+		return -ENOMEM;
+
+	leg->camss = csiphy->camss;
+	leg->id = csiphy->id;
+	leg->cfg.combo_mode = 1;
+	leg->phy = csiphy;
+	leg->res = csiphy->res;
+	csiphy->combo = leg;
+
+	return 0;
+}
+
+/*
  * csiphy_link_setup - Setup CSIPHY connections
  * @entity: Pointer to media entity structure
  * @local: Pointer to local pad
@@ -774,14 +862,7 @@ static const struct media_entity_operations csiphy_media_ops = {
 	.link_validate = v4l2_subdev_link_validate,
 };
 
-/*
- * msm_csiphy_register_entity - Register subdev node for CSIPHY module
- * @csiphy: CSIPHY device
- * @v4l2_dev: V4L2 device
- *
- * Return 0 on success or a negative error code otherwise
- */
-int msm_csiphy_register_entity(struct csiphy_device *csiphy,
+static int csiphy_register_leg(struct csiphy_device *csiphy,
 			       struct v4l2_device *v4l2_dev)
 {
 	struct v4l2_subdev *sd = &csiphy->subdev;
@@ -792,8 +873,8 @@ int msm_csiphy_register_entity(struct csiphy_device *csiphy,
 	v4l2_subdev_init(sd, &csiphy_v4l2_ops);
 	sd->internal_ops = &csiphy_v4l2_internal_ops;
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
-	snprintf(sd->name, ARRAY_SIZE(sd->name), "%s%d",
-		 MSM_CSIPHY_NAME, csiphy->id);
+	snprintf(sd->name, ARRAY_SIZE(sd->name), "%s%d%s",
+		 MSM_CSIPHY_NAME, csiphy->id, csiphy->cfg.combo_mode ? "_combo" : "");
 	sd->grp_id = CSIPHY_GRP_ID;
 	v4l2_set_subdevdata(sd, csiphy);
 
@@ -823,12 +904,45 @@ int msm_csiphy_register_entity(struct csiphy_device *csiphy,
 	return ret;
 }
 
+static void csiphy_unregister_leg(struct csiphy_device *csiphy)
+{
+	v4l2_device_unregister_subdev(&csiphy->subdev);
+	media_entity_cleanup(&csiphy->subdev.entity);
+}
+
 /*
- * msm_csiphy_unregister_entity - Unregister CSIPHY module subdev node
+ * msm_csiphy_register_entity - Register subdev nodes for CSIPHY module
+ * @csiphy: CSIPHY device
+ * @v4l2_dev: V4L2 device
+ *
+ * Registers one subdev per leg of the CSIPHY.
+ *
+ * Return 0 on success or a negative error code otherwise
+ */
+int msm_csiphy_register_entity(struct csiphy_device *csiphy,
+			       struct v4l2_device *v4l2_dev)
+{
+	int ret;
+
+	ret = csiphy_register_leg(csiphy, v4l2_dev);
+	if (ret < 0 || !csiphy->combo)
+		return ret;
+
+	ret = csiphy_register_leg(csiphy->combo, v4l2_dev);
+	if (ret < 0)
+		csiphy_unregister_leg(csiphy);
+
+	return ret;
+}
+
+/*
+ * msm_csiphy_unregister_entity - Unregister CSIPHY module subdev nodes
  * @csiphy: CSIPHY device
  */
 void msm_csiphy_unregister_entity(struct csiphy_device *csiphy)
 {
-	v4l2_device_unregister_subdev(&csiphy->subdev);
-	media_entity_cleanup(&csiphy->subdev.entity);
+	if (csiphy->combo)
+		csiphy_unregister_leg(csiphy->combo);
+
+	csiphy_unregister_leg(csiphy);
 }

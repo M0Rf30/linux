@@ -12,6 +12,7 @@
 
 #include <linux/clk.h>
 #include <linux/interrupt.h>
+#include <linux/mutex.h>
 #include <media/media-entity.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-mediabus.h>
@@ -44,6 +45,12 @@ struct csiphy_csi2_cfg {
 	struct csiphy_lanes_cfg lane_cfg;
 };
 
+/**
+ * struct csiphy_config - CSIPHY leg configuration
+ * @combo_mode: set on the second leg of a CSIPHY in D-PHY combo mode
+ * @csid_id:    CSID the leg is linked to
+ * @csi2:       CSI-2 interface configuration of the sensor on the leg
+ */
 struct csiphy_config {
 	u8 combo_mode;
 	u8 csid_id;
@@ -95,9 +102,19 @@ struct csiphy_device_regs {
 	u32 common_status_offset;
 };
 
+/*
+ * A CSIPHY running in D-PHY combo mode serves two sensors at once, each on its
+ * own "leg": leg 0 uses DL0, DL1 and the dedicated clock lane, leg 1 uses DL2
+ * with DL3 as its clock lane. Every leg is a separate subdev with its own
+ * sensor link, lane configuration, formats and CSID link. The PHY hardware
+ * (registers, clocks, supplies, IRQ) is owned by the leg 0 device, which every
+ * leg reaches through @phy. A PHY without a second endpoint has a single leg.
+ */
 struct csiphy_device {
 	struct camss *camss;
 	u8 id;
+	struct csiphy_device *phy;
+	struct csiphy_device *combo;
 	struct v4l2_subdev subdev;
 	struct media_pad pads[MSM_CSIPHY_PADS_NUM];
 	void __iomem *base;
@@ -108,6 +125,10 @@ struct csiphy_device {
 	bool *rate_set;
 	int nclocks;
 	u32 timer_clk_rate;
+	/* Serializes power and stream state shared by the legs of the PHY */
+	struct mutex lock;
+	unsigned int power_users;
+	u8 lanes_active;
 	struct regulator_bulk_data *supplies;
 	int num_supplies;
 	struct csiphy_config cfg;
@@ -121,6 +142,8 @@ struct camss_subdev_resources;
 int msm_csiphy_subdev_init(struct camss *camss,
 			   struct csiphy_device *csiphy,
 			   const struct camss_subdev_resources *res, u8 id);
+
+int msm_csiphy_combo_init(struct csiphy_device *csiphy);
 
 int msm_csiphy_register_entity(struct csiphy_device *csiphy,
 			       struct v4l2_device *v4l2_dev);
