@@ -183,11 +183,32 @@ static const struct s5k2l7_reg s5k2l7_mode_2752x2064[] = {
 };
 
 /*
+ * 2016x1512 (4:3): 2x2 binned full array. Output PLL changes to 702 Mbps
+ * per lane (0x310 = 0xea, 0x312 = 1). Delta against the 4032x3024 table:
+ * binning, increments, output size, frame length, PLL and burst registers.
+ */
+static const struct s5k2l7_reg s5k2l7_mode_2016x1512[] = {
+	{ 0x034c, 0x07e0 }, { 0x034e, 0x05e8 }, { 0x0408, 0x0008 }, { 0x040a, 0x0004 },
+	{ 0x0900, 0x0122 }, { 0x0382, 0x0003 }, { 0x0386, 0x0003 }, { 0x0310, 0x00ea },
+	{ 0x0312, 0x0001 }, { 0x0340, 0x0c4d }, { 0x30a6, 0x0008 }, { 0x30a8, 0x0000 },
+	{ 0x30aa, 0x07e0 }, { 0x30ac, 0x0000 }, { 0x30a0, 0x0001 }, { 0x30a4, 0x017a },
+	{ 0x6028, 0x2000 }, { 0x602a, 0x0af8 }, { 0x6f12, 0x0008 }, { 0x602a, 0x27b8 },
+	{ 0x6f12, 0x0000 }, { 0x602a, 0x1698 }, { 0x6f12, 0x00a0 }, { 0x602a, 0x16c6 },
+	{ 0x6f12, 0x12af }, { 0x6f12, 0x0328 }, { 0x602a, 0x0b16 }, { 0x6f12, 0x0100 },
+	{ 0x602a, 0x0b62 }, { 0x6f12, 0x0166 }, { 0x602a, 0x5160 }, { 0x6f12, 0x0100 },
+	{ 0x602a, 0x5694 }, { 0x6f12, 0x0000 }, { 0x602a, 0x569c }, { 0x6f12, 0x000c },
+	{ 0x6f12, 0x0100 }, { 0x6f12, 0x0200 }, { 0x6f12, 0x0100 }, { 0x602a, 0x56d8 },
+	{ 0x6f12, 0x0000 }, { 0x602a, 0x56e0 }, { 0x6f12, 0x000c }, { 0x6f12, 0x0100 },
+	{ 0x6f12, 0x0200 }, { 0x6f12, 0x0100 }, { 0x6028, 0x4000 },
+};
+
+/*
  * Link frequency (DDR, so the lane rate is twice this) and pixel rate on the
  * CSI-2 bus: pixel rate = link * 2 * lanes / 10 bits.
  */
 static const s64 s5k2l7_link_freqs[] = {
 	666000000,	/* 1332 Mbps per lane */
+	351000000,	/*  702 Mbps per lane */
 };
 
 struct s5k2l7_mode {
@@ -233,6 +254,16 @@ static const struct s5k2l7_mode s5k2l7_modes[] = {
 		.crop = { 624, 472, 2752, 2064 },
 		.regs = s5k2l7_mode_2752x2064,
 		.num_regs = ARRAY_SIZE(s5k2l7_mode_2752x2064),
+	},
+	{
+		.width = 2016,
+		.height = 1512,
+		.hts = 10160,
+		.vts_def = 3149,
+		.link_freq_idx = 1,
+		.crop = { 0, 0, 4032, 3024 },
+		.regs = s5k2l7_mode_2016x1512,
+		.num_regs = ARRAY_SIZE(s5k2l7_mode_2016x1512),
 	},
 };
 
