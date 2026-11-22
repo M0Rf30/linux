@@ -86,9 +86,9 @@ examples:
         #address-cells = <1>;
         #size-cells = <0>;
 
-        camera@2d {
+        camera@18 {
             compatible = "samsung,s5k5e8";
-            reg = <0x2d>;
+            reg = <0x18>;
 
             clocks = <&cam_clk>;
             reset-gpios = <&tlmm 52 GPIO_ACTIVE_LOW>;
