@@ -399,6 +399,7 @@ static int gen1_typec_start_toggling(struct tcpc_dev *tcpc,
 	unsigned int role;
 	unsigned int try_src = 0;
 	unsigned int try_snk = 0;
+	unsigned int status4;
 	int ret;
 
 	switch (port_type) {
@@ -440,6 +441,18 @@ static int gen1_typec_start_toggling(struct tcpc_dev *tcpc,
 		goto out;
 
 	ret = gen1_typec_set_power_role(port, role);
+	if (ret)
+		goto out;
+
+	/*
+	 * Restarting the state machine does not report a detach when a
+	 * partner is already attached (e.g. cable present at boot), so no
+	 * type-c-change edge follows. Let TCPM re-read CC in that case.
+	 */
+	ret = regmap_read(port->regmap, port->base + TYPEC_STATUS_4_REG,
+			  &status4);
+	if (!ret && (status4 & CC_ATTACHED) && port->tcpm_port)
+		tcpm_cc_change(port->tcpm_port);
 
 out:
 	mutex_unlock(&port->lock);
